@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from './types/safe-user.type';
@@ -16,6 +16,26 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { email },
     });
+  }
+
+  async findAll(): Promise<SafeUser[]> {
+    const users = await this.prisma.user.findMany({
+      orderBy: { id: 'asc' },
+    });
+
+    return users.map((user) => this.toSafeUser(user));
+  }
+
+  async findOne(id: number): Promise<SafeUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.toSafeUser(user);
   }
 
   async findActiveById(id: number): Promise<SafeUser | null> {
