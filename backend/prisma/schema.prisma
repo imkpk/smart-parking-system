@@ -50,59 +50,62 @@ enum BookingStatus {
   EXPIRED
 }
 
+enum ParkingEventStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 enum AssignmentStatus {
   ACTIVE
   REVOKED
 }
 
-enum ParkingEventType {
-  ENTRY
-  EXIT
-}
-
 model User {
-  id           Int              @id @default(autoincrement())
-  name         String
-  email        String           @unique
-  phone        String?          @unique
-  passwordHash String
-  role         Role             @default(USER)
-  isActive     Boolean          @default(true)
-  vehicles     Vehicle[]
-  bookings     Booking[]
-  assignments  SlotAssignment[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id            Int              @id @default(autoincrement())
+  name          String
+  email         String           @unique
+  phone         String?          @unique
+  passwordHash  String
+  role          Role             @default(USER)
+  isActive      Boolean          @default(true)
+  vehicles      Vehicle[]
+  bookings      Booking[]
+  parkingEvents ParkingEvent[]
+  assignments   SlotAssignment[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@map("users")
 }
 
 model ParkingLot {
-  id        Int            @id @default(autoincrement())
-  name      String
-  type      ParkingLotType @default(APARTMENT)
-  address   String?
-  city      String?
-  state     String?
-  pincode   String?
-  isActive  Boolean        @default(true)
-  floors    Floor[]
-  bookings  Booking[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id            Int            @id @default(autoincrement())
+  name          String
+  type          ParkingLotType @default(APARTMENT)
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  isActive      Boolean        @default(true)
+  floors        Floor[]
+  bookings      Booking[]
+  parkingEvents ParkingEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("parking_lots")
 }
 
 model Floor {
-  id           Int         @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   name         String
   level        Int?
   parkingLotId Int
-  parkingLot   ParkingLot  @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
+  parkingLot   ParkingLot @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
   slots        Slot[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@unique([parkingLotId, name])
   @@index([parkingLotId])
@@ -148,21 +151,22 @@ model Vehicle {
 }
 
 model Booking {
-  id           Int           @id @default(autoincrement())
-  userId       Int
-  vehicleId    Int
-  slotId       Int
-  parkingLotId Int
-  status       BookingStatus @default(CONFIRMED)
-  startTime    DateTime
-  endTime      DateTime?
-  bookingCode  String        @unique
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  slot         Slot          @relation(fields: [slotId], references: [id], onDelete: Cascade)
-  parkingLot   ParkingLot    @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  vehicleId     Int
+  slotId        Int
+  parkingLotId  Int
+  status        BookingStatus  @default(CONFIRMED)
+  startTime     DateTime
+  endTime       DateTime?
+  bookingCode   String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  slot          Slot           @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  parkingLot    ParkingLot     @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
+  parkingEvents ParkingEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([userId])
   @@index([vehicleId])
@@ -192,18 +196,30 @@ model SlotAssignment {
 }
 
 model ParkingEvent {
-  id        Int              @id @default(autoincrement())
-  type      ParkingEventType
-  vehicleId Int
-  slotId    Int?
-  notes     String?
-  createdAt DateTime         @default(now())
-  vehicle   Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  slot      Slot?            @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  id              Int                @id @default(autoincrement())
+  bookingId       Int
+  userId          Int
+  vehicleId       Int
+  slotId          Int
+  parkingLotId    Int
+  checkInTime     DateTime
+  checkOutTime    DateTime?
+  status          ParkingEventStatus @default(ACTIVE)
+  durationMinutes Int?
+  feeAmount       Decimal?           @db.Decimal(10, 2)
+  booking         Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle         Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  slot            Slot               @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  parkingLot      ParkingLot         @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
+  @@unique([bookingId])
+  @@index([userId])
   @@index([vehicleId])
   @@index([slotId])
-  @@index([type])
-  @@index([createdAt])
+  @@index([parkingLotId])
+  @@index([status])
   @@map("parking_events")
 }
