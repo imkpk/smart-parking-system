@@ -2,7 +2,7 @@
 
 NestJS backend for a Smart Parking Management System.
 
-The backend currently covers authentication, role-based access, parking structure management, vehicle registration, available slot search, and booking.
+The backend currently covers authentication, role-based access, parking structure management, vehicle registration, available slot search, booking, and parking event check-in/check-out.
 
 ## Tech Stack
 
@@ -22,12 +22,12 @@ The backend currently covers authentication, role-based access, parking structur
 Milestone 1: Auth + Users + Roles                      Complete
 Milestone 2: Parking Lots + Floors + Slots             Complete
 Milestone 3: Vehicles + Available Slot Search + Booking Complete
+Milestone 4: Parking Events + Check-In/Check-Out        Complete
 ```
 
 Not built yet:
 
 - Payments
-- Check-in/check-out
 - Dashboard analytics
 - Frontend
 - Pricing
@@ -41,11 +41,15 @@ ADMIN
 - View all users
 - View all vehicles
 - View all bookings
+- View all parking events
 - Cancel bookings
 
 SECURITY
 - View parking lots, floors, and slots
 - View bookings for later verification
+- Check in vehicles
+- Check out vehicles
+- View active parking events
 
 USER
 - Register vehicles
@@ -54,6 +58,7 @@ USER
 - Create bookings
 - View own bookings
 - Cancel own active bookings
+- View own parking history
 ```
 
 ## Project Structure
@@ -135,6 +140,7 @@ Current migrations:
 20260613200354_init
 20260614203000_milestone_2_parking_structure
 20260614214500_milestone_3_vehicles_bookings
+20260614223000_milestone_4_parking_events
 ```
 
 ## Run The Backend
@@ -515,6 +521,135 @@ GET /api/bookings
 Authorization: Bearer SECURITY_TOKEN
 ```
 
+## Milestone 4: Parking Events + Check-In/Check-Out
+
+### Features
+
+- Security check-in by `bookingId` or `bookingCode`
+- Security check-out by parking event id
+- Active parking event listing
+- User parking history
+- Admin parking event listing
+- Fee calculation
+- Slot changes from `RESERVED` to `OCCUPIED` on check-in
+- Slot changes from `OCCUPIED` to `AVAILABLE` on check-out
+- Booking changes from `CONFIRMED` to `COMPLETED` on check-out
+- Duplicate check-in prevention
+
+### Parking Event APIs
+
+```text
+POST /api/parking-events/check-in
+POST /api/parking-events/check-out
+GET  /api/parking-events/active
+GET  /api/parking-events/history
+GET  /api/parking-events
+GET  /api/parking-events/:id
+```
+
+### Check-In Rules
+
+- Security can check in using `bookingId` or `bookingCode`.
+- Booking must be `CONFIRMED`.
+- Slot must be `RESERVED`.
+- Duplicate check-in for the same booking is blocked.
+- Check-in creates an `ACTIVE` parking event.
+- Check-in marks the slot as `OCCUPIED`.
+- Check-in uses a Prisma transaction.
+
+### Check-Out Rules
+
+- Only `ACTIVE` parking events can be checked out.
+- Check-out calculates duration in minutes.
+- Check-out calculates a mock fee.
+- Check-out marks the parking event as `COMPLETED`.
+- Check-out marks the booking as `COMPLETED`.
+- Check-out releases the slot back to `AVAILABLE`.
+- Check-out uses a Prisma transaction.
+
+### Fee Rules
+
+```text
+First 60 minutes: 50
+Every additional started hour: 30
+Partial hours are rounded up
+```
+
+Examples:
+
+```text
+30 mins  = 50
+60 mins  = 50
+61 mins  = 80
+120 mins = 80
+121 mins = 110
+```
+
+### Parking Event Sample Flow
+
+Check in with booking code:
+
+```http
+POST /api/parking-events/check-in
+Authorization: Bearer SECURITY_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "bookingCode": "BK-1781389000000-ABC123"
+}
+```
+
+Check in with booking id:
+
+```http
+POST /api/parking-events/check-in
+Authorization: Bearer SECURITY_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "bookingId": 1
+}
+```
+
+Check out:
+
+```http
+POST /api/parking-events/check-out
+Authorization: Bearer SECURITY_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "parkingEventId": 1
+}
+```
+
+View active parking events:
+
+```http
+GET /api/parking-events/active
+Authorization: Bearer SECURITY_TOKEN
+```
+
+View user parking history:
+
+```http
+GET /api/parking-events/history
+Authorization: Bearer USER_TOKEN
+```
+
+Admin view all parking events:
+
+```http
+GET /api/parking-events
+Authorization: Bearer ADMIN_TOKEN
+```
+
 ## Important Enums
 
 ```text
@@ -553,6 +688,11 @@ BookingStatus:
 - CANCELLED
 - COMPLETED
 - EXPIRED
+
+ParkingEventStatus:
+- ACTIVE
+- COMPLETED
+- CANCELLED
 ```
 
 ## Verification Commands
@@ -569,4 +709,12 @@ npx prisma migrate status
 - Floors and slots currently use hard delete/status updates.
 - Booking creation currently sets booking status to `CONFIRMED`.
 - Booking creation reserves the slot by setting slot status to `RESERVED`.
-- Check-in/check-out will be handled in a later milestone.
+- Check-in marks the slot as `OCCUPIED`.
+- Check-out marks the slot as `AVAILABLE`.
+- Fee calculation is currently mock/local logic, not payment processing.
+
+# Note from Pratibha for this service
+Milestone 1: Auth + Users + Roles ✅
+Milestone 2: Parking Lots + Floors + Slots ✅
+Milestone 3: Vehicles + Bookings ✅
+Milestone 4: Check-in + Check-out + Fee Calculation ✅
