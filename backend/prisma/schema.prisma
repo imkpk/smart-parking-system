@@ -18,7 +18,22 @@ enum SlotStatus {
   AVAILABLE
   OCCUPIED
   RESERVED
-  INACTIVE
+  MAINTENANCE
+}
+
+enum ParkingLotType {
+  APARTMENT
+  MALL
+  HOSPITAL
+  OFFICE
+  PUBLIC
+}
+
+enum SlotType {
+  CAR
+  BIKE
+  EV
+  HANDICAPPED
 }
 
 enum VehicleType {
@@ -54,13 +69,17 @@ model User {
 }
 
 model ParkingLot {
-  id        Int      @id @default(autoincrement())
+  id        Int            @id @default(autoincrement())
   name      String
+  type      ParkingLotType @default(APARTMENT)
   address   String?
-  isActive  Boolean  @default(true)
+  city      String?
+  state     String?
+  pincode   String?
+  isActive  Boolean        @default(true)
   floors    Floor[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@map("parking_lots")
 }
@@ -71,7 +90,7 @@ model Floor {
   level        Int?
   parkingLotId Int
   parkingLot   ParkingLot  @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
-  slots        ParkingSlot[]
+  slots        Slot[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -80,10 +99,10 @@ model Floor {
   @@map("floors")
 }
 
-model ParkingSlot {
+model Slot {
   id          Int              @id @default(autoincrement())
   slotNumber  String
-  type        VehicleType      @default(FOUR_WHEELER)
+  slotType    SlotType         @default(CAR) @map("type")
   status      SlotStatus       @default(AVAILABLE)
   floorId     Int
   floor       Floor            @relation(fields: [floorId], references: [id], onDelete: Cascade)
@@ -126,7 +145,7 @@ model SlotAssignment {
   revokedAt  DateTime?
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle    Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  slot       ParkingSlot      @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  slot       Slot             @relation(fields: [slotId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([vehicleId])
@@ -143,7 +162,7 @@ model ParkingEvent {
   notes     String?
   createdAt DateTime         @default(now())
   vehicle   Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  slot      ParkingSlot?     @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  slot      Slot?            @relation(fields: [slotId], references: [id], onDelete: SetNull)
 
   @@index([vehicleId])
   @@index([slotId])
