@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SECURITY
+  USER
+}
+
+enum SlotStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  INACTIVE
+}
+
+enum VehicleType {
+  TWO_WHEELER
+  FOUR_WHEELER
+  OTHER
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum ParkingEventType {
+  ENTRY
+  EXIT
+}
+
+model User {
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  phone        String?          @unique
+  passwordHash String
+  role         Role             @default(USER)
+  isActive     Boolean          @default(true)
+  vehicles     Vehicle[]
+  assignments  SlotAssignment[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("users")
+}
+
+model ParkingLot {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String?
+  isActive  Boolean  @default(true)
+  floors    Floor[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("parking_lots")
+}
+
+model Floor {
+  id           Int         @id @default(autoincrement())
+  name         String
+  level        Int?
+  parkingLotId Int
+  parkingLot   ParkingLot  @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
+  slots        ParkingSlot[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([parkingLotId, name])
+  @@index([parkingLotId])
+  @@map("floors")
+}
+
+model ParkingSlot {
+  id          Int              @id @default(autoincrement())
+  slotNumber  String
+  type        VehicleType      @default(FOUR_WHEELER)
+  status      SlotStatus       @default(AVAILABLE)
+  floorId     Int
+  floor       Floor            @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  assignments SlotAssignment[]
+  events      ParkingEvent[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([floorId, slotNumber])
+  @@index([floorId])
+  @@index([status])
+  @@map("parking_slots")
+}
+
+model Vehicle {
+  id             Int              @id @default(autoincrement())
+  registrationNo String           @unique
+  type           VehicleType      @default(FOUR_WHEELER)
+  make           String?
+  model          String?
+  color          String?
+  ownerId        Int
+  owner          User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  assignments    SlotAssignment[]
+  events         ParkingEvent[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([ownerId])
+  @@map("vehicles")
+}
+
+model SlotAssignment {
+  id         Int              @id @default(autoincrement())
+  userId     Int
+  vehicleId  Int
+  slotId     Int
+  status     AssignmentStatus @default(ACTIVE)
+  assignedAt DateTime         @default(now())
+  revokedAt  DateTime?
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  slot       ParkingSlot      @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([slotId])
+  @@index([status])
+  @@map("slot_assignments")
+}
+
+model ParkingEvent {
+  id        Int              @id @default(autoincrement())
+  type      ParkingEventType
+  vehicleId Int
+  slotId    Int?
+  notes     String?
+  createdAt DateTime         @default(now())
+  vehicle   Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  slot      ParkingSlot?     @relation(fields: [slotId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId])
+  @@index([slotId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("parking_events")
+}
