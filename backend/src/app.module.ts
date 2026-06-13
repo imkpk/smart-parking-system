@@ -4,6 +4,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FloorsModule } from './floors/floors.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
@@ -20,6 +21,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     }),
     PrismaModule,
     AuthModule,
+    BookingsModule,
     UsersModule,
     VehiclesModule,
     ParkingLotsModule,
