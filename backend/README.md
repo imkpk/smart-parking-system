@@ -1,127 +1,572 @@
 # Smart Parking Backend
 
-Phase 1: Apartment Parking MVP backend scaffold.
+NestJS backend for a Smart Parking Management System.
+
+The backend currently covers authentication, role-based access, parking structure management, vehicle registration, available slot search, and booking.
 
 ## Tech Stack
 
 - NestJS
+- TypeScript
 - MySQL
-- Prisma
-- JWT auth with roles
+- Prisma ORM
+- JWT authentication
+- Passport JWT
+- bcrypt
+- class-validator
+- Swagger/OpenAPI
 
-## Folder Structure
+## Current Milestones
+
+```text
+Milestone 1: Auth + Users + Roles                      Complete
+Milestone 2: Parking Lots + Floors + Slots             Complete
+Milestone 3: Vehicles + Available Slot Search + Booking Complete
+```
+
+Not built yet:
+
+- Payments
+- Check-in/check-out
+- Dashboard analytics
+- Frontend
+- Pricing
+- Booking expiry jobs
+
+## Roles
+
+```text
+ADMIN
+- Manage parking lots, floors, and slots
+- View all users
+- View all vehicles
+- View all bookings
+- Cancel bookings
+
+SECURITY
+- View parking lots, floors, and slots
+- View bookings for later verification
+
+USER
+- Register vehicles
+- View own vehicles
+- Search available slots
+- Create bookings
+- View own bookings
+- Cancel own active bookings
+```
+
+## Project Structure
 
 ```text
 backend/
   prisma/
     schema.prisma
+    migrations/
   src/
     app.module.ts
     main.ts
+    app.controller.ts
+    app.service.ts
+    auth/
+    users/
+    parking-lots/
+    floors/
+    slots/
+    vehicles/
+    bookings/
+    assignments/
+    parking-events/
+    dashboard/
     common/
       decorators/
       guards/
-      enums/
-    config/
     prisma/
-      prisma.module.ts
-      prisma.service.ts
-    auth/
-      auth.controller.ts
-      auth.module.ts
-      auth.service.ts
-      dto/
-      guards/
-      strategies/
-    users/
-      users.controller.ts
-      users.module.ts
-      users.service.ts
-      dto/
-    parking-lots/
-      parking-lots.controller.ts
-      parking-lots.module.ts
-      parking-lots.service.ts
-      dto/
-    floors/
-      floors.controller.ts
-      floors.module.ts
-      floors.service.ts
-      dto/
-    slots/
-      slots.controller.ts
-      slots.module.ts
-      slots.service.ts
-      dto/
-    vehicles/
-      vehicles.controller.ts
-      vehicles.module.ts
-      vehicles.service.ts
-      dto/
-    assignments/
-      assignments.controller.ts
-      assignments.module.ts
-      assignments.service.ts
-      dto/
-    parking-events/
-      parking-events.controller.ts
-      parking-events.module.ts
-      parking-events.service.ts
-      dto/
-    dashboard/
-      dashboard.controller.ts
-      dashboard.module.ts
-      dashboard.service.ts
-      dto/
 ```
 
-## Planned API Routes
+## Environment Setup
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_db"
+SHADOW_DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_shadow_db"
+JWT_SECRET="dev_secret_change_later"
+JWT_EXPIRES_IN="1d"
+PORT=3000
+```
+
+For Prisma migrations in local development, the shadow database must exist and the configured MySQL user must have access to it.
+
+Example:
+
+```sql
+CREATE DATABASE IF NOT EXISTS parking_lot_shadow_db;
+GRANT ALL PRIVILEGES ON parking_lot_shadow_db.* TO 'parking_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+## Installation
+
+```bash
+cd backend
+npm install
+npx prisma generate
+npm run build
+```
+
+## Database Migrations
+
+Apply migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+Check migration status:
+
+```bash
+npx prisma migrate status
+```
+
+Current migrations:
 
 ```text
-POST   /auth/register
-POST   /auth/login
-
-GET    /users
-GET    /users/:id
-
-POST   /parking-lots
-GET    /parking-lots
-GET    /parking-lots/:id
-PATCH  /parking-lots/:id
-DELETE /parking-lots/:id
-
-POST   /floors
-GET    /floors
-GET    /floors/:id
-PATCH  /floors/:id
-DELETE /floors/:id
-
-POST   /slots
-GET    /slots
-GET    /slots/:id
-PATCH  /slots/:id
-DELETE /slots/:id
-
-POST   /vehicles
-GET    /vehicles
-GET    /vehicles/:id
-PATCH  /vehicles/:id
-DELETE /vehicles/:id
-
-POST   /assignments
-GET    /assignments
-PATCH  /assignments/:id/revoke
-
-POST   /parking-events/entry
-POST   /parking-events/exit
-GET    /parking-events
-
-GET    /dashboard/slot-summary
+20260613200354_init
+20260614203000_milestone_2_parking_structure
+20260614214500_milestone_3_vehicles_bookings
 ```
 
-## Phase 1 Domain
+## Run The Backend
 
-- `ADMIN` manages lots, floors/zones, slots, users, and slot assignments.
-- `USER` registers vehicles.
-- `SECURITY` records vehicle entries and exits.
-- Dashboard reports total, occupied, and available slots.
+Development:
+
+```bash
+npm run start:dev
+```
+
+Production-style local start:
+
+```bash
+npm run build
+npm run start
+```
+
+Base URL:
+
+```text
+http://localhost:3000/api
+```
+
+Health check:
+
+```http
+GET /api/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "service": "smart-parking-backend"
+}
+```
+
+## Swagger
+
+Swagger UI:
+
+```text
+http://localhost:3000/api/docs
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:3000/api/docs-json
+```
+
+## Milestone 1: Auth + Users + Roles
+
+### Features
+
+- User registration
+- User login
+- JWT authentication
+- Current user endpoint
+- Admin-only users listing
+- Role infrastructure
+
+### Auth APIs
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
+
+### Users APIs
+
+```text
+GET /api/users
+GET /api/users/:id
+```
+
+### Auth Sample Requests
+
+Register:
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "phone": "+919999999999",
+  "password": "password123",
+  "role": "ADMIN"
+}
+```
+
+Login:
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+```
+
+Use the returned `accessToken` as a Bearer token:
+
+```http
+Authorization: Bearer ACCESS_TOKEN
+```
+
+Current user:
+
+```http
+GET /api/auth/me
+Authorization: Bearer ACCESS_TOKEN
+```
+
+## Milestone 2: Parking Lots + Floors + Slots
+
+### Features
+
+- Create, view, update, and soft-delete parking lots
+- Create, view, update, and delete floors
+- Create slots
+- Bulk create slots
+- View all slots in a parking lot
+- View available slots in a parking lot
+- Update slot status
+
+### Parking Lot APIs
+
+```text
+GET    /api/parking-lots
+POST   /api/parking-lots
+GET    /api/parking-lots/:id
+PATCH  /api/parking-lots/:id
+DELETE /api/parking-lots/:id
+```
+
+### Floor APIs
+
+```text
+GET    /api/parking-lots/:parkingLotId/floors
+POST   /api/parking-lots/:parkingLotId/floors
+PATCH  /api/floors/:id
+DELETE /api/floors/:id
+```
+
+### Slot APIs
+
+```text
+GET   /api/parking-lots/:parkingLotId/slots
+GET   /api/parking-lots/:parkingLotId/available-slots
+POST  /api/floors/:floorId/slots
+POST  /api/floors/:floorId/slots/bulk
+PATCH /api/slots/:id/status
+```
+
+### Parking Structure Sample Flow
+
+Create parking lot:
+
+```http
+POST /api/parking-lots
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Apartment Block A",
+  "type": "APARTMENT",
+  "address": "Main gate basement entry",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pincode": "500081"
+}
+```
+
+Create floor:
+
+```http
+POST /api/parking-lots/1/floors
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Basement 1",
+  "level": -1
+}
+```
+
+Create slot:
+
+```http
+POST /api/floors/1/slots
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "slotNumber": "B1-C-001",
+  "slotType": "CAR",
+  "status": "AVAILABLE"
+}
+```
+
+Bulk create slots:
+
+```http
+POST /api/floors/1/slots/bulk
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "slots": [
+    {
+      "slotNumber": "B1-C-002",
+      "slotType": "CAR"
+    },
+    {
+      "slotNumber": "B1-B-001",
+      "slotType": "BIKE"
+    }
+  ]
+}
+```
+
+Update slot status:
+
+```http
+PATCH /api/slots/1/status
+Authorization: Bearer ADMIN_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "status": "MAINTENANCE"
+}
+```
+
+## Milestone 3: Vehicles + Available Slot Search + Booking
+
+### Features
+
+- Register vehicles
+- View own vehicles
+- Admin view all vehicles
+- Search available slots by vehicle type
+- Create bookings
+- View own bookings
+- Admin and security view bookings
+- Cancel bookings
+- Reserve slot on booking
+- Release slot on cancellation
+- Prevent double booking
+
+### Vehicle APIs
+
+```text
+POST   /api/vehicles
+GET    /api/vehicles/my
+GET    /api/vehicles
+GET    /api/vehicles/:id
+PATCH  /api/vehicles/:id
+DELETE /api/vehicles/:id
+```
+
+### Available Slot Search
+
+```text
+GET /api/parking-lots/:parkingLotId/available-slots?vehicleType=CAR
+```
+
+### Booking APIs
+
+```text
+POST /api/bookings
+GET  /api/bookings/my
+GET  /api/bookings
+GET  /api/bookings/:id
+POST /api/bookings/:id/cancel
+```
+
+### Booking Rules
+
+- User can only book with their own vehicle.
+- Slot must be `AVAILABLE`.
+- Slot type must match vehicle type.
+- Booking creation uses a Prisma transaction.
+- Booking creation marks the slot as `RESERVED`.
+- Cancelling a booking marks it as `CANCELLED`.
+- Cancelling a booking releases the slot back to `AVAILABLE`.
+- Double booking the same slot returns conflict.
+
+### Booking Sample Flow
+
+Register vehicle:
+
+```http
+POST /api/vehicles
+Authorization: Bearer USER_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "vehicleNumber": "TS09EA1234",
+  "vehicleType": "CAR",
+  "brand": "Hyundai",
+  "model": "Creta",
+  "color": "White"
+}
+```
+
+Search available slots:
+
+```http
+GET /api/parking-lots/1/available-slots?vehicleType=CAR
+Authorization: Bearer USER_TOKEN
+```
+
+Create booking:
+
+```http
+POST /api/bookings
+Authorization: Bearer USER_TOKEN
+Content-Type: application/json
+```
+
+```json
+{
+  "vehicleId": 1,
+  "slotId": 1,
+  "startTime": "2026-06-14T10:00:00.000Z",
+  "endTime": "2026-06-14T18:00:00.000Z"
+}
+```
+
+View own bookings:
+
+```http
+GET /api/bookings/my
+Authorization: Bearer USER_TOKEN
+```
+
+Cancel booking:
+
+```http
+POST /api/bookings/1/cancel
+Authorization: Bearer USER_TOKEN
+```
+
+Admin view all bookings:
+
+```http
+GET /api/bookings
+Authorization: Bearer ADMIN_TOKEN
+```
+
+Security view bookings:
+
+```http
+GET /api/bookings
+Authorization: Bearer SECURITY_TOKEN
+```
+
+## Important Enums
+
+```text
+Role:
+- ADMIN
+- SECURITY
+- USER
+
+ParkingLotType:
+- APARTMENT
+- MALL
+- HOSPITAL
+- OFFICE
+- PUBLIC
+
+SlotType:
+- CAR
+- BIKE
+- EV
+- HANDICAPPED
+
+SlotStatus:
+- AVAILABLE
+- OCCUPIED
+- RESERVED
+- MAINTENANCE
+
+VehicleType:
+- CAR
+- BIKE
+- EV
+
+BookingStatus:
+- PENDING
+- CONFIRMED
+- CANCELLED
+- COMPLETED
+- EXPIRED
+```
+
+## Verification Commands
+
+```bash
+npm run build
+npx prisma validate
+npx prisma migrate status
+```
+
+## Notes
+
+- Parking lot delete is a soft delete using `isActive = false`.
+- Floors and slots currently use hard delete/status updates.
+- Booking creation currently sets booking status to `CONFIRMED`.
+- Booking creation reserves the slot by setting slot status to `RESERVED`.
+- Check-in/check-out will be handled in a later milestone.

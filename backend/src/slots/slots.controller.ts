@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,6 +22,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
@@ -44,15 +46,19 @@ export class SlotsController {
   }
 
   @Get('parking-lots/:parkingLotId/available-slots')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.USER, Role.ADMIN, Role.SECURITY)
   @ApiOkResponse({ description: 'Available slots for a parking lot' })
   @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'ADMIN or SECURITY role is required' })
+  @ApiForbiddenResponse({ description: 'USER, ADMIN, or SECURITY role is required' })
   @ApiNotFoundResponse({ description: 'Parking lot not found' })
   findAvailableByParkingLot(
     @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
+    @Query() query: AvailableSlotsQueryDto,
   ) {
-    return this.slotsService.findAvailableByParkingLot(parkingLotId);
+    return this.slotsService.findAvailableByParkingLot(
+      parkingLotId,
+      query.vehicleType,
+    );
   }
 
   @Post('floors/:floorId/slots')

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { SlotStatus } from '@prisma/client';
+import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
@@ -23,12 +23,16 @@ export class SlotsService {
     });
   }
 
-  async findAvailableByParkingLot(parkingLotId: number) {
+  async findAvailableByParkingLot(
+    parkingLotId: number,
+    vehicleType?: VehicleType,
+  ) {
     await this.ensureActiveParkingLot(parkingLotId);
 
     return this.prisma.slot.findMany({
       where: {
         status: SlotStatus.AVAILABLE,
+        ...(vehicleType ? { slotType: vehicleType as unknown as SlotType } : {}),
         floor: {
           parkingLotId,
           parkingLot: { isActive: true },
