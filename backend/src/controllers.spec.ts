@@ -172,8 +172,24 @@ describe('Controllers', () => {
     await expect(controller.findOne(1, normalUser)).resolves.toEqual({ id: 1 });
   });
 
+  it('DashboardController delegates dashboard reports', async () => {
+    const dashboardService = {
+      getAdminSummary: jest.fn().mockResolvedValue({ totalUsers: 1 }),
+      getParkingLotSummary: jest.fn().mockResolvedValue({ parkingLotId: 1 }),
+      getRecentEvents: jest.fn().mockResolvedValue([{ parkingEventId: 1 }]),
+      getTodayBookings: jest.fn().mockResolvedValue([{ id: 1 }]),
+      getSlotStatusSummary: jest.fn().mockResolvedValue({ availableSlots: 1 }),
+    };
+    const controller = new DashboardController(dashboardService as never);
+
+    await expect(controller.getAdminSummary()).resolves.toEqual({ totalUsers: 1 });
+    await expect(controller.getParkingLotSummary(1)).resolves.toEqual({ parkingLotId: 1 });
+    await expect(controller.getRecentEvents()).resolves.toEqual([{ parkingEventId: 1 }]);
+    await expect(controller.getTodayBookings()).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.getSlotStatusSummary()).resolves.toEqual({ availableSlots: 1 });
+  });
+
   it('placeholder controllers can be constructed', () => {
     expect(new AssignmentsController()).toBeInstanceOf(AssignmentsController);
-    expect(new DashboardController()).toBeInstanceOf(DashboardController);
   });
 });

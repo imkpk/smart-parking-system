@@ -15,6 +15,7 @@ tags:
   - name: Vehicles
   - name: Bookings
   - name: Parking Events
+  - name: Dashboard
 paths:
   /health:
     get:
@@ -565,6 +566,80 @@ paths:
         "200":
           description: Parking event
 
+  /dashboard/admin-summary:
+    get:
+      tags: [Dashboard]
+      summary: Get admin dashboard summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Admin dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboardSummary"
+        "403":
+          description: ADMIN role is required
+
+  /dashboard/parking-lot/{id}/summary:
+    get:
+      tags: [Dashboard]
+      summary: Get parking lot dashboard summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Parking lot dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParkingLotDashboardSummary"
+        "404":
+          description: Parking lot not found
+
+  /dashboard/recent-events:
+    get:
+      tags: [Dashboard]
+      summary: Get recent parking events
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recent check-ins and check-outs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentParkingEvent"
+
+  /dashboard/today-bookings:
+    get:
+      tags: [Dashboard]
+      summary: Get today's bookings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Today's bookings
+
+  /dashboard/slot-status-summary:
+    get:
+      tags: [Dashboard]
+      summary: Get slot status summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Slot status summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlotStatusSummary"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -927,3 +1002,95 @@ components:
           type: string
           nullable: true
           example: Payment service unavailable
+    SlotStatusSummary:
+      type: object
+      properties:
+        availableSlots:
+          type: integer
+          example: 20
+        occupiedSlots:
+          type: integer
+          example: 5
+        reservedSlots:
+          type: integer
+          example: 3
+        maintenanceSlots:
+          type: integer
+          example: 1
+    AdminDashboardSummary:
+      allOf:
+        - $ref: "#/components/schemas/SlotStatusSummary"
+        - type: object
+          properties:
+            totalUsers:
+              type: integer
+              example: 12
+            totalParkingLots:
+              type: integer
+              example: 2
+            totalSlots:
+              type: integer
+              example: 29
+            totalBookings:
+              type: integer
+              example: 40
+            activeParkingEvents:
+              type: integer
+              example: 4
+            completedParkingEvents:
+              type: integer
+              example: 36
+    ParkingLotDashboardSummary:
+      allOf:
+        - $ref: "#/components/schemas/SlotStatusSummary"
+        - type: object
+          properties:
+            parkingLotId:
+              type: integer
+              example: 1
+            parkingLotName:
+              type: string
+              example: Block A Parking
+            totalFloors:
+              type: integer
+              example: 2
+            totalSlots:
+              type: integer
+              example: 29
+            todayBookings:
+              type: integer
+              example: 6
+            activeEvents:
+              type: integer
+              example: 4
+    RecentParkingEvent:
+      type: object
+      properties:
+        parkingEventId:
+          type: integer
+          example: 1
+        bookingId:
+          type: integer
+          example: 1
+        vehicleNumber:
+          type: string
+          example: TS09EA1234
+        slotNumber:
+          type: string
+          example: B1-C-001
+        parkingLotName:
+          type: string
+          example: Block A Parking
+        status:
+          $ref: "#/components/schemas/ParkingEventStatus"
+        checkInTime:
+          type: string
+          format: date-time
+        checkOutTime:
+          type: string
+          format: date-time
+          nullable: true
+        feeAmount:
+          type: number
+          nullable: true
+          example: 80

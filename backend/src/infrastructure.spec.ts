@@ -192,6 +192,6 @@ describe('Infrastructure', () => {
       service: 'smart-parking-backend',
     });
     expect(new AssignmentsService()).toBeInstanceOf(AssignmentsService);
-    expect(new DashboardService()).toBeInstanceOf(DashboardService);
+    expect(new DashboardService({} as never)).toBeInstanceOf(DashboardService);
   });
 });
