@@ -1,0 +1,12 @@
+import { AdminSummary, SlotStatusSummary } from '../types/dashboard';
+import { apiClient } from './client';
+
+export async function getAdminSummary() {
+  const response = await apiClient.get<AdminSummary>('/dashboard/admin-summary');
+  return response.data;
+}
+
+export async function getSlotStatusSummary() {
+  const response = await apiClient.get<SlotStatusSummary>('/dashboard/slot-status-summary');
+  return response.data;
+}
