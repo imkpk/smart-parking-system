@@ -19,4 +19,9 @@ public final class AuthUtils {
     public static boolean isAdmin(Jwt jwt) {
         return "ADMIN".equals(jwt.getClaimAsString("role"));
     }
+
+    public static boolean isAdminOrSecurity(Jwt jwt) {
+        String role = jwt.getClaimAsString("role");
+        return "ADMIN".equals(role) || "SECURITY".equals(role);
+    }
 }

@@ -10,6 +10,9 @@ import { adminUser, normalUser } from '../test/test-users';
 
 describe('ParkingEventsService', () => {
   let service: ParkingEventsService;
+  let paymentClientService: {
+    initiatePayment: jest.Mock;
+  };
   let prisma: {
     $transaction: jest.Mock;
     booking: {
@@ -59,7 +62,13 @@ describe('ParkingEventsService', () => {
         updateMany: jest.fn(),
       },
     };
-    service = new ParkingEventsService(prisma as never);
+    paymentClientService = {
+      initiatePayment: jest.fn().mockResolvedValue({
+        paymentInitiated: true,
+        payment: { id: 1, status: 'INITIATED' },
+      }),
+    };
+    service = new ParkingEventsService(prisma as never, paymentClientService as never);
     jest.useRealTimers();
   });
 
@@ -189,6 +198,7 @@ describe('ParkingEventsService', () => {
     prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
     prisma.parkingEvent.update.mockResolvedValue({
       ...activeEvent,
+      userId: booking.userId,
       status: ParkingEventStatus.COMPLETED,
       durationMinutes: 121,
       feeAmount: 110,
@@ -212,7 +222,22 @@ describe('ParkingEventsService', () => {
       where: { id: booking.slotId },
       data: { status: SlotStatus.AVAILABLE },
     });
-    expect(result.feeAmount).toBe(110);
+    expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
+      {
+        parkingEventId: activeEvent.id,
+        bookingId: booking.id,
+        userId: booking.userId,
+        amount: 110,
+        currency: 'INR',
+        paymentMethod: 'MOCK',
+      },
+      undefined,
+    );
+    expect(result).toEqual({
+      parkingEvent: expect.objectContaining({ feeAmount: 110 }),
+      paymentInitiated: true,
+      payment: { id: 1, status: 'INITIATED' },
+    });
   });
 
   it('charges the base fee for 60 minutes or less', async () => {
@@ -227,6 +252,7 @@ describe('ParkingEventsService', () => {
     prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
     prisma.parkingEvent.update.mockResolvedValue({
       ...activeEvent,
+      userId: booking.userId,
       status: ParkingEventStatus.COMPLETED,
       durationMinutes: 30,
       feeAmount: 50,
@@ -255,6 +281,7 @@ describe('ParkingEventsService', () => {
     prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
     prisma.parkingEvent.update.mockResolvedValue({
       ...activeEvent,
+      userId: booking.userId,
       status: ParkingEventStatus.COMPLETED,
       durationMinutes: 0,
       feeAmount: 50,
@@ -269,6 +296,87 @@ describe('ParkingEventsService', () => {
         feeAmount: 50,
       }),
     });
+  });
+
+  it('completes checkout when payment service fails', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-14T10:30:00.000Z'));
+    const activeEvent = {
+      id: 100,
+      bookingId: booking.id,
+      userId: booking.userId,
+      slotId: booking.slotId,
+      checkInTime: new Date('2026-06-14T10:00:00.000Z'),
+      status: ParkingEventStatus.ACTIVE,
+    };
+    prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
+    prisma.parkingEvent.update.mockResolvedValue({
+      ...activeEvent,
+      status: ParkingEventStatus.COMPLETED,
+      durationMinutes: 30,
+      feeAmount: 50,
+    });
+    paymentClientService.initiatePayment.mockResolvedValue({
+      paymentInitiated: false,
+      paymentError: 'Payment service unavailable',
+    });
+
+    const result = await service.checkOut({ parkingEventId: activeEvent.id });
+
+    expect(result).toEqual({
+      parkingEvent: expect.objectContaining({ status: ParkingEventStatus.COMPLETED }),
+      paymentInitiated: false,
+      paymentError: 'Payment service unavailable',
+    });
+  });
+
+  it('sends zero payment amount when completed event has no fee amount', async () => {
+    const activeEvent = {
+      id: 100,
+      bookingId: booking.id,
+      userId: booking.userId,
+      slotId: booking.slotId,
+      checkInTime: new Date('2026-06-14T10:00:00.000Z'),
+      status: ParkingEventStatus.ACTIVE,
+    };
+    prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
+    prisma.parkingEvent.update.mockResolvedValue({
+      ...activeEvent,
+      status: ParkingEventStatus.COMPLETED,
+      durationMinutes: 0,
+      feeAmount: null,
+    });
+
+    await service.checkOut({ parkingEventId: activeEvent.id });
+
+    expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 0 }),
+      undefined,
+    );
+  });
+
+  it('passes authorization header to payment client during checkout', async () => {
+    const activeEvent = {
+      id: 100,
+      bookingId: booking.id,
+      userId: booking.userId,
+      slotId: booking.slotId,
+      checkInTime: new Date('2026-06-14T10:00:00.000Z'),
+      status: ParkingEventStatus.ACTIVE,
+    };
+    prisma.parkingEvent.findUnique.mockResolvedValue(activeEvent);
+    prisma.parkingEvent.update.mockResolvedValue({
+      ...activeEvent,
+      status: ParkingEventStatus.COMPLETED,
+      durationMinutes: 30,
+      feeAmount: 50,
+    });
+
+    await service.checkOut({ parkingEventId: activeEvent.id }, 'Bearer security-token');
+
+    expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 50 }),
+      'Bearer security-token',
+    );
   });
 
   it('throws when checkout parking event is missing', async () => {

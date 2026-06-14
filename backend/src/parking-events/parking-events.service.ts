@@ -11,6 +11,7 @@ import {
   Role,
   SlotStatus,
 } from '@prisma/client';
+import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CheckInDto } from './dto/check-in.dto';
@@ -18,7 +19,10 @@ import { CheckOutDto } from './dto/check-out.dto';
 
 @Injectable()
 export class ParkingEventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentClientService: PaymentClientService,
+  ) {}
 
   async checkIn(checkInDto: CheckInDto) {
     if (!checkInDto.bookingId && !checkInDto.bookingCode) {
@@ -94,8 +98,8 @@ export class ParkingEventsService {
     });
   }
 
-  async checkOut(checkOutDto: CheckOutDto) {
-    return this.prisma.$transaction(async (tx) => {
+  async checkOut(checkOutDto: CheckOutDto, authorizationHeader?: string) {
+    const parkingEvent = await this.prisma.$transaction(async (tx) => {
       const parkingEvent = await tx.parkingEvent.findUnique({
         where: { id: checkOutDto.parkingEventId },
       });
@@ -143,6 +147,23 @@ export class ParkingEventsService {
 
       return completedEvent;
     });
+
+    const paymentResult = await this.paymentClientService.initiatePayment(
+      {
+        parkingEventId: parkingEvent.id,
+        bookingId: parkingEvent.bookingId,
+        userId: parkingEvent.userId,
+        amount: Number(parkingEvent.feeAmount ?? 0),
+        currency: 'INR',
+        paymentMethod: 'MOCK',
+      },
+      authorizationHeader,
+    );
+
+    return {
+      parkingEvent,
+      ...paymentResult,
+    };
   }
 
   findActive() {

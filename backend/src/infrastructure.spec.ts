@@ -19,6 +19,7 @@ import { DashboardService } from './dashboard/dashboard.service';
 import { FloorsModule } from './floors/floors.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
+import { PaymentClientModule } from './integrations/payment-service/payment-client.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { SlotsModule } from './slots/slots.module';
@@ -49,6 +50,7 @@ describe('Infrastructure', () => {
     expect(FloorsModule).toBeDefined();
     expect(ParkingEventsModule).toBeDefined();
     expect(ParkingLotsModule).toBeDefined();
+    expect(PaymentClientModule).toBeDefined();
     expect(PrismaModule).toBeDefined();
     expect(SlotsModule).toBeDefined();
     expect(UsersModule).toBeDefined();
