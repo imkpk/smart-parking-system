@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
 import { Role } from '../../types/auth';
 
@@ -93,6 +94,12 @@ export function AppLayout() {
     navigate('/login', { replace: true });
   };
 
+  const handleGoHome = () => {
+    if (user) {
+      navigate(getRoleHomePath(user.role));
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
@@ -139,9 +146,28 @@ export function AppLayout() {
           },
         }}
       >
-        <Toolbar sx={{ alignItems: 'flex-start', flexDirection: 'column', py: 2 }}>
-          <Typography variant="h6">Smart Parking</Typography>
-          <Typography variant="body2" color="text.secondary">
+        <Toolbar
+          component="button"
+          onClick={handleGoHome}
+          sx={{
+            alignItems: 'flex-start',
+            bgcolor: 'transparent',
+            border: 0,
+            cursor: 'pointer',
+            flexDirection: 'column',
+            font: 'inherit',
+            py: 2,
+            textAlign: 'left',
+            width: '100%',
+            '&:hover': {
+              bgcolor: 'action.hover',
+            },
+          }}
+        >
+          <Typography variant="h6" component="span">
+            Smart Parking
+          </Typography>
+          <Typography variant="body2" color="text.secondary" component="span">
             Management System
           </Typography>
         </Toolbar>
