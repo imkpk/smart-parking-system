@@ -29,7 +29,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   checkboxSelection = false,
   columns,
   getRowId,
-  height = 520,
+  height = 500,
   loading = false,
   onRowSelectionModelChange,
   rowSelectionModel,
@@ -70,6 +70,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         pageSizeOptions={[5, 10, 25]}
         rowSelectionModel={rowSelectionModel}
         rows={rows}
+        density="comfortable"
         slots={{ toolbar: AppGridToolbar }}
         sx={{
           border: 0,
