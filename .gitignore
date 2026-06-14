@@ -1,10 +1,12 @@
 # dependencies
 node_modules/
 backend/node_modules/
+frontend/node_modules/
 
 # build output
 dist/
 backend/dist/
+frontend/dist/
 payment-service/target/
 target/
 *.class
@@ -14,6 +16,8 @@ target/
 .env.local
 backend/.env
 backend/.env.local
+frontend/.env
+frontend/.env.local
 payment-service/.env
 payment-service/.env.local
 payment-service/src/main/resources/application-local.properties
@@ -22,6 +26,7 @@ payment-service/src/main/resources/application-dev.properties
 # keep examples
 !.env.example
 !backend/.env.example
+!frontend/.env.example
 
 # logs
 logs/
@@ -35,6 +40,7 @@ replay_pid*
 # test coverage
 coverage/
 backend/coverage/
+frontend/coverage/
 
 # OS/editor
 .DS_Store
