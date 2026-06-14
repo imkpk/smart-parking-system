@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -35,7 +36,14 @@ import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getParkingLot } from '../../api/parkingLotsApi';
 import { createFloor, deleteFloor, getFloors, updateFloor } from '../../api/floorsApi';
-import { createBulkSlots, createSlot, getSlots, updateSlotStatus } from '../../api/slotsApi';
+import {
+  createBulkSlots,
+  createSlot,
+  deleteSlot,
+  deleteSlots,
+  getSlots,
+  updateSlotStatus,
+} from '../../api/slotsApi';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatCard } from '../../components/common/StatCard';
@@ -104,6 +112,9 @@ export function ParkingLotDetailsPage() {
   const [slotFloorFilter, setSlotFloorFilter] = useState<number | 'ALL'>('ALL');
   const [slotStatusFilter, setSlotStatusFilter] = useState<SlotStatus | 'ALL'>('ALL');
   const [slotTypeFilter, setSlotTypeFilter] = useState<SlotType | 'ALL'>('ALL');
+  const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
+  const [deleteSlotTarget, setDeleteSlotTarget] = useState<Slot | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const parkingLotQuery = useQuery({
@@ -137,6 +148,10 @@ export function ParkingLotDetailsPage() {
         return floorMatches && statusMatches && typeMatches;
       }),
     [slotFloorFilter, slotStatusFilter, slotTypeFilter, slots],
+  );
+  const filteredSlotIds = useMemo(
+    () => filteredSlots.map((slot) => slot.id),
+    [filteredSlots],
   );
   const slotStatusCounts = useMemo(
     () =>
@@ -234,6 +249,26 @@ export function ParkingLotDetailsPage() {
     },
     onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
   });
+  const deleteSlotMutation = useMutation({
+    mutationFn: deleteSlot,
+    onSuccess: async (_deletedSlot, slotId) => {
+      await invalidateStructure();
+      setSelectedSlotIds((current) => current.filter((id) => id !== slotId));
+      setDeleteSlotTarget(null);
+      setSnackbar({ message: 'Slot deleted.', severity: 'success' });
+    },
+    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+  });
+  const bulkDeleteSlotsMutation = useMutation({
+    mutationFn: deleteSlots,
+    onSuccess: async (_result, ids) => {
+      await invalidateStructure();
+      setSelectedSlotIds((current) => current.filter((id) => !ids.includes(id)));
+      setBulkDeleteOpen(false);
+      setSnackbar({ message: `${ids.length} slots deleted.`, severity: 'success' });
+    },
+    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+  });
 
   const closeFloorForm = () => {
     setFloorFormOpen(false);
@@ -316,6 +351,26 @@ export function ParkingLotDetailsPage() {
     }
 
     navigate(`/parking-lots/${parkingLotId}/${nextTab}`);
+  };
+
+  const toggleSlotSelection = (slotId: number) => {
+    setSelectedSlotIds((current) =>
+      current.includes(slotId)
+        ? current.filter((id) => id !== slotId)
+        : [...current, slotId],
+    );
+  };
+
+  const toggleAllFilteredSlots = () => {
+    const allFilteredSelected =
+      filteredSlotIds.length > 0 && filteredSlotIds.every((id) => selectedSlotIds.includes(id));
+
+    if (allFilteredSelected) {
+      setSelectedSlotIds((current) => current.filter((id) => !filteredSlotIds.includes(id)));
+      return;
+    }
+
+    setSelectedSlotIds((current) => Array.from(new Set([...current, ...filteredSlotIds])));
   };
 
   const firstError = parkingLotQuery.error ?? floorsQuery.error ?? slotsQuery.error;
@@ -420,11 +475,17 @@ export function ParkingLotDetailsPage() {
               filteredSlots={filteredSlots}
               onBulkCreate={openBulkForm}
               onCreate={openCreateSlotForm}
+              onDelete={setDeleteSlotTarget}
+              onBulkDelete={() => setBulkDeleteOpen(true)}
               onFloorFilterChange={setSlotFloorFilter}
+              onSelectAll={toggleAllFilteredSlots}
+              onSelectOne={toggleSlotSelection}
               onStatusChange={(slotId, status) => updateStatusMutation.mutate({ slotId, status })}
               onStatusFilterChange={setSlotStatusFilter}
               onTypeFilterChange={setSlotTypeFilter}
+              selectedSlotIds={selectedSlotIds}
               slotFloorFilter={slotFloorFilter}
+              filteredSlotIds={filteredSlotIds}
               slotStatusFilter={slotStatusFilter}
               slotTypeFilter={slotTypeFilter}
             />
@@ -556,6 +617,30 @@ export function ParkingLotDetailsPage() {
         title="Delete Floor"
       />
 
+      <ConfirmDialog
+        confirmLabel="Delete"
+        description={deleteSlotTarget ? `Delete slot ${deleteSlotTarget.slotNumber}?` : ''}
+        isLoading={deleteSlotMutation.isPending}
+        onClose={() => setDeleteSlotTarget(null)}
+        onConfirm={() => {
+          if (deleteSlotTarget) {
+            deleteSlotMutation.mutate(deleteSlotTarget.id);
+          }
+        }}
+        open={Boolean(deleteSlotTarget)}
+        title="Delete Slot"
+      />
+
+      <ConfirmDialog
+        confirmLabel="Delete"
+        description={`Delete ${selectedSlotIds.length} selected slots?`}
+        isLoading={bulkDeleteSlotsMutation.isPending}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={() => bulkDeleteSlotsMutation.mutate(selectedSlotIds)}
+        open={bulkDeleteOpen}
+        title="Bulk Delete Slots"
+      />
+
       <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
         <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
           {snackbar?.message}
@@ -631,31 +716,47 @@ function FloorsSection({
 
 function SlotsSection({
   filteredSlots,
+  filteredSlotIds,
   floorNameById,
   floors,
   onBulkCreate,
+  onBulkDelete,
   onCreate,
+  onDelete,
   onFloorFilterChange,
+  onSelectAll,
+  onSelectOne,
   onStatusChange,
   onStatusFilterChange,
   onTypeFilterChange,
+  selectedSlotIds,
   slotFloorFilter,
   slotStatusFilter,
   slotTypeFilter,
 }: {
   filteredSlots: Slot[];
+  filteredSlotIds: number[];
   floorNameById: Map<number, string>;
   floors: Floor[];
   onBulkCreate: () => void;
+  onBulkDelete: () => void;
   onCreate: () => void;
+  onDelete: (slot: Slot) => void;
   onFloorFilterChange: (floorId: number | 'ALL') => void;
+  onSelectAll: () => void;
+  onSelectOne: (slotId: number) => void;
   onStatusChange: (slotId: number, status: SlotStatus) => void;
   onStatusFilterChange: (status: SlotStatus | 'ALL') => void;
   onTypeFilterChange: (slotType: SlotType | 'ALL') => void;
+  selectedSlotIds: number[];
   slotFloorFilter: number | 'ALL';
   slotStatusFilter: SlotStatus | 'ALL';
   slotTypeFilter: SlotType | 'ALL';
 }) {
+  const allFilteredSelected =
+    filteredSlotIds.length > 0 && filteredSlotIds.every((id) => selectedSlotIds.includes(id));
+  const someFilteredSelected = filteredSlotIds.some((id) => selectedSlotIds.includes(id));
+
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} p={2}>
@@ -709,6 +810,14 @@ function SlotsSection({
           </FormControl>
         </Stack>
         <Stack direction="row" spacing={1}>
+          <Button
+            color="error"
+            disabled={selectedSlotIds.length === 0}
+            onClick={onBulkDelete}
+            variant="outlined"
+          >
+            Delete Selected
+          </Button>
           <Button disabled={floors.length === 0} onClick={onCreate} startIcon={<Add />} variant="contained">
             Create Slot
           </Button>
@@ -721,17 +830,25 @@ function SlotsSection({
         <Table size="small" sx={{ minWidth: 760 }}>
           <TableHead>
             <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={allFilteredSelected}
+                  disabled={filteredSlotIds.length === 0}
+                  indeterminate={someFilteredSelected && !allFilteredSelected}
+                  onChange={onSelectAll}
+                />
+              </TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Slot</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Floor</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700 }}>Update Status</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredSlots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <Typography color="text.secondary" py={3} textAlign="center">
                     No slots found.
                   </Typography>
@@ -740,6 +857,12 @@ function SlotsSection({
             ) : (
               filteredSlots.map((slot) => (
                 <TableRow hover key={slot.id}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedSlotIds.includes(slot.id)}
+                      onChange={() => onSelectOne(slot.id)}
+                    />
+                  </TableCell>
                   <TableCell>{slot.slotNumber}</TableCell>
                   <TableCell>{floorNameById.get(slot.floorId) ?? `Floor #${slot.floorId}`}</TableCell>
                   <TableCell>{slot.slotType}</TableCell>
@@ -747,18 +870,25 @@ function SlotsSection({
                     <Chip label={slot.status} size="small" />
                   </TableCell>
                   <TableCell align="right">
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                      <Select
-                        onChange={(event) => onStatusChange(slot.id, event.target.value as SlotStatus)}
-                        value={slot.status}
-                      >
-                        {slotStatusOptions.map((status) => (
-                          <MenuItem key={status} value={status}>
-                            {status}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                      <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <Select
+                          onChange={(event) => onStatusChange(slot.id, event.target.value as SlotStatus)}
+                          value={slot.status}
+                        >
+                          {slotStatusOptions.map((status) => (
+                            <MenuItem key={status} value={status}>
+                              {status}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <Tooltip title="Delete">
+                        <IconButton color="error" onClick={() => onDelete(slot)}>
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))
