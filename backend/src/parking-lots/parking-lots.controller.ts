@@ -23,7 +23,7 @@ export class ParkingLotsController {
   constructor(private readonly parkingLotsService: ParkingLotsService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.ADMIN, Role.SECURITY, Role.USER)
   findAll() {
     return this.parkingLotsService.findAll();
   }
@@ -35,7 +35,7 @@ export class ParkingLotsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.ADMIN, Role.SECURITY, Role.USER)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.parkingLotsService.findOne(id);
   }
