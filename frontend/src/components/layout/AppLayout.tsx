@@ -129,23 +129,23 @@ export function AppLayout() {
     <>
       <Toolbar
         sx={{
-          alignItems: 'flex-start',
-          display: { xs: 'none', md: 'flex' },
-          flexDirection: 'column',
+          alignItems: 'center',
+          display: 'flex',
+          justifyContent: shouldShowExpandedDrawer ? 'space-between' : 'center',
           py: 2,
           textAlign: 'left',
           width: '100%',
         }}
       >
         {shouldShowExpandedDrawer ? (
-          <>
+          <Box>
             <Typography variant="h6" component="span">
               Smart Parking
             </Typography>
-            <Typography variant="body2" color="text.secondary" component="span">
+            <Typography variant="body2" color="text.secondary" component="span" display="block">
               Management System
             </Typography>
-          </>
+          </Box>
         ) : (
           <Box
             sx={{
@@ -162,6 +162,17 @@ export function AppLayout() {
             <LocalParking />
           </Box>
         )}
+        {!isMobile ? (
+          <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+            <IconButton
+              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              onClick={toggleSidebar}
+              size="small"
+            >
+              {isSidebarOpen ? <MenuOpen /> : <Menu />}
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </Toolbar>
       <Divider />
       <List sx={{ px: 1 }}>
@@ -222,43 +233,32 @@ export function AppLayout() {
       >
         <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 64, sm: 72 } }}>
           <Box alignItems="center" display="flex" gap={1.5}>
-            <Tooltip
-              title={
-                isMobile
-                  ? 'Open navigation'
-                  : isSidebarOpen
-                    ? 'Collapse sidebar'
-                    : 'Expand sidebar'
-              }
-            >
+            {isMobile ? (
+            <Tooltip title="Open navigation">
               <IconButton
-                aria-label={
-                  isMobile
-                    ? 'Open navigation'
-                    : isSidebarOpen
-                      ? 'Collapse sidebar'
-                      : 'Expand sidebar'
-                }
+                aria-label="Open navigation"
                 color="inherit"
                 onClick={toggleSidebar}
               >
-                {!isMobile && isSidebarOpen ? <MenuOpen /> : <Menu />}
+                <Menu />
               </IconButton>
             </Tooltip>
+            ) : null}
             <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ lineHeight: 1.15 }} variant="h6">
-                Smart Parking
-              </Typography>
               <Typography
-                variant="body2"
-                color="text.secondary"
+                variant="subtitle1"
                 sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.2,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {user?.name} · {user?.role}
+                {user?.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.role}
               </Typography>
             </Box>
           </Box>

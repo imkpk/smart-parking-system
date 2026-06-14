@@ -2,7 +2,6 @@ import {
   Alert,
   Box,
   Button,
-  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -19,12 +18,6 @@ import {
   Snackbar,
   Stack,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tabs,
   TextField,
   Tooltip,
@@ -32,6 +25,7 @@ import {
 } from '@mui/material';
 import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { GridColDef, GridRowId } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getParkingLot } from '../../api/parkingLotsApi';
@@ -45,6 +39,7 @@ import {
   updateSlotStatus,
 } from '../../api/slotsApi';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
@@ -361,6 +356,10 @@ export function ParkingLotDetailsPage() {
     );
   };
 
+  const setSlotSelection = (ids: GridRowId[]) => {
+    setSelectedSlotIds(ids.map(Number));
+  };
+
   const toggleAllFilteredSlots = () => {
     const allFilteredSelected =
       filteredSlotIds.length > 0 && filteredSlotIds.every((id) => selectedSlotIds.includes(id));
@@ -478,8 +477,7 @@ export function ParkingLotDetailsPage() {
               onDelete={setDeleteSlotTarget}
               onBulkDelete={() => setBulkDeleteOpen(true)}
               onFloorFilterChange={setSlotFloorFilter}
-              onSelectAll={toggleAllFilteredSlots}
-              onSelectOne={toggleSlotSelection}
+              onSelectionChange={setSlotSelection}
               onStatusChange={(slotId, status) => updateStatusMutation.mutate({ slotId, status })}
               onStatusFilterChange={setSlotStatusFilter}
               onTypeFilterChange={setSlotTypeFilter}
@@ -661,6 +659,37 @@ function FloorsSection({
   onDelete: (floor: Floor) => void;
   onEdit: (floor: Floor) => void;
 }) {
+  const columns = useMemo<GridColDef<Floor>[]>(
+    () => [
+      { field: 'name', flex: 1, headerName: 'Name', minWidth: 180 },
+      { field: 'level', headerName: 'Level', minWidth: 120 },
+      {
+        field: 'actions',
+        align: 'right',
+        filterable: false,
+        headerAlign: 'right',
+        headerName: 'Actions',
+        minWidth: 140,
+        sortable: false,
+        renderCell: ({ row }) => (
+          <Stack direction="row" justifyContent="flex-end" width="100%">
+            <Tooltip title="Edit">
+              <IconButton onClick={() => onEdit(row)}>
+                <Edit />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton color="error" onClick={() => onDelete(row)}>
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
+    ],
+    [onDelete, onEdit],
+  );
+
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" p={2}>
@@ -669,47 +698,7 @@ function FloorsSection({
           Create Floor
         </Button>
       </Stack>
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Level</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {floors.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3}>
-                  <Typography color="text.secondary" py={3} textAlign="center">
-                    No floors found.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              floors.map((floor) => (
-                <TableRow hover key={floor.id}>
-                  <TableCell>{floor.name}</TableCell>
-                  <TableCell>{floor.level ?? '-'}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => onEdit(floor)}>
-                        <Edit />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton color="error" onClick={() => onDelete(floor)}>
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <AppDataGrid columns={columns} height={420} rows={floors} />
     </Paper>
   );
 }
@@ -724,8 +713,7 @@ function SlotsSection({
   onCreate,
   onDelete,
   onFloorFilterChange,
-  onSelectAll,
-  onSelectOne,
+  onSelectionChange,
   onStatusChange,
   onStatusFilterChange,
   onTypeFilterChange,
@@ -743,8 +731,7 @@ function SlotsSection({
   onCreate: () => void;
   onDelete: (slot: Slot) => void;
   onFloorFilterChange: (floorId: number | 'ALL') => void;
-  onSelectAll: () => void;
-  onSelectOne: (slotId: number) => void;
+  onSelectionChange: (ids: GridRowId[]) => void;
   onStatusChange: (slotId: number, status: SlotStatus) => void;
   onStatusFilterChange: (status: SlotStatus | 'ALL') => void;
   onTypeFilterChange: (slotType: SlotType | 'ALL') => void;
@@ -753,9 +740,56 @@ function SlotsSection({
   slotStatusFilter: SlotStatus | 'ALL';
   slotTypeFilter: SlotType | 'ALL';
 }) {
-  const allFilteredSelected =
-    filteredSlotIds.length > 0 && filteredSlotIds.every((id) => selectedSlotIds.includes(id));
-  const someFilteredSelected = filteredSlotIds.some((id) => selectedSlotIds.includes(id));
+  const columns = useMemo<GridColDef<Slot>[]>(
+    () => [
+      { field: 'slotNumber', headerName: 'Slot', minWidth: 130 },
+      {
+        field: 'floorId',
+        flex: 1,
+        headerName: 'Floor',
+        minWidth: 160,
+        valueGetter: (_value, row) => floorNameById.get(row.floorId) ?? `Floor #${row.floorId}`,
+      },
+      { field: 'slotType', headerName: 'Type', minWidth: 140 },
+      {
+        field: 'status',
+        headerName: 'Status',
+        minWidth: 150,
+        renderCell: ({ row }) => <Chip label={row.status} size="small" />,
+      },
+      {
+        field: 'actions',
+        align: 'right',
+        filterable: false,
+        headerAlign: 'right',
+        headerName: 'Actions',
+        minWidth: 240,
+        sortable: false,
+        renderCell: ({ row }) => (
+          <Stack direction="row" justifyContent="flex-end" spacing={1} width="100%">
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <Select
+                onChange={(event) => onStatusChange(row.id, event.target.value as SlotStatus)}
+                value={row.status}
+              >
+                {slotStatusOptions.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Tooltip title="Delete">
+              <IconButton color="error" onClick={() => onDelete(row)}>
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
+    ],
+    [floorNameById, onDelete, onStatusChange],
+  );
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -826,76 +860,14 @@ function SlotsSection({
           </Button>
         </Stack>
       </Stack>
-      <TableContainer sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ minWidth: 760 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={allFilteredSelected}
-                  disabled={filteredSlotIds.length === 0}
-                  indeterminate={someFilteredSelected && !allFilteredSelected}
-                  onChange={onSelectAll}
-                />
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Slot</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Floor</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredSlots.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Typography color="text.secondary" py={3} textAlign="center">
-                    No slots found.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredSlots.map((slot) => (
-                <TableRow hover key={slot.id}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedSlotIds.includes(slot.id)}
-                      onChange={() => onSelectOne(slot.id)}
-                    />
-                  </TableCell>
-                  <TableCell>{slot.slotNumber}</TableCell>
-                  <TableCell>{floorNameById.get(slot.floorId) ?? `Floor #${slot.floorId}`}</TableCell>
-                  <TableCell>{slot.slotType}</TableCell>
-                  <TableCell>
-                    <Chip label={slot.status} size="small" />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                      <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <Select
-                          onChange={(event) => onStatusChange(slot.id, event.target.value as SlotStatus)}
-                          value={slot.status}
-                        >
-                          {slotStatusOptions.map((status) => (
-                            <MenuItem key={status} value={status}>
-                              {status}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => onDelete(slot)}>
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <AppDataGrid
+        checkboxSelection
+        columns={columns}
+        height={520}
+        onRowSelectionModelChange={onSelectionChange}
+        rowSelectionModel={selectedSlotIds}
+        rows={filteredSlots}
+      />
     </Paper>
   );
 }
