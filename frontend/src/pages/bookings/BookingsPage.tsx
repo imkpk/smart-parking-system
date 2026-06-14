@@ -30,14 +30,14 @@ import {
   getMyBookings,
 } from '../../api/bookingsApi';
 import { getParkingLots } from '../../api/parkingLotsApi';
-import { getMyVehicles } from '../../api/vehiclesApi';
+import { getMyVehicles, getVehicles } from '../../api/vehiclesApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { useAuth } from '../../providers/AuthProvider';
 import { Booking } from '../../types/booking';
-import { VehicleType, vehicleTypeOptions } from '../../types/vehicle';
+import { VehicleType } from '../../types/vehicle';
 
 interface BookingFormState {
   parkingLotId: number | '';
@@ -68,6 +68,7 @@ export function BookingsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isUser = user?.role === 'USER';
+  const isAdmin = user?.role === 'ADMIN';
   const canViewAll = user?.role === 'ADMIN' || user?.role === 'SECURITY';
   const [formOpen, setFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
@@ -83,20 +84,20 @@ export function BookingsPage() {
     enabled: Boolean(isUser || canViewAll),
   });
   const vehiclesQuery = useQuery({
-    queryKey: ['vehicles', 'my'],
-    queryFn: getMyVehicles,
-    enabled: isUser,
+    queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
+    queryFn: isAdmin ? getVehicles : getMyVehicles,
+    enabled: isUser || isAdmin,
   });
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
-    enabled: isUser,
+    enabled: Boolean(isUser || canViewAll),
   });
   const availableSlotsQuery = useQuery({
     queryKey: ['parking-lots', bookingForm.parkingLotId, 'available-slots', bookingForm.vehicleType],
     queryFn: () =>
       getAvailableSlotsForBooking(Number(bookingForm.parkingLotId), bookingForm.vehicleType),
-    enabled: isUser && Boolean(bookingForm.parkingLotId && bookingForm.vehicleType),
+    enabled: isUser && Boolean(bookingForm.parkingLotId && bookingForm.vehicleId && bookingForm.vehicleType),
   });
 
   const vehicles = vehiclesQuery.data ?? [];
@@ -109,6 +110,10 @@ export function BookingsPage() {
   const parkingLotById = useMemo(
     () => new Map(parkingLots.map((parkingLot) => [parkingLot.id, parkingLot])),
     [parkingLots],
+  );
+  const slotById = useMemo(
+    () => new Map(availableSlots.map((slot) => [slot.id, slot])),
+    [availableSlots],
   );
 
   const createMutation = useMutation({
@@ -153,7 +158,12 @@ export function BookingsPage() {
         valueGetter: (_value, row) =>
           vehicleById.get(row.vehicleId)?.vehicleNumber ?? `Vehicle #${row.vehicleId}`,
       },
-      { field: 'slotId', headerName: 'Slot ID', minWidth: 110 },
+      {
+        field: 'slotId',
+        headerName: 'Slot',
+        minWidth: 130,
+        valueGetter: (_value, row) => slotById.get(row.slotId)?.slotNumber ?? `Slot #${row.slotId}`,
+      },
       {
         field: 'status',
         headerName: 'Status',
@@ -172,7 +182,7 @@ export function BookingsPage() {
         minWidth: 190,
         valueGetter: (_value, row) => (row.endTime ? new Date(row.endTime).toLocaleString() : '-'),
       },
-      ...(isUser || user?.role === 'ADMIN'
+      ...(isUser
         ? [
             {
               field: 'actions',
@@ -201,7 +211,7 @@ export function BookingsPage() {
           ]
         : []),
     ],
-    [isUser, parkingLotById, user?.role, vehicleById],
+    [isUser, parkingLotById, slotById, vehicleById],
   );
 
   const openCreateForm = () => {
@@ -270,6 +280,29 @@ export function BookingsPage() {
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <FormControl required>
+                <InputLabel>Vehicle</InputLabel>
+                <Select
+                  label="Vehicle"
+                  onChange={(event) => handleVehicleChange(Number(event.target.value))}
+                  value={bookingForm.vehicleId}
+                >
+                  {vehicles.map((vehicle) => (
+                    <MenuItem key={vehicle.id} value={vehicle.id}>
+                      {vehicle.vehicleNumber} · {vehicle.vehicleType}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl disabled required>
+                <InputLabel>Vehicle Type</InputLabel>
+                <Select
+                  label="Vehicle Type"
+                  value={bookingForm.vehicleType}
+                >
+                  <MenuItem value={bookingForm.vehicleType}>{bookingForm.vehicleType}</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl required>
                 <InputLabel>Parking Lot</InputLabel>
                 <Select
                   label="Parking Lot"
@@ -289,41 +322,10 @@ export function BookingsPage() {
                   ))}
                 </Select>
               </FormControl>
-              <FormControl required>
-                <InputLabel>Vehicle</InputLabel>
-                <Select
-                  label="Vehicle"
-                  onChange={(event) => handleVehicleChange(Number(event.target.value))}
-                  value={bookingForm.vehicleId}
-                >
-                  {vehicles.map((vehicle) => (
-                    <MenuItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.vehicleNumber} · {vehicle.vehicleType}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl required>
-                <InputLabel>Vehicle Type</InputLabel>
-                <Select
-                  label="Vehicle Type"
-                  onChange={(event) =>
-                    setBookingForm((current) => ({
-                      ...current,
-                      vehicleType: event.target.value as VehicleType,
-                      slotId: '',
-                    }))
-                  }
-                  value={bookingForm.vehicleType}
-                >
-                  {vehicleTypeOptions.map((vehicleType) => (
-                    <MenuItem key={vehicleType} value={vehicleType}>
-                      {vehicleType}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl required disabled={!bookingForm.parkingLotId || availableSlotsQuery.isLoading}>
+              <FormControl
+                required
+                disabled={!bookingForm.parkingLotId || !bookingForm.vehicleId || availableSlotsQuery.isLoading}
+              >
                 <InputLabel>Available Slot</InputLabel>
                 <Select
                   label="Available Slot"
