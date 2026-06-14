@@ -5,12 +5,19 @@ backend/node_modules/
 # build output
 dist/
 backend/dist/
+payment-service/target/
+target/
+*.class
 
 # env files
 .env
 .env.local
 backend/.env
 backend/.env.local
+payment-service/.env
+payment-service/.env.local
+payment-service/src/main/resources/application-local.properties
+payment-service/src/main/resources/application-dev.properties
 
 # keep examples
 !.env.example
@@ -22,6 +29,8 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+hs_err_pid*
+replay_pid*
 
 # test coverage
 coverage/
@@ -29,4 +38,10 @@ backend/coverage/
 
 # OS/editor
 .DS_Store
+.idea/
+*.iml
 .vscode/
+
+# Java/Maven
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
