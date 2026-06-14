@@ -4,6 +4,7 @@ import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
+import com.smartparking.payment.security.AuthUtils;
 import com.smartparking.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +56,7 @@ public class PaymentController {
 
     @PostMapping("/initiate")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Initiate a payment", description = "Creates a new INITIATED payment record.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Payment initiated",
@@ -75,12 +80,17 @@ public class PaymentController {
                                     """)
                     )
             )
-            @Valid @RequestBody InitiatePaymentRequest request
+            @Valid @RequestBody InitiatePaymentRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return com.smartparking.payment.dto.ApiResponse.success("Payment initiated", paymentService.initiate(request));
+        return com.smartparking.payment.dto.ApiResponse.success(
+                "Payment initiated",
+                paymentService.initiate(request, AuthUtils.userId(jwt), AuthUtils.isAdmin(jwt))
+        );
     }
 
     @PostMapping("/{id}/mock-success")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Mark payment as mock success", description = "Marks an INITIATED payment as SUCCESS and generates a provider reference.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Payment marked SUCCESS",
@@ -95,6 +105,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/mock-failure")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Mark payment as mock failure", description = "Marks an INITIATED payment as FAILED and stores a failure reason.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Payment marked FAILED",
@@ -111,6 +122,7 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Get payment by id")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Payment details",
@@ -118,21 +130,31 @@ public class PaymentController {
             @ApiResponse(responseCode = "404", description = "Payment not found")
     })
     public com.smartparking.payment.dto.ApiResponse<PaymentResponse> findById(
-            @Parameter(example = "1") @PathVariable @Positive Long id
+            @Parameter(example = "1") @PathVariable @Positive Long id,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return com.smartparking.payment.dto.ApiResponse.success("Payment details", paymentService.findById(id));
+        return com.smartparking.payment.dto.ApiResponse.success(
+                "Payment details",
+                paymentService.findById(id, AuthUtils.userId(jwt), AuthUtils.isAdmin(jwt))
+        );
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Get payments by user id")
     @ApiResponse(responseCode = "200", description = "User payments")
     public com.smartparking.payment.dto.ApiResponse<List<PaymentResponse>> findByUserId(
-            @Parameter(example = "1") @PathVariable @Positive Long userId
+            @Parameter(example = "1") @PathVariable @Positive Long userId,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return com.smartparking.payment.dto.ApiResponse.success("User payments", paymentService.findByUserId(userId));
+        return com.smartparking.payment.dto.ApiResponse.success(
+                "User payments",
+                paymentService.findByUserId(userId, AuthUtils.userId(jwt), AuthUtils.isAdmin(jwt))
+        );
     }
 
     @GetMapping("/reports/summary")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get payment summary report")
     @ApiResponse(responseCode = "200", description = "Payment summary",
             content = @Content(schema = @Schema(implementation = PaymentSummaryResponse.class)))

@@ -11,9 +11,11 @@ import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,9 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse initiate(InitiatePaymentRequest request) {
+    public PaymentResponse initiate(InitiatePaymentRequest request, Long currentUserId, boolean admin) {
+        ensureUserAccess(request.userId(), currentUserId, admin);
+
         Payment payment = new Payment();
         payment.setParkingEventId(request.parkingEventId());
         payment.setBookingId(request.bookingId());
@@ -76,11 +80,15 @@ public class PaymentService {
         return PaymentResponse.from(paymentRepository.save(payment));
     }
 
-    public PaymentResponse findById(Long id) {
-        return PaymentResponse.from(findPayment(id));
+    public PaymentResponse findById(Long id, Long currentUserId, boolean admin) {
+        Payment payment = findPayment(id);
+        ensureUserAccess(payment.getUserId(), currentUserId, admin);
+        return PaymentResponse.from(payment);
     }
 
-    public java.util.List<PaymentResponse> findByUserId(Long userId) {
+    public List<PaymentResponse> findByUserId(Long userId, Long currentUserId, boolean admin) {
+        ensureUserAccess(userId, currentUserId, admin);
+
         return paymentRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(PaymentResponse::from)
@@ -103,6 +111,14 @@ public class PaymentService {
     private Payment findPayment(Long id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+    }
+
+    private void ensureUserAccess(Long resourceUserId, Long currentUserId, boolean admin) {
+        if (admin || resourceUserId.equals(currentUserId)) {
+            return;
+        }
+
+        throw new AccessDeniedException("You can only access your own payments");
     }
 
     private String normalizeCurrency(String currency) {

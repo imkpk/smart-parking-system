@@ -67,6 +67,7 @@ $env:SERVER_PORT="8081"
 $env:DB_URL="jdbc:mysql://localhost:3306/parking_payment_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 $env:DB_USERNAME="parking_user"
 $env:DB_PASSWORD="your_password"
+$env:JWT_SECRET="same_secret_as_nest_backend"
 ```
 
 ## Run
@@ -98,6 +99,41 @@ POST /api/payments/{id}/mock-failure
 GET  /api/payments/{id}
 GET  /api/payments/user/{userId}
 GET  /api/payments/reports/summary
+```
+
+## Authorization
+
+All payment APIs except health and Swagger require a JWT from the NestJS backend.
+
+Public:
+
+```text
+GET /api/payments/health
+GET /swagger-ui/index.html
+GET /v3/api-docs
+```
+
+Protected:
+
+```text
+POST /api/payments/initiate                 USER or ADMIN
+POST /api/payments/{id}/mock-success        ADMIN
+POST /api/payments/{id}/mock-failure        ADMIN
+GET  /api/payments/{id}                     Payment owner or ADMIN
+GET  /api/payments/user/{userId}            Same user or ADMIN
+GET  /api/payments/reports/summary          ADMIN
+```
+
+The Spring Boot service validates the same HS256 JWT secret used by the NestJS backend:
+
+```powershell
+$env:JWT_SECRET="same_secret_as_nest_backend"
+```
+
+Use the token as:
+
+```http
+Authorization: Bearer ACCESS_TOKEN
 ```
 
 ## Swagger
@@ -164,6 +200,7 @@ GET http://localhost:8081/api/payments/health
 
 ```http
 POST http://localhost:8081/api/payments/initiate
+Authorization: Bearer USER_TOKEN
 Content-Type: application/json
 ```
 
@@ -182,12 +219,14 @@ Content-Type: application/json
 
 ```http
 POST http://localhost:8081/api/payments/1/mock-success
+Authorization: Bearer ADMIN_TOKEN
 ```
 
 ### Mark Mock Failure
 
 ```http
 POST http://localhost:8081/api/payments/1/mock-failure
+Authorization: Bearer ADMIN_TOKEN
 Content-Type: application/json
 ```
 
@@ -201,16 +240,19 @@ Content-Type: application/json
 
 ```http
 GET http://localhost:8081/api/payments/1
+Authorization: Bearer USER_OR_ADMIN_TOKEN
 ```
 
 ### Get User Payments
 
 ```http
 GET http://localhost:8081/api/payments/user/1
+Authorization: Bearer USER_OR_ADMIN_TOKEN
 ```
 
 ### Summary
 
 ```http
 GET http://localhost:8081/api/payments/reports/summary
+Authorization: Bearer ADMIN_TOKEN
 ```
