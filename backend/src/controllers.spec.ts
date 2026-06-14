@@ -95,6 +95,7 @@ describe('Controllers', () => {
       findAvailableByParkingLot: jest.fn().mockResolvedValue([{ id: 1 }]),
       findByParkingLot: jest.fn().mockResolvedValue([{ id: 1 }]),
       updateStatus: jest.fn().mockResolvedValue({ id: 1, status: SlotStatus.MAINTENANCE }),
+      removeBulk: jest.fn().mockResolvedValue({ count: 2 }),
     };
     const controller = new SlotsController(slotsService as never);
 
@@ -112,6 +113,7 @@ describe('Controllers', () => {
       id: 1,
       status: SlotStatus.MAINTENANCE,
     });
+    await expect(controller.removeBulk({ ids: [1, 2] })).resolves.toEqual({ count: 2 });
   });
 
   it('VehiclesController delegates vehicle operations', async () => {

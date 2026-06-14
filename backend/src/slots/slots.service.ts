@@ -3,11 +3,12 @@ import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
+import { DeleteSlotsDto } from './dto/delete-slots.dto';
 import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
 
 @Injectable()
 export class SlotsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByParkingLot(parkingLotId: number) {
     await this.ensureActiveParkingLot(parkingLotId);
@@ -109,6 +110,38 @@ export class SlotsService {
       where: { id },
       data: { status: updateSlotStatusDto.status },
     });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.slot.delete({
+      where: { id },
+    });
+  }
+
+  async removeBulk(ids: number[]) {
+    const deleted = await this.prisma.slot.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    if (deleted.count === 0) {
+      throw new NotFoundException('No slots found to delete');
+    }
+
+    return deleted;
+  }
+
+  private async findOne(id: number) {
+    const slot = await this.prisma.slot.findUnique({
+      where: { id },
+    });
+
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    return slot;
   }
 
   private async ensureActiveParkingLot(id: number) {

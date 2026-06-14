@@ -11,6 +11,7 @@ import { SecurityDashboardPage } from './pages/dashboard/SecurityDashboardPage';
 import { UserDashboardPage } from './pages/dashboard/UserDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ParkingEventsPage } from './pages/parking-events/ParkingEventsPage';
+import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPage';
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
@@ -67,6 +68,18 @@ export const router = createBrowserRouter([
               {
                 path: 'parking-lots',
                 element: <ParkingLotsPage />,
+              },
+              {
+                path: 'parking-lots/:id',
+                element: <ParkingLotDetailsPage />,
+              },
+              {
+                path: 'parking-lots/:id/floors',
+                element: <ParkingLotDetailsPage />,
+              },
+              {
+                path: 'parking-lots/:id/slots',
+                element: <ParkingLotDetailsPage />,
               },
             ],
           },

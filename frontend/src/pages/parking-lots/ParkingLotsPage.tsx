@@ -32,9 +32,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Add, Delete, Edit, Search } from '@mui/icons-material';
+import { Add, Delete, Edit, Search, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -389,6 +390,11 @@ export function ParkingLotsPage() {
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.75 }}>
+                      <Tooltip title="View Details">
+                        <IconButton component={RouterLink} to={`/parking-lots/${parkingLot.id}`}>
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Edit">
                         <IconButton onClick={() => openEditForm(parkingLot)}>
                           <Edit />
