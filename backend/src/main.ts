@@ -1,7 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
+import * as YAML from 'yamljs';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -18,13 +20,7 @@ async function bootstrap() {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Smart Parking Backend API')
-    .setDescription('Apartment Parking MVP backend API documentation')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  const swaggerDocument = YAML.load(join(process.cwd(), 'docs', 'openapi.yaml'));
   SwaggerModule.setup('api/docs', app, swaggerDocument);
 
   await app.listen(port);

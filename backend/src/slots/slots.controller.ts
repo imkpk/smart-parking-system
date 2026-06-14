@@ -9,15 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiTags,
-  ApiUnauthorizedResponse,
-} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -28,8 +19,6 @@ import { CreateSlotDto } from './dto/create-slot.dto';
 import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
 import { SlotsService } from './slots.service';
 
-@ApiTags('Slots')
-@ApiBearerAuth()
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SlotsController {
@@ -37,20 +26,12 @@ export class SlotsController {
 
   @Get('parking-lots/:parkingLotId/slots')
   @Roles(Role.ADMIN, Role.SECURITY)
-  @ApiOkResponse({ description: 'Slots for a parking lot' })
-  @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'ADMIN or SECURITY role is required' })
-  @ApiNotFoundResponse({ description: 'Parking lot not found' })
   findByParkingLot(@Param('parkingLotId', ParseIntPipe) parkingLotId: number) {
     return this.slotsService.findByParkingLot(parkingLotId);
   }
 
   @Get('parking-lots/:parkingLotId/available-slots')
   @Roles(Role.USER, Role.ADMIN, Role.SECURITY)
-  @ApiOkResponse({ description: 'Available slots for a parking lot' })
-  @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'USER, ADMIN, or SECURITY role is required' })
-  @ApiNotFoundResponse({ description: 'Parking lot not found' })
   findAvailableByParkingLot(
     @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
     @Query() query: AvailableSlotsQueryDto,
@@ -63,10 +44,6 @@ export class SlotsController {
 
   @Post('floors/:floorId/slots')
   @Roles(Role.ADMIN)
-  @ApiCreatedResponse({ description: 'Slot created' })
-  @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'ADMIN role is required' })
-  @ApiNotFoundResponse({ description: 'Floor not found' })
   create(
     @Param('floorId', ParseIntPipe) floorId: number,
     @Body() createSlotDto: CreateSlotDto,
@@ -76,10 +53,6 @@ export class SlotsController {
 
   @Post('floors/:floorId/slots/bulk')
   @Roles(Role.ADMIN)
-  @ApiCreatedResponse({ description: 'Slots created' })
-  @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'ADMIN role is required' })
-  @ApiNotFoundResponse({ description: 'Floor not found' })
   createBulk(
     @Param('floorId', ParseIntPipe) floorId: number,
     @Body() createBulkSlotsDto: CreateBulkSlotsDto,
@@ -89,10 +62,6 @@ export class SlotsController {
 
   @Patch('slots/:id/status')
   @Roles(Role.ADMIN)
-  @ApiOkResponse({ description: 'Slot status updated' })
-  @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-  @ApiForbiddenResponse({ description: 'ADMIN role is required' })
-  @ApiNotFoundResponse({ description: 'Slot not found' })
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSlotStatusDto: UpdateSlotStatusDto,
