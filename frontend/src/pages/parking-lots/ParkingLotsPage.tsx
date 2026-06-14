@@ -23,14 +23,17 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
+  useMediaQuery,
+  useTheme,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { Add, Delete, Edit } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -59,10 +62,15 @@ const emptyForm: ParkingLotPayload = {
 
 export function ParkingLotsPage() {
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isCompactAction = useMediaQuery(theme.breakpoints.down('md'));
   const [formOpen, setFormOpen] = useState(false);
   const [editingParkingLot, setEditingParkingLot] = useState<ParkingLot | null>(null);
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [snackbar, setSnackbar] = useState<{
     message: string;
     severity: 'success' | 'error';
@@ -128,6 +136,34 @@ export function ParkingLotsPage() {
     () => parkingLotsQuery.data ?? [],
     [parkingLotsQuery.data],
   );
+  const filteredParkingLots = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return sortedParkingLots;
+    }
+
+    return sortedParkingLots.filter((parkingLot) =>
+      [
+        parkingLot.name,
+        parkingLot.type,
+        parkingLot.address,
+        parkingLot.city,
+        parkingLot.state,
+        parkingLot.pincode,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }, [search, sortedParkingLots]);
+  const visibleParkingLots = useMemo(
+    () =>
+      filteredParkingLots.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage,
+      ),
+    [filteredParkingLots, page, rowsPerPage],
+  );
 
   const openCreateForm = () => {
     setEditingParkingLot(null);
@@ -187,13 +223,39 @@ export function ParkingLotsPage() {
     createMutation.mutate(payload);
   };
 
+  const handlePageChange = (_event: unknown, nextPage: number) => {
+    setPage(nextPage);
+  };
+
+  const handleRowsPerPageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
+  };
+
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+    setPage(0);
+  };
+
   return (
     <Stack spacing={3}>
       <PageHeader
         action={
-          <Button onClick={openCreateForm} startIcon={<Add />} variant="contained">
-            Create Parking Lot
-          </Button>
+          <Tooltip title="Create Parking Lot">
+            <Button
+              aria-label="Create Parking Lot"
+              onClick={openCreateForm}
+              startIcon={isCompactAction ? undefined : <Add />}
+              variant="contained"
+              sx={{
+                height: { xs: 44, md: 40 },
+                minWidth: { xs: 44, md: 180 },
+                px: { xs: 0, md: 2 },
+              }}
+            >
+              {isCompactAction ? <Add /> : 'Create Parking Lot'}
+            </Button>
+          </Tooltip>
         }
         title="Parking Lots"
         description="Create, update, and deactivate parking lots."
@@ -214,8 +276,56 @@ export function ParkingLotsPage() {
       ) : null}
 
       {parkingLotsQuery.data ? (
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Table>
+        <Paper
+          elevation={0}
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              p: 2,
+            }}
+          >
+            <TextField
+              fullWidth
+              label="Search parking lots"
+              onChange={handleSearchChange}
+              placeholder="Search by name, type, city, state, or pincode"
+              size="small"
+              value={search}
+            />
+          </Box>
+          <TableContainer
+            sx={{
+            maxHeight: { xs: 'calc(100vh - 280px)', md: 'calc(100vh - 260px)' },
+            overflow: 'auto',
+            scrollbarColor: 'rgba(31, 111, 235, 0.65) rgba(15, 23, 42, 0.08)',
+            scrollbarWidth: 'thin',
+            WebkitOverflowScrolling: 'touch',
+            width: '100%',
+            '&::-webkit-scrollbar': {
+              height: 10,
+              width: 10,
+            },
+            '&::-webkit-scrollbar-track': {
+              bgcolor: 'rgba(15, 23, 42, 0.08)',
+              borderRadius: 8,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              bgcolor: 'rgba(31, 111, 235, 0.65)',
+              borderRadius: 8,
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              bgcolor: 'primary.main',
+            },
+          }}
+        >
+          <Table stickyHeader sx={{ minWidth: 780 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
@@ -235,8 +345,16 @@ export function ParkingLotsPage() {
                     </Typography>
                   </TableCell>
                 </TableRow>
+              ) : filteredParkingLots.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <Typography color="text.secondary" py={3} textAlign="center">
+                      No parking lots match your search.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
               ) : (
-                sortedParkingLots.map((parkingLot) => (
+                visibleParkingLots.map((parkingLot) => (
                   <TableRow hover key={parkingLot.id}>
                     <TableCell>
                       <Stack spacing={0.5}>
@@ -277,7 +395,34 @@ export function ParkingLotsPage() {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredParkingLots.length}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            sx={{
+              bgcolor: 'background.paper',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bottom: 0,
+              position: 'sticky',
+              zIndex: 2,
+              '& .MuiTablePagination-toolbar': {
+                flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                justifyContent: { xs: 'center', sm: 'flex-end' },
+                minHeight: { xs: 72, sm: 52 },
+                px: { xs: 1, sm: 2 },
+              },
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                m: 0,
+              },
+            }}
+          />
+        </Paper>
       ) : null}
 
       <Dialog fullWidth maxWidth="sm" onClose={closeForm} open={formOpen}>

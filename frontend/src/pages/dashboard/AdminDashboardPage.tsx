@@ -60,54 +60,54 @@ export function AdminDashboardPage() {
 
       {summary ? (
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard icon={<Group />} label="Total Users" value={summary.totalUsers} />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard icon={<Garage />} label="Parking Lots" value={summary.totalParkingLots} />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard icon={<LocalParking />} label="Total Slots" value={summary.totalSlots} />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<CheckCircle />}
               label="Available Slots"
               value={slotSummary?.availableSlots ?? summary.availableSlots}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<TimeToLeave />}
               label="Occupied Slots"
               value={slotSummary?.occupiedSlots ?? summary.occupiedSlots}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<PendingActions />}
               label="Reserved Slots"
               value={slotSummary?.reservedSlots ?? summary.reservedSlots}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<ReportProblem />}
               label="Maintenance Slots"
               value={slotSummary?.maintenanceSlots ?? summary.maintenanceSlots}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard icon={<CalendarMonth />} label="Total Bookings" value={summary.totalBookings} />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<EventAvailable />}
               label="Active Parking Events"
               value={summary.activeParkingEvents}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               icon={<TaskAlt />}
               label="Completed Parking Events"
