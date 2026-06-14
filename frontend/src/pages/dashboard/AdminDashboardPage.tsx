@@ -21,6 +21,7 @@ import { getAdminSummary, getSlotStatusSummary } from '../../api/dashboardApi';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { slotStatusStyles } from '../../lib/slotStatusStyles';
 
 export function AdminDashboardPage() {
   const adminSummaryQuery = useQuery({
@@ -71,28 +72,36 @@ export function AdminDashboardPage() {
           </Grid>
           <Grid item xs={12} sm={6} lg={3}>
             <StatCard
+              accentColor={slotStatusStyles.AVAILABLE.borderColor}
               icon={<CheckCircle />}
+              iconBgcolor={slotStatusStyles.AVAILABLE.bgcolor}
               label="Available Slots"
               value={slotSummary?.availableSlots ?? summary.availableSlots}
             />
           </Grid>
           <Grid item xs={12} sm={6} lg={3}>
             <StatCard
+              accentColor={slotStatusStyles.OCCUPIED.borderColor}
               icon={<TimeToLeave />}
+              iconBgcolor={slotStatusStyles.OCCUPIED.bgcolor}
               label="Occupied Slots"
               value={slotSummary?.occupiedSlots ?? summary.occupiedSlots}
             />
           </Grid>
           <Grid item xs={12} sm={6} lg={3}>
             <StatCard
+              accentColor={slotStatusStyles.RESERVED.borderColor}
               icon={<PendingActions />}
+              iconBgcolor={slotStatusStyles.RESERVED.bgcolor}
               label="Reserved Slots"
               value={slotSummary?.reservedSlots ?? summary.reservedSlots}
             />
           </Grid>
           <Grid item xs={12} sm={6} lg={3}>
             <StatCard
+              accentColor={slotStatusStyles.MAINTENANCE.borderColor}
               icon={<ReportProblem />}
+              iconBgcolor={slotStatusStyles.MAINTENANCE.bgcolor}
               label="Maintenance Slots"
               value={slotSummary?.maintenanceSlots ?? summary.maintenanceSlots}
             />

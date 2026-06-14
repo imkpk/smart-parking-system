@@ -5,10 +5,14 @@ export function StatCard({
   label,
   value,
   icon,
+  accentColor = 'primary.main',
+  iconBgcolor = 'rgba(31, 111, 235, 0.1)',
 }: {
   label: string;
   value: number | string;
   icon?: ReactNode;
+  accentColor?: string;
+  iconBgcolor?: string;
 }) {
   return (
     <Card
@@ -21,7 +25,7 @@ export function StatCard({
         height: '100%',
         transition: 'border-color 160ms ease, box-shadow 160ms ease',
         '&:hover': {
-          borderColor: 'primary.main',
+          borderColor: accentColor,
           boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
         },
       }}
@@ -41,9 +45,9 @@ export function StatCard({
               alignItems="center"
               justifyContent="center"
               sx={{
-                bgcolor: 'rgba(31, 111, 235, 0.1)',
+                bgcolor: iconBgcolor,
                 borderRadius: 1.5,
-                color: 'primary.main',
+                color: accentColor,
                 height: 44,
                 width: 44,
               }}

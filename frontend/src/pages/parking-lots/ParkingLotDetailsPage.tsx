@@ -2,7 +2,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -41,8 +40,10 @@ import {
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { slotStatusStyles } from '../../lib/slotStatusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
   BulkSlotForm,
@@ -425,10 +426,21 @@ export function ParkingLotDetailsPage() {
                 <StatCard icon={<ViewModule />} label="Total Slots" value={slots.length} />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
-                <StatCard icon={<LocalParking />} label="Available" value={slotStatusCounts.AVAILABLE} />
+                <StatCard
+                  accentColor={slotStatusStyles.AVAILABLE.borderColor}
+                  icon={<LocalParking />}
+                  iconBgcolor={slotStatusStyles.AVAILABLE.bgcolor}
+                  label="Available"
+                  value={slotStatusCounts.AVAILABLE}
+                />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
-                <StatCard label="Occupied" value={slotStatusCounts.OCCUPIED} />
+                <StatCard
+                  accentColor={slotStatusStyles.OCCUPIED.borderColor}
+                  iconBgcolor={slotStatusStyles.OCCUPIED.bgcolor}
+                  label="Occupied"
+                  value={slotStatusCounts.OCCUPIED}
+                />
               </Grid>
               <Grid item xs={12}>
                 <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}>
@@ -755,7 +767,7 @@ function SlotsSection({
         field: 'status',
         headerName: 'Status',
         minWidth: 150,
-        renderCell: ({ row }) => <Chip label={row.status} size="small" />,
+        renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
       },
       {
         field: 'actions',
@@ -774,7 +786,7 @@ function SlotsSection({
               >
                 {slotStatusOptions.map((status) => (
                   <MenuItem key={status} value={status}>
-                    {status}
+                    <SlotStatusChip status={status} />
                   </MenuItem>
                 ))}
               </Select>
@@ -822,7 +834,7 @@ function SlotsSection({
               <MenuItem value="ALL">All Statuses</MenuItem>
               {slotStatusOptions.map((status) => (
                 <MenuItem key={status} value={status}>
-                  {status}
+                  <SlotStatusChip status={status} />
                 </MenuItem>
               ))}
             </Select>
@@ -935,7 +947,7 @@ function SlotStatusSelect({
       <Select label="Status" onChange={(event) => onChange(event.target.value as SlotStatus)} value={value}>
         {slotStatusOptions.map((status) => (
           <MenuItem key={status} value={status}>
-            {status}
+            <SlotStatusChip status={status} />
           </MenuItem>
         ))}
       </Select>
