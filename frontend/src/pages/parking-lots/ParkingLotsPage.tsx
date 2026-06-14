@@ -11,6 +11,7 @@ import {
   FormControl,
   FormControlLabel,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -31,7 +32,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Add, Delete, Edit } from '@mui/icons-material';
+import { Add, Delete, Edit, Search } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import {
@@ -293,6 +294,13 @@ export function ParkingLotsPage() {
           >
             <TextField
               fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
               label="Search parking lots"
               onChange={handleSearchChange}
               placeholder="Search by name, type, city, state, or pincode"
@@ -302,38 +310,40 @@ export function ParkingLotsPage() {
           </Box>
           <TableContainer
             sx={{
-            maxHeight: { xs: 'calc(100vh - 280px)', md: 'calc(100vh - 260px)' },
-            overflow: 'auto',
-            scrollbarColor: 'rgba(31, 111, 235, 0.65) rgba(15, 23, 42, 0.08)',
-            scrollbarWidth: 'thin',
-            WebkitOverflowScrolling: 'touch',
-            width: '100%',
-            '&::-webkit-scrollbar': {
-              height: 10,
-              width: 10,
-            },
-            '&::-webkit-scrollbar-track': {
-              bgcolor: 'rgba(15, 23, 42, 0.08)',
-              borderRadius: 8,
-            },
-            '&::-webkit-scrollbar-thumb': {
-              bgcolor: 'rgba(31, 111, 235, 0.65)',
-              borderRadius: 8,
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              bgcolor: 'primary.main',
-            },
-          }}
-        >
-          <Table stickyHeader sx={{ minWidth: 780 }}>
+              maxHeight: { xs: 'calc(100vh - 280px)', md: 'calc(100vh - 260px)' },
+              overflow: 'auto',
+              scrollbarColor: 'rgba(31, 111, 235, 0.65) rgba(15, 23, 42, 0.08)',
+              scrollbarWidth: 'thin',
+              WebkitOverflowScrolling: 'touch',
+              width: '100%',
+              '&::-webkit-scrollbar': {
+                height: 10,
+                width: 10,
+              },
+              '&::-webkit-scrollbar-track': {
+                bgcolor: 'rgba(15, 23, 42, 0.08)',
+                borderRadius: 8,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                bgcolor: 'rgba(31, 111, 235, 0.65)',
+                borderRadius: 8,
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                bgcolor: 'primary.main',
+              },
+            }}
+          >
+          <Table size="small" stickyHeader sx={{ minWidth: 780 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Pincode</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Name</TableCell>
+                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Type</TableCell>
+                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Location</TableCell>
+                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Pincode</TableCell>
+                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Status</TableCell>
+                <TableCell align="right" sx={{ bgcolor: 'background.default', fontWeight: 700 }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -355,8 +365,8 @@ export function ParkingLotsPage() {
                 </TableRow>
               ) : (
                 visibleParkingLots.map((parkingLot) => (
-                  <TableRow hover key={parkingLot.id}>
-                    <TableCell>
+                  <TableRow hover key={parkingLot.id} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                    <TableCell sx={{ py: 1.75 }}>
                       <Stack spacing={0.5}>
                         <Typography fontWeight={600}>{parkingLot.name}</Typography>
                         <Typography color="text.secondary" variant="body2">
@@ -364,21 +374,21 @@ export function ParkingLotsPage() {
                         </Typography>
                       </Stack>
                     </TableCell>
-                    <TableCell>{parkingLot.type}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 1.75 }}>{parkingLot.type}</TableCell>
+                    <TableCell sx={{ py: 1.75 }}>
                       {[parkingLot.address, parkingLot.city, parkingLot.state]
                         .filter(Boolean)
                         .join(', ') || '-'}
                     </TableCell>
-                    <TableCell>{parkingLot.pincode || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 1.75 }}>{parkingLot.pincode || '-'}</TableCell>
+                    <TableCell sx={{ py: 1.75 }}>
                       <Chip
                         color={parkingLot.isActive ? 'success' : 'default'}
                         label={parkingLot.isActive ? 'Active' : 'Inactive'}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ py: 1.75 }}>
                       <Tooltip title="Edit">
                         <IconButton onClick={() => openEditForm(parkingLot)}>
                           <Edit />

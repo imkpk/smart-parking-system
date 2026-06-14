@@ -32,10 +32,23 @@ export const theme = createTheme({
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          textRendering: 'geometricPrecision',
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
           borderRadius: 8,
+          boxShadow: 'none',
+        },
+        contained: {
+          '&:hover': {
+            boxShadow: '0 8px 18px rgba(31, 111, 235, 0.22)',
+          },
         },
       },
     },

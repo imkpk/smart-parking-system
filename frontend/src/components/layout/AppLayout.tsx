@@ -220,7 +220,7 @@ export function AppLayout() {
             }),
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 64, sm: 72 } }}>
           <Box alignItems="center" display="flex" gap={1.5}>
             <Tooltip
               title={
@@ -246,7 +246,9 @@ export function AppLayout() {
               </IconButton>
             </Tooltip>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6">Smart Parking</Typography>
+              <Typography sx={{ lineHeight: 1.15 }} variant="h6">
+                Smart Parking
+              </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -324,7 +326,7 @@ export function AppLayout() {
         sx={{
           flexGrow: 1,
           minWidth: 0,
-          px: { xs: 2, sm: 3 },
+          px: { xs: 2, sm: 3, lg: 4 },
           py: { xs: 2, sm: 3 },
           mt: { xs: 8, sm: 9 },
         }}
