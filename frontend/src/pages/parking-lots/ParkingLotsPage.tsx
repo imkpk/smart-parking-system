@@ -1,10 +1,384 @@
-import { PlaceholderPage } from '../common/PlaceholderPage';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Snackbar,
+  Stack,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { Add, Delete, Edit } from '@mui/icons-material';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FormEvent, useMemo, useState } from 'react';
+import {
+  createParkingLot,
+  deleteParkingLot,
+  getParkingLots,
+  updateParkingLot,
+} from '../../api/parkingLotsApi';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { PageHeader } from '../../components/common/PageHeader';
+import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import {
+  ParkingLot,
+  ParkingLotPayload,
+  ParkingLotType,
+  parkingLotTypeOptions,
+} from '../../types/parkingLot';
+
+const emptyForm: ParkingLotPayload = {
+  name: '',
+  type: 'APARTMENT',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  isActive: true,
+};
 
 export function ParkingLotsPage() {
+  const queryClient = useQueryClient();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingParkingLot, setEditingParkingLot] = useState<ParkingLot | null>(null);
+  const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    message: string;
+    severity: 'success' | 'error';
+  } | null>(null);
+
+  const parkingLotsQuery = useQuery({
+    queryKey: ['parking-lots'],
+    queryFn: getParkingLots,
+  });
+
+  const invalidateParkingLots = () =>
+    queryClient.invalidateQueries({ queryKey: ['parking-lots'] });
+
+  const createMutation = useMutation({
+    mutationFn: createParkingLot,
+    onSuccess: async () => {
+      await invalidateParkingLots();
+      setSnackbar({ message: 'Parking lot created.', severity: 'success' });
+      closeForm();
+    },
+    onError: (error) => {
+      setSnackbar({
+        message: getApiErrorMessage(error, 'Could not create parking lot.'),
+        severity: 'error',
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ParkingLotPayload }) =>
+      updateParkingLot(id, payload),
+    onSuccess: async () => {
+      await invalidateParkingLots();
+      setSnackbar({ message: 'Parking lot updated.', severity: 'success' });
+      closeForm();
+    },
+    onError: (error) => {
+      setSnackbar({
+        message: getApiErrorMessage(error, 'Could not update parking lot.'),
+        severity: 'error',
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteParkingLot,
+    onSuccess: async () => {
+      await invalidateParkingLots();
+      setSnackbar({ message: 'Parking lot deleted.', severity: 'success' });
+      setDeleteTarget(null);
+    },
+    onError: (error) => {
+      setSnackbar({
+        message: getApiErrorMessage(error, 'Could not delete parking lot.'),
+        severity: 'error',
+      });
+    },
+  });
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const sortedParkingLots = useMemo(
+    () => parkingLotsQuery.data ?? [],
+    [parkingLotsQuery.data],
+  );
+
+  const openCreateForm = () => {
+    setEditingParkingLot(null);
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
+
+  const openEditForm = (parkingLot: ParkingLot) => {
+    setEditingParkingLot(parkingLot);
+    setForm({
+      name: parkingLot.name,
+      type: parkingLot.type,
+      address: parkingLot.address ?? '',
+      city: parkingLot.city ?? '',
+      state: parkingLot.state ?? '',
+      pincode: parkingLot.pincode ?? '',
+      isActive: parkingLot.isActive,
+    });
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    if (isSaving) {
+      return;
+    }
+
+    setFormOpen(false);
+    setEditingParkingLot(null);
+    setForm(emptyForm);
+  };
+
+  const updateField = <Key extends keyof ParkingLotPayload>(
+    key: Key,
+    value: ParkingLotPayload[Key],
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const toPayload = () => ({
+    ...form,
+    address: form.address?.trim() || undefined,
+    city: form.city?.trim() || undefined,
+    state: form.state?.trim() || undefined,
+    pincode: form.pincode?.trim() || undefined,
+    name: form.name.trim(),
+  });
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const payload = toPayload();
+
+    if (editingParkingLot) {
+      updateMutation.mutate({ id: editingParkingLot.id, payload });
+      return;
+    }
+
+    createMutation.mutate(payload);
+  };
+
   return (
-    <PlaceholderPage
-      title="Parking Lots"
-      description="Manage and inspect parking lots, floors, and zones."
-    />
+    <Stack spacing={3}>
+      <PageHeader
+        action={
+          <Button onClick={openCreateForm} startIcon={<Add />} variant="contained">
+            Create Parking Lot
+          </Button>
+        }
+        title="Parking Lots"
+        description="Create, update, and deactivate parking lots."
+      />
+
+      {parkingLotsQuery.isLoading ? (
+        <Stack alignItems="center" py={8}>
+          <CircularProgress />
+        </Stack>
+      ) : null}
+
+      {parkingLotsQuery.error ? (
+        <Alert severity={isForbiddenError(parkingLotsQuery.error) ? 'warning' : 'error'}>
+          {isForbiddenError(parkingLotsQuery.error)
+            ? 'Access denied. Admin role is required to manage parking lots.'
+            : getApiErrorMessage(parkingLotsQuery.error, 'Could not load parking lots.')}
+        </Alert>
+      ) : null}
+
+      {parkingLotsQuery.data ? (
+        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Pincode</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sortedParkingLots.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <Typography color="text.secondary" py={3} textAlign="center">
+                      No parking lots found.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sortedParkingLots.map((parkingLot) => (
+                  <TableRow hover key={parkingLot.id}>
+                    <TableCell>
+                      <Stack spacing={0.5}>
+                        <Typography fontWeight={600}>{parkingLot.name}</Typography>
+                        <Typography color="text.secondary" variant="body2">
+                          ID #{parkingLot.id}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>{parkingLot.type}</TableCell>
+                    <TableCell>
+                      {[parkingLot.address, parkingLot.city, parkingLot.state]
+                        .filter(Boolean)
+                        .join(', ') || '-'}
+                    </TableCell>
+                    <TableCell>{parkingLot.pincode || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        color={parkingLot.isActive ? 'success' : 'default'}
+                        label={parkingLot.isActive ? 'Active' : 'Inactive'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Edit">
+                        <IconButton onClick={() => openEditForm(parkingLot)}>
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton color="error" onClick={() => setDeleteTarget(parkingLot)}>
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : null}
+
+      <Dialog fullWidth maxWidth="sm" onClose={closeForm} open={formOpen}>
+        <Box component="form" onSubmit={handleSubmit}>
+          <DialogTitle>{editingParkingLot ? 'Edit Parking Lot' : 'Create Parking Lot'}</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <TextField
+                label="Name"
+                onChange={(event) => updateField('name', event.target.value)}
+                required
+                value={form.name}
+              />
+              <FormControl required>
+                <InputLabel id="parking-lot-type-label">Type</InputLabel>
+                <Select
+                  label="Type"
+                  labelId="parking-lot-type-label"
+                  onChange={(event) => updateField('type', event.target.value as ParkingLotType)}
+                  value={form.type}
+                >
+                  {parkingLotTypeOptions.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Address"
+                onChange={(event) => updateField('address', event.target.value)}
+                value={form.address}
+              />
+              <TextField
+                label="City"
+                onChange={(event) => updateField('city', event.target.value)}
+                value={form.city}
+              />
+              <TextField
+                label="State"
+                onChange={(event) => updateField('state', event.target.value)}
+                value={form.state}
+              />
+              <TextField
+                label="Pincode"
+                onChange={(event) => updateField('pincode', event.target.value)}
+                value={form.pincode}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={Boolean(form.isActive)}
+                    onChange={(event) => updateField('isActive', event.target.checked)}
+                  />
+                }
+                label="Active"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button disabled={isSaving} onClick={closeForm}>
+              Cancel
+            </Button>
+            <Button disabled={isSaving} type="submit" variant="contained">
+              {editingParkingLot ? 'Save Changes' : 'Create'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      <ConfirmDialog
+        confirmLabel="Delete"
+        description={
+          deleteTarget
+            ? `Delete ${deleteTarget.name}? This will mark the parking lot inactive.`
+            : ''
+        }
+        isLoading={deleteMutation.isPending}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
+          }
+        }}
+        open={Boolean(deleteTarget)}
+        title="Delete Parking Lot"
+      />
+
+      <Snackbar
+        autoHideDuration={3500}
+        onClose={() => setSnackbar(null)}
+        open={Boolean(snackbar)}
+      >
+        <Alert
+          onClose={() => setSnackbar(null)}
+          severity={snackbar?.severity ?? 'success'}
+          variant="filled"
+        >
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
+    </Stack>
   );
 }

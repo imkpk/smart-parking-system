@@ -8,6 +8,7 @@ frontend/.vite/
 dist/
 backend/dist/
 frontend/dist/
+frontend/*.tsbuildinfo
 payment-service/target/
 target/
 *.class

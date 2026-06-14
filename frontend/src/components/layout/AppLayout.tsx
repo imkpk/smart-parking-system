@@ -4,11 +4,13 @@ import {
   Button,
   Divider,
   Drawer,
+  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Toolbar,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -17,16 +19,19 @@ import {
   EventNote,
   LocalParking,
   Logout,
+  Menu,
+  MenuOpen,
   Payments,
   Security,
 } from '@mui/icons-material';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 260;
+const collapsedDrawerWidth = 76;
 
 interface NavItem {
   label: string;
@@ -58,7 +63,7 @@ const navItems: NavItem[] = [
     label: 'Parking Lots',
     to: '/parking-lots',
     icon: <LocalParking />,
-    roles: ['ADMIN', 'SECURITY'],
+    roles: ['ADMIN'],
   },
   {
     label: 'Vehicles',
@@ -84,6 +89,8 @@ export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const activeDrawerWidth = isSidebarOpen ? drawerWidth : collapsedDrawerWidth;
 
   const visibleNavItems = navItems.filter((item) =>
     user ? item.roles.includes(user.role) : false,
@@ -100,26 +107,45 @@ export function AppLayout() {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen((current) => !current);
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
         elevation={0}
         sx={{
-          width: `calc(100% - ${drawerWidth}px)`,
-          ml: `${drawerWidth}px`,
+          width: `calc(100% - ${activeDrawerWidth}px)`,
+          ml: `${activeDrawerWidth}px`,
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
           color: 'text.primary',
+          transition: (theme) =>
+            theme.transitions.create(['margin-left', 'width'], {
+              duration: theme.transitions.duration.shortest,
+            }),
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="h6">Smart Parking</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.name} · {user?.role}
-            </Typography>
+          <Box alignItems="center" display="flex" gap={1.5}>
+            <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+              <IconButton
+                aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                color="inherit"
+                onClick={toggleSidebar}
+              >
+                {isSidebarOpen ? <MenuOpen /> : <Menu />}
+              </IconButton>
+            </Tooltip>
+            <Box>
+              <Typography variant="h6">Smart Parking</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.name} · {user?.role}
+              </Typography>
+            </Box>
           </Box>
           <Button
             color="inherit"
@@ -137,12 +163,17 @@ export function AppLayout() {
         open
         variant="permanent"
         sx={{
-          width: drawerWidth,
+          width: activeDrawerWidth,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
-            width: drawerWidth,
+            overflowX: 'hidden',
+            width: activeDrawerWidth,
             borderRight: '1px solid',
             borderColor: 'divider',
+            transition: (theme) =>
+              theme.transitions.create('width', {
+                duration: theme.transitions.duration.shortest,
+              }),
           },
         }}
       >
@@ -164,26 +195,64 @@ export function AppLayout() {
             },
           }}
         >
-          <Typography variant="h6" component="span">
-            Smart Parking
-          </Typography>
-          <Typography variant="body2" color="text.secondary" component="span">
-            Management System
-          </Typography>
+          {isSidebarOpen ? (
+            <>
+              <Typography variant="h6" component="span">
+                Smart Parking
+              </Typography>
+              <Typography variant="body2" color="text.secondary" component="span">
+                Management System
+              </Typography>
+            </>
+          ) : (
+            <Box
+              sx={{
+                alignItems: 'center',
+                bgcolor: 'primary.main',
+                borderRadius: 1,
+                color: 'primary.contrastText',
+                display: 'flex',
+                height: 40,
+                justifyContent: 'center',
+                width: 40,
+              }}
+            >
+              <LocalParking />
+            </Box>
+          )}
         </Toolbar>
         <Divider />
         <List sx={{ px: 1 }}>
           {visibleNavItems.map((item) => (
-            <ListItemButton
+            <Tooltip
+              disableHoverListener={isSidebarOpen}
               key={item.to}
-              component={NavLink}
-              selected={location.pathname === item.to}
-              to={item.to}
-              sx={{ borderRadius: 1, mb: 0.5 }}
+              placement="right"
+              title={item.label}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
+              <ListItemButton
+                component={NavLink}
+                selected={location.pathname === item.to}
+                to={item.to}
+                sx={{
+                  borderRadius: 1,
+                  justifyContent: isSidebarOpen ? 'flex-start' : 'center',
+                  mb: 0.5,
+                  minHeight: 48,
+                  px: isSidebarOpen ? 2 : 1.5,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    justifyContent: 'center',
+                    minWidth: isSidebarOpen ? 56 : 0,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                {isSidebarOpen ? <ListItemText primary={item.label} /> : null}
+              </ListItemButton>
+            </Tooltip>
           ))}
         </List>
       </Drawer>

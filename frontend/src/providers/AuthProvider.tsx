@@ -4,6 +4,7 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -63,6 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     queryClient.removeQueries({ queryKey: ['auth'] });
   }, [queryClient]);
+
+  useEffect(() => {
+    window.addEventListener('smart-parking:unauthorized', logout);
+
+    return () => {
+      window.removeEventListener('smart-parking:unauthorized', logout);
+    };
+  }, [logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
