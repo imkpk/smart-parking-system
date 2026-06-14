@@ -518,6 +518,10 @@ paths:
       responses:
         "200":
           description: Vehicle checked out, fee calculated, and slot released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
 
   /parking-events/active:
     get:
@@ -885,3 +889,41 @@ components:
         parkingEventId:
           type: integer
           example: 1
+    CheckoutResponse:
+      type: object
+      properties:
+        parkingEvent:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            bookingId:
+              type: integer
+              example: 1
+            userId:
+              type: integer
+              example: 1
+            status:
+              $ref: "#/components/schemas/ParkingEventStatus"
+            durationMinutes:
+              type: integer
+              example: 121
+            feeAmount:
+              type: number
+              example: 110
+        paymentInitiated:
+          type: boolean
+          example: true
+        payment:
+          type: object
+          nullable: true
+          example:
+            id: 1
+            status: INITIATED
+            amount: 110
+            currency: INR
+        paymentError:
+          type: string
+          nullable: true
+          example: Payment service unavailable

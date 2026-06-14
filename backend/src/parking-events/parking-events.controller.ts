@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   ParseIntPipe,
   Post,
@@ -30,8 +31,11 @@ export class ParkingEventsController {
 
   @Post('check-out')
   @Roles(Role.SECURITY)
-  checkOut(@Body() checkOutDto: CheckOutDto) {
-    return this.parkingEventsService.checkOut(checkOutDto);
+  checkOut(
+    @Body() checkOutDto: CheckOutDto,
+    @Headers('authorization') authorizationHeader?: string,
+  ) {
+    return this.parkingEventsService.checkOut(checkOutDto, authorizationHeader);
   }
 
   @Get('active')
