@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -16,13 +17,14 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
+import { DeleteSlotsDto } from './dto/delete-slots.dto';
 import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
 import { SlotsService } from './slots.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SlotsController {
-  constructor(private readonly slotsService: SlotsService) {}
+  constructor(private readonly slotsService: SlotsService) { }
 
   @Get('parking-lots/:parkingLotId/slots')
   @Roles(Role.ADMIN, Role.SECURITY)
@@ -67,5 +69,17 @@ export class SlotsController {
     @Body() updateSlotStatusDto: UpdateSlotStatusDto,
   ) {
     return this.slotsService.updateStatus(id, updateSlotStatusDto);
+  }
+
+  @Delete('slots/:id')
+  @Roles(Role.ADMIN)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.slotsService.remove(id);
+  }
+
+  @Delete('slots')
+  @Roles(Role.ADMIN)
+  removeBulk(@Body() deleteSlotsDto: DeleteSlotsDto) {
+    return this.slotsService.removeBulk(deleteSlotsDto.ids);
   }
 }

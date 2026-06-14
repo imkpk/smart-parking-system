@@ -19,22 +19,17 @@ import {
   Snackbar,
   Stack,
   Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
   TextField,
   useMediaQuery,
   useTheme,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Add, Delete, Edit, Search } from '@mui/icons-material';
+import { Add, Delete, Edit, Search, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { GridColDef } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -42,6 +37,7 @@ import {
   updateParkingLot,
 } from '../../api/parkingLotsApi';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { PageHeader } from '../../components/common/PageHeader';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import {
@@ -70,8 +66,6 @@ export function ParkingLotsPage() {
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [snackbar, setSnackbar] = useState<{
     message: string;
     severity: 'success' | 'error';
@@ -157,13 +151,74 @@ export function ParkingLotsPage() {
         .some((value) => String(value).toLowerCase().includes(query)),
     );
   }, [search, sortedParkingLots]);
-  const visibleParkingLots = useMemo(
-    () =>
-      filteredParkingLots.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-      ),
-    [filteredParkingLots, page, rowsPerPage],
+  const columns = useMemo<GridColDef<ParkingLot>[]>(
+    () => [
+      {
+        field: 'name',
+        flex: 1.1,
+        headerName: 'Name',
+        minWidth: 180,
+        renderCell: ({ row }) => (
+          <Stack spacing={0.25}>
+            <Typography fontWeight={600}>{row.name}</Typography>
+            <Typography color="text.secondary" variant="body2">
+              ID #{row.id}
+            </Typography>
+          </Stack>
+        ),
+      },
+      { field: 'type', headerName: 'Type', minWidth: 140 },
+      {
+        field: 'location',
+        flex: 1.3,
+        headerName: 'Location',
+        minWidth: 220,
+        valueGetter: (_value, row) =>
+          [row.address, row.city, row.state].filter(Boolean).join(', ') || '-',
+      },
+      { field: 'pincode', headerName: 'Pincode', minWidth: 120 },
+      {
+        field: 'isActive',
+        headerName: 'Status',
+        minWidth: 120,
+        renderCell: ({ row }) => (
+          <Chip
+            color={row.isActive ? 'success' : 'default'}
+            label={row.isActive ? 'Active' : 'Inactive'}
+            size="small"
+          />
+        ),
+      },
+      {
+        field: 'actions',
+        align: 'right',
+        filterable: false,
+        headerAlign: 'right',
+        headerName: 'Actions',
+        minWidth: 170,
+        sortable: false,
+        renderCell: ({ row }) => (
+          <Stack direction="row" justifyContent="flex-end" width="100%">
+            <Tooltip title="View Details">
+              <IconButton component={RouterLink} to={`/parking-lots/${row.id}`}>
+                <Visibility />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit">
+              <IconButton onClick={() => openEditForm(row)}>
+                <Edit />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton color="error" onClick={() => setDeleteTarget(row)}>
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
+    ],
+    [],
   );
 
   const openCreateForm = () => {
@@ -224,18 +279,8 @@ export function ParkingLotsPage() {
     createMutation.mutate(payload);
   };
 
-  const handlePageChange = (_event: unknown, nextPage: number) => {
-    setPage(nextPage);
-  };
-
-  const handleRowsPerPageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(Number(event.target.value));
-    setPage(0);
-  };
-
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value);
-    setPage(0);
   };
 
   return (
@@ -308,129 +353,11 @@ export function ParkingLotsPage() {
               value={search}
             />
           </Box>
-          <TableContainer
-            sx={{
-              maxHeight: { xs: 'calc(100vh - 280px)', md: 'calc(100vh - 260px)' },
-              overflow: 'auto',
-              scrollbarColor: 'rgba(31, 111, 235, 0.65) rgba(15, 23, 42, 0.08)',
-              scrollbarWidth: 'thin',
-              WebkitOverflowScrolling: 'touch',
-              width: '100%',
-              '&::-webkit-scrollbar': {
-                height: 10,
-                width: 10,
-              },
-              '&::-webkit-scrollbar-track': {
-                bgcolor: 'rgba(15, 23, 42, 0.08)',
-                borderRadius: 8,
-              },
-              '&::-webkit-scrollbar-thumb': {
-                bgcolor: 'rgba(31, 111, 235, 0.65)',
-                borderRadius: 8,
-              },
-              '&::-webkit-scrollbar-thumb:hover': {
-                bgcolor: 'primary.main',
-              },
-            }}
-          >
-          <Table size="small" stickyHeader sx={{ minWidth: 780 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Name</TableCell>
-                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Type</TableCell>
-                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Location</TableCell>
-                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Pincode</TableCell>
-                <TableCell sx={{ bgcolor: 'background.default', fontWeight: 700 }}>Status</TableCell>
-                <TableCell align="right" sx={{ bgcolor: 'background.default', fontWeight: 700 }}>
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedParkingLots.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Typography color="text.secondary" py={3} textAlign="center">
-                      No parking lots found.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : filteredParkingLots.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Typography color="text.secondary" py={3} textAlign="center">
-                      No parking lots match your search.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                visibleParkingLots.map((parkingLot) => (
-                  <TableRow hover key={parkingLot.id} sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                    <TableCell sx={{ py: 1.75 }}>
-                      <Stack spacing={0.5}>
-                        <Typography fontWeight={600}>{parkingLot.name}</Typography>
-                        <Typography color="text.secondary" variant="body2">
-                          ID #{parkingLot.id}
-                        </Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.75 }}>{parkingLot.type}</TableCell>
-                    <TableCell sx={{ py: 1.75 }}>
-                      {[parkingLot.address, parkingLot.city, parkingLot.state]
-                        .filter(Boolean)
-                        .join(', ') || '-'}
-                    </TableCell>
-                    <TableCell sx={{ py: 1.75 }}>{parkingLot.pincode || '-'}</TableCell>
-                    <TableCell sx={{ py: 1.75 }}>
-                      <Chip
-                        color={parkingLot.isActive ? 'success' : 'default'}
-                        label={parkingLot.isActive ? 'Active' : 'Inactive'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.75 }}>
-                      <Tooltip title="Edit">
-                        <IconButton onClick={() => openEditForm(parkingLot)}>
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => setDeleteTarget(parkingLot)}>
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          </TableContainer>
-          <TablePagination
-            component="div"
-            count={filteredParkingLots.length}
-            onPageChange={handlePageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[5, 10, 25]}
-            sx={{
-              bgcolor: 'background.paper',
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              bottom: 0,
-              position: 'sticky',
-              zIndex: 2,
-              '& .MuiTablePagination-toolbar': {
-                flexWrap: { xs: 'wrap', sm: 'nowrap' },
-                justifyContent: { xs: 'center', sm: 'flex-end' },
-                minHeight: { xs: 72, sm: 52 },
-                px: { xs: 1, sm: 2 },
-              },
-              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                m: 0,
-              },
-            }}
+          <AppDataGrid
+            columns={columns}
+            height="calc(100vh - 290px)"
+            loading={parkingLotsQuery.isFetching}
+            rows={filteredParkingLots}
           />
         </Paper>
       ) : null}

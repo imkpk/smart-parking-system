@@ -14,6 +14,7 @@ describe('SlotsService', () => {
       createMany: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock;
+      delete: jest.Mock;
     };
   };
 
@@ -28,6 +29,8 @@ describe('SlotsService', () => {
         createMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
+        deleteMany: jest.fn(),
       },
     };
     service = new SlotsService(prisma as never);
@@ -175,5 +178,36 @@ describe('SlotsService', () => {
     await expect(service.updateStatus(404, { status: SlotStatus.MAINTENANCE })).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('deletes a slot after checking the slot exists', async () => {
+    prisma.slot.findUnique.mockResolvedValue({ id: 1 });
+    prisma.slot.delete.mockResolvedValue({ id: 1 });
+
+    const result = await service.remove(1);
+
+    expect(prisma.slot.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(result.id).toBe(1);
+  });
+
+  it('throws when deleting a missing slot', async () => {
+    prisma.slot.findUnique.mockResolvedValue(null);
+
+    await expect(service.remove(404)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('deletes multiple slots by id list', async () => {
+    prisma.slot.deleteMany.mockResolvedValue({ count: 2 });
+
+    const result = await service.removeBulk([1, 2]);
+
+    expect(prisma.slot.deleteMany).toHaveBeenCalledWith({ where: { id: { in: [1, 2] } } });
+    expect(result).toEqual({ count: 2 });
+  });
+
+  it('throws when bulk deleting with no matching slots', async () => {
+    prisma.slot.deleteMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.removeBulk([404])).rejects.toBeInstanceOf(NotFoundException);
   });
 });
