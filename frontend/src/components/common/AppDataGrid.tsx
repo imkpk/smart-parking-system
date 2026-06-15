@@ -1,29 +1,13 @@
-import { Box, Paper } from '@mui/material';
+import { Paper } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
   GridRowId,
+  GridRowSelectionModel,
   GridRowsProp,
-  GridToolbar,
   GridValidRowModel
 } from '@mui/x-data-grid';
-
-function AppGridToolbar() {
-  return (
-    <Box
-      sx={{
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        display: 'flex',
-        justifyContent: 'flex-end',
-        p: 1,
-        width: '100%'
-      }}
-    >
-      <GridToolbar />
-    </Box>
-  );
-}
+import { CustomToolbar } from '../../utils/CutsomToolbar';
 
 export function AppDataGrid<Row extends GridValidRowModel>({
   checkboxSelection = false,
@@ -44,6 +28,11 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
 }) {
+  const gridRowSelectionModel: GridRowSelectionModel = {
+    type: 'include',
+    ids: new Set(rowSelectionModel ?? [])
+  };
+
   return (
     <Paper
       elevation={0}
@@ -65,13 +54,14 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         }}
         loading={loading}
         onRowSelectionModelChange={(model) =>
-          onRowSelectionModelChange?.(Array.from(model))
+          onRowSelectionModelChange?.(Array.from(model.ids))
         }
         pageSizeOptions={[5, 10, 25]}
-        rowSelectionModel={rowSelectionModel}
+        rowSelectionModel={gridRowSelectionModel}
         rows={rows}
         density="comfortable"
-        slots={{ toolbar: AppGridToolbar }}
+        showToolbar
+        slots={{ toolbar: CustomToolbar }}
         sx={{
           border: 0,
           '& .MuiDataGrid-columnHeaders': {

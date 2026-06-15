@@ -2,7 +2,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -32,6 +31,7 @@ import {
 import { getParkingLots } from '../../api/parkingLotsApi';
 import { getMyVehicles, getVehicles } from '../../api/vehiclesApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
@@ -168,7 +168,7 @@ export function BookingsPage() {
         field: 'status',
         headerName: 'Status',
         minWidth: 140,
-        renderCell: ({ row }) => <Chip label={row.status} size="small" />,
+        renderCell: ({ row }) => <BookingStatusChip status={row.status} />,
       },
       {
         field: 'startTime',
