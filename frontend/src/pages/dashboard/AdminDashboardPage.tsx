@@ -1,9 +1,9 @@
 import {
   Alert,
   CircularProgress,
-  Grid,
   Stack,
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import {
   CalendarMonth,
   CheckCircle,

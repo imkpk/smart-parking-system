@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -22,6 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
@@ -900,7 +900,10 @@ function FloorSelect({
       <InputLabel>{label}</InputLabel>
       <Select
         label={label}
-        onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
+        onChange={(event) => {
+          const nextValue = event.target.value as number | '';
+          onChange(nextValue === '' ? '' : Number(nextValue));
+        }}
         value={value}
       >
         {floors.map((floor) => (
