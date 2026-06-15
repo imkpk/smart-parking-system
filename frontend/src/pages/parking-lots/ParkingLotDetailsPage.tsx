@@ -2,14 +2,12 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -23,6 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
@@ -41,8 +40,10 @@ import {
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { slotStatusStyles } from '../../lib/slotStatusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
   BulkSlotForm,
@@ -425,10 +426,21 @@ export function ParkingLotDetailsPage() {
                 <StatCard icon={<ViewModule />} label="Total Slots" value={slots.length} />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
-                <StatCard icon={<LocalParking />} label="Available" value={slotStatusCounts.AVAILABLE} />
+                <StatCard
+                  accentColor={slotStatusStyles.AVAILABLE.borderColor}
+                  icon={<LocalParking />}
+                  iconBgcolor={slotStatusStyles.AVAILABLE.bgcolor}
+                  label="Available"
+                  value={slotStatusCounts.AVAILABLE}
+                />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
-                <StatCard label="Occupied" value={slotStatusCounts.OCCUPIED} />
+                <StatCard
+                  accentColor={slotStatusStyles.OCCUPIED.borderColor}
+                  iconBgcolor={slotStatusStyles.OCCUPIED.bgcolor}
+                  label="Occupied"
+                  value={slotStatusCounts.OCCUPIED}
+                />
               </Grid>
               <Grid item xs={12}>
                 <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}>
@@ -755,7 +767,7 @@ function SlotsSection({
         field: 'status',
         headerName: 'Status',
         minWidth: 150,
-        renderCell: ({ row }) => <Chip label={row.status} size="small" />,
+        renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
       },
       {
         field: 'actions',
@@ -774,7 +786,7 @@ function SlotsSection({
               >
                 {slotStatusOptions.map((status) => (
                   <MenuItem key={status} value={status}>
-                    {status}
+                    <SlotStatusChip status={status} />
                   </MenuItem>
                 ))}
               </Select>
@@ -822,7 +834,7 @@ function SlotsSection({
               <MenuItem value="ALL">All Statuses</MenuItem>
               {slotStatusOptions.map((status) => (
                 <MenuItem key={status} value={status}>
-                  {status}
+                  <SlotStatusChip status={status} />
                 </MenuItem>
               ))}
             </Select>
@@ -888,7 +900,10 @@ function FloorSelect({
       <InputLabel>{label}</InputLabel>
       <Select
         label={label}
-        onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
+        onChange={(event) => {
+          const nextValue = event.target.value as number | '';
+          onChange(nextValue === '' ? '' : Number(nextValue));
+        }}
         value={value}
       >
         {floors.map((floor) => (
@@ -935,7 +950,7 @@ function SlotStatusSelect({
       <Select label="Status" onChange={(event) => onChange(event.target.value as SlotStatus)} value={value}>
         {slotStatusOptions.map((status) => (
           <MenuItem key={status} value={status}>
-            {status}
+            <SlotStatusChip status={status} />
           </MenuItem>
         ))}
       </Select>
