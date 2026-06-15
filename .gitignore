@@ -24,6 +24,7 @@ payment-service/.env
 payment-service/.env.local
 payment-service/src/main/resources/application-local.properties
 payment-service/src/main/resources/application-dev.properties
+# checkgin the push to main and develop
 
 # keep examples
 !.env.example
