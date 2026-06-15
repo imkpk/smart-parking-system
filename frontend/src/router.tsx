@@ -13,6 +13,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ParkingEventsPage } from './pages/parking-events/ParkingEventsPage';
 import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPage';
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
+import { PaymentsPage } from './pages/payments/PaymentsPage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
 export const router = createBrowserRouter([
@@ -102,6 +103,15 @@ export const router = createBrowserRouter([
               {
                 path: 'parking-events',
                 element: <ParkingEventsPage />,
+              },
+            ],
+          },
+          {
+            element: <RoleRoute allowedRoles={['ADMIN', 'USER']} />,
+            children: [
+              {
+                path: 'payments',
+                element: <PaymentsPage />,
               },
             ],
           },
