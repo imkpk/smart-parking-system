@@ -39,6 +39,11 @@ export async function getPayment(id: number) {
   return unwrap(response);
 }
 
+export async function getPayments() {
+  const response = await paymentApiClient.get<PaymentApiResponse<Payment[]>>('/payments');
+  return unwrap(response);
+}
+
 export async function getUserPayments(userId: number) {
   const response = await paymentApiClient.get<PaymentApiResponse<Payment[]>>(
     `/payments/user/${userId}`,

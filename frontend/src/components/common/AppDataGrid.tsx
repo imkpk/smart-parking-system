@@ -10,11 +10,12 @@ import {
 import { CustomToolbar } from '../../utils/CutsomToolbar';
 
 export function AppDataGrid<Row extends GridValidRowModel>({
-  checkboxSelection = false,
+  checkboxSelection = true,
   columns,
   getRowId,
   height = 500,
   loading = false,
+  noRowsLabel = 'No rows',
   onRowSelectionModelChange,
   rowSelectionModel,
   rows
@@ -22,16 +23,19 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   checkboxSelection?: boolean;
   columns: GridColDef<Row>[];
   getRowId?: (row: Row) => GridRowId;
-  height?: number | string;
+  height?: number | string | Record<string, number | string>;
   loading?: boolean;
+  noRowsLabel?: string;
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
 }) {
-  const gridRowSelectionModel: GridRowSelectionModel = {
-    type: 'include',
-    ids: new Set(rowSelectionModel ?? [])
-  };
+  const gridRowSelectionModel: GridRowSelectionModel | undefined = rowSelectionModel
+    ? {
+        type: 'include',
+        ids: new Set(rowSelectionModel)
+      }
+    : undefined;
 
   return (
     <Paper
@@ -53,8 +57,11 @@ export function AppDataGrid<Row extends GridValidRowModel>({
           }
         }}
         loading={loading}
-        onRowSelectionModelChange={(model) =>
-          onRowSelectionModelChange?.(Array.from(model.ids))
+        localeText={{ noRowsLabel }}
+        onRowSelectionModelChange={
+          onRowSelectionModelChange
+            ? (model) => onRowSelectionModelChange(Array.from(model.ids))
+            : undefined
         }
         pageSizeOptions={[5, 10, 25]}
         rowSelectionModel={gridRowSelectionModel}

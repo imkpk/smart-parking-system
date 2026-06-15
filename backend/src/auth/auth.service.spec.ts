@@ -15,6 +15,7 @@ describe('AuthService', () => {
   let jwtService: { sign: jest.Mock };
   let usersService: {
     findByEmail: jest.Mock;
+    findByPhone: jest.Mock;
     create: jest.Mock;
     toSafeUser: jest.Mock;
   };
@@ -23,6 +24,7 @@ describe('AuthService', () => {
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
     usersService = {
       findByEmail: jest.fn(),
+      findByPhone: jest.fn(),
       create: jest.fn(),
       toSafeUser: jest.fn(),
     };
@@ -33,6 +35,7 @@ describe('AuthService', () => {
 
   it('registers a user with a hashed password and returns a token', async () => {
     usersService.findByEmail.mockResolvedValue(null);
+    usersService.findByPhone.mockResolvedValue(null);
     jest.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never);
     usersService.create.mockResolvedValue(normalUser);
 
@@ -72,6 +75,22 @@ describe('AuthService', () => {
         role: normalUser.role,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('blocks duplicate phone registration', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.findByPhone.mockResolvedValue(userRecord);
+
+    await expect(
+      service.register({
+        name: normalUser.name,
+        email: 'new@example.com',
+        phone: normalUser.phone ?? undefined,
+        password: 'password123',
+        role: normalUser.role,
+      }),
+    ).rejects.toThrow('Phone number already exists');
+    expect(usersService.create).not.toHaveBeenCalled();
   });
 
   it('logs in with a valid password', async () => {

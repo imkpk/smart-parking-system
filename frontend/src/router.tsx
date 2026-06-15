@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN', 'USER']} />,
+            element: <RoleRoute allowedRoles={['ADMIN', 'SECURITY', 'USER']} />,
             children: [
               {
                 path: 'payments',
