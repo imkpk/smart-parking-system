@@ -10,7 +10,7 @@ import {
 import { CustomToolbar } from '../../utils/CutsomToolbar';
 
 export function AppDataGrid<Row extends GridValidRowModel>({
-  checkboxSelection = false,
+  checkboxSelection = true,
   columns,
   getRowId,
   height = 500,
@@ -30,10 +30,12 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
 }) {
-  const gridRowSelectionModel: GridRowSelectionModel = {
-    type: 'include',
-    ids: new Set(rowSelectionModel ?? [])
-  };
+  const gridRowSelectionModel: GridRowSelectionModel | undefined = rowSelectionModel
+    ? {
+        type: 'include',
+        ids: new Set(rowSelectionModel)
+      }
+    : undefined;
 
   return (
     <Paper
@@ -56,8 +58,10 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         }}
         loading={loading}
         localeText={{ noRowsLabel }}
-        onRowSelectionModelChange={(model) =>
-          onRowSelectionModelChange?.(Array.from(model.ids))
+        onRowSelectionModelChange={
+          onRowSelectionModelChange
+            ? (model) => onRowSelectionModelChange(Array.from(model.ids))
+            : undefined
         }
         pageSizeOptions={[5, 10, 25]}
         rowSelectionModel={gridRowSelectionModel}

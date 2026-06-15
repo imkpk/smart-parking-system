@@ -8,7 +8,6 @@ import {
   DialogTitle,
   Divider,
   Paper,
-  Snackbar,
   Stack,
   Tab,
   Tabs,
@@ -27,34 +26,165 @@ import {
   getParkingEvents,
 } from '../../api/parkingEventsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
-import { DetailsDialog } from '../../components/common/DetailsDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
+import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
-import { createDetailsColumn } from '../../components/common/gridColumns';
+import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
+import {
+  createBookingColumn,
+  createDateTimeColumn,
+  createDetailsColumn,
+  createSessionColumn,
+  createStatusColumn,
+  createVehicleColumn,
+} from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
-import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { useUserRole } from '../../hooks/useUserRole';
+import { getApiErrorMessage } from '../../lib/apiError';
 import { formatDateTime, formatRupees } from '../../lib/formatters';
-import { useAuth } from '../../providers/AuthProvider';
 import { CheckOutResult, ParkingEvent } from '../../types/parkingEvent';
-import { SnackbarState } from '../../types/ui';
 
 type EventTab = 'active' | 'history';
 
+function buildParkingEventSummaryRows(
+  event: ParkingEvent,
+  labels: ReturnType<typeof useReferenceLabels>,
+): DetailsRow[] {
+  return [
+    { label: 'Session No', value: labels.getSessionLabel(event.id) },
+    { label: 'Booking No', value: labels.getBookingLabel(event.bookingId) },
+    { label: 'Vehicle', value: labels.getVehicleLabel(event.vehicleId) },
+    { label: 'Parking Lot', value: labels.getParkingLotLabel(event.parkingLotId) },
+    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
+    { label: 'Status', value: <ParkingEventStatusChip status={event.status} /> },
+    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
+    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) },
+  ];
+}
+
+function buildParkingEventTechnicalRows(event: ParkingEvent): DetailsRow[] {
+  return [
+    { label: 'Event ID', value: event.id },
+    { label: 'Booking ID', value: event.bookingId },
+    { label: 'User ID', value: event.userId },
+    { label: 'Vehicle ID', value: event.vehicleId },
+    { label: 'Slot ID', value: event.slotId },
+    { label: 'Lot ID', value: event.parkingLotId },
+  ];
+}
+
+function buildParkingEventHistoryColumns({
+  isUser,
+  labels,
+  onViewDetails,
+}: {
+  isUser: boolean;
+  labels: ReturnType<typeof useReferenceLabels>;
+  onViewDetails: (event: ParkingEvent) => void;
+}): GridColDef<ParkingEvent>[] {
+  const adminOnlyColumns: GridColDef<ParkingEvent>[] = isUser
+    ? []
+    : [createSessionColumn<ParkingEvent>((row) => labels.getSessionLabel(row.id))];
+
+  return [
+    ...adminOnlyColumns,
+    createBookingColumn<ParkingEvent>((row) => labels.getBookingLabel(row.bookingId)),
+    createVehicleColumn<ParkingEvent>((row) => labels.getVehicleLabel(row.vehicleId)),
+    {
+      field: 'parkingLotId',
+      flex: 1,
+      headerName: 'Parking Lot',
+      minWidth: 180,
+      valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
+    },
+    {
+      field: 'slotId',
+      headerName: 'Slot',
+      minWidth: 130,
+      valueGetter: (_value, row) => labels.getSlotLabel(row.slotId),
+    },
+    createStatusColumn<ParkingEvent>((row) => <ParkingEventStatusChip status={row.status} />),
+    createDateTimeColumn<ParkingEvent>('checkInTime', 'Checked In At', (row) => row.checkInTime),
+    createDateTimeColumn<ParkingEvent>(
+      'checkOutTime',
+      'Checked Out At',
+      (row) => row.checkOutTime,
+    ),
+    {
+      field: 'durationMinutes',
+      headerName: 'Duration',
+      minWidth: 130,
+      valueGetter: (_value, row) =>
+        row.durationMinutes === null ? '-' : `${row.durationMinutes} min`,
+    },
+    {
+      field: 'feeAmount',
+      headerName: 'Fee',
+      minWidth: 120,
+      valueGetter: (_value, row) => formatRupees(row.feeAmount),
+    },
+    createDetailsColumn<ParkingEvent>(onViewDetails),
+  ];
+}
+
+function buildCheckoutResultRows(checkoutResult: CheckOutResult): DetailsRow[] {
+  return [
+    { label: 'Event', value: `#${checkoutResult.parkingEvent.id}` },
+    {
+      label: 'Duration',
+      value: `${checkoutResult.parkingEvent.durationMinutes ?? 0} min`,
+    },
+    { label: 'Fee', value: formatRupees(checkoutResult.parkingEvent.feeAmount) },
+    { label: 'Payment Initiated', value: checkoutResult.paymentInitiated ? 'Yes' : 'No' },
+    ...(checkoutResult.payment?.status
+      ? [{ label: 'Payment Status', value: checkoutResult.payment.status }]
+      : []),
+  ];
+}
+
+function CheckoutResultDialog({
+  checkoutResult,
+  onClose,
+}: {
+  checkoutResult: CheckOutResult | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog fullWidth maxWidth="sm" onClose={onClose} open={Boolean(checkoutResult)}>
+      <DialogTitle>Check-out Result</DialogTitle>
+      <DialogContent>
+        {checkoutResult ? (
+          <Stack spacing={2}>
+            <InfoRows rows={buildCheckoutResultRows(checkoutResult)} />
+            {checkoutResult.paymentError ? (
+              <Alert severity="warning">{checkoutResult.paymentError}</Alert>
+            ) : null}
+          </Stack>
+        ) : null}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} variant="contained">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export function ParkingEventsPage() {
-  const { user } = useAuth();
+  const { user, isSecurity, isAdmin, isUser, canOperateParkingEvents } = useUserRole();
   const queryClient = useQueryClient();
-  const isSecurity = user?.role === 'SECURITY';
-  const isAdmin = user?.role === 'ADMIN';
-  const isUser = user?.role === 'USER';
-  const canOperateParkingEvents = isAdmin || isSecurity;
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [activeTab, setActiveTab] = useState<EventTab>(isUser ? 'history' : 'active');
   const [bookingCode, setBookingCode] = useState('');
   const [bookingId, setBookingId] = useState('');
   const [checkoutTarget, setCheckoutTarget] = useState<ParkingEvent | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<CheckOutResult | null>(null);
   const [detailsEvent, setDetailsEvent] = useState<ParkingEvent | null>(null);
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
@@ -87,12 +217,9 @@ export function ParkingEventsPage() {
       await invalidateParkingEvents();
       setBookingCode('');
       setBookingId('');
-      setSnackbar({
-        message: `Checked in booking #${parkingEvent.bookingId}.`,
-        severity: 'success',
-      });
+      showSuccess(`Checked in booking #${parkingEvent.bookingId}.`);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const checkOutMutation = useMutation({
     mutationFn: checkOutParkingEvent,
@@ -100,32 +227,16 @@ export function ParkingEventsPage() {
       await invalidateParkingEvents();
       setCheckoutTarget(null);
       setCheckoutResult(result);
-      setSnackbar({ message: 'Parking event checked out.', severity: 'success' });
+      showSuccess('Parking event checked out.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const activeColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () => [
-      {
-        field: 'id',
-        headerName: 'Session No',
-        minWidth: 130,
-        valueGetter: (_value, row) => labels.getSessionLabel(row.id),
-      },
-      {
-        field: 'bookingId',
-        flex: 1,
-        headerName: 'Booking No',
-        minWidth: 210,
-        valueGetter: (_value, row) => labels.getBookingLabel(row.bookingId),
-      },
-      {
-        field: 'vehicleId',
-        headerName: 'Vehicle',
-        minWidth: 160,
-        valueGetter: (_value, row) => labels.getVehicleLabel(row.vehicleId),
-      },
+      createSessionColumn<ParkingEvent>((row) => labels.getSessionLabel(row.id)),
+      createBookingColumn<ParkingEvent>((row) => labels.getBookingLabel(row.bookingId)),
+      createVehicleColumn<ParkingEvent>((row) => labels.getVehicleLabel(row.vehicleId)),
       {
         field: 'slotId',
         headerName: 'Slot',
@@ -139,19 +250,13 @@ export function ParkingEventsPage() {
         minWidth: 180,
         valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
       },
-      {
-        field: 'status',
-        headerName: 'Status',
-        minWidth: 130,
-        renderCell: ({ row }) => <ParkingEventStatusChip status={row.status} />,
-      },
-      {
-        field: 'checkInTime',
-        flex: 1,
-        headerName: 'Checked In At',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkInTime),
-      },
+      createStatusColumn<ParkingEvent>((row) => <ParkingEventStatusChip status={row.status} />),
+      createDateTimeColumn<ParkingEvent>(
+        'checkInTime',
+        'Checked In At',
+        (row) => row.checkInTime,
+        { flex: 1 },
+      ),
       createDetailsColumn<ParkingEvent>(setDetailsEvent),
       ...(canOperateParkingEvents
         ? [
@@ -184,76 +289,12 @@ export function ParkingEventsPage() {
   );
 
   const historyColumns = useMemo<GridColDef<ParkingEvent>[]>(
-    () => [
-      ...(isUser
-        ? []
-        : [
-            {
-              field: 'id',
-              headerName: 'Session No',
-              minWidth: 130,
-              valueGetter: (_value, row) => labels.getSessionLabel(row.id),
-            } satisfies GridColDef<ParkingEvent>,
-          ]),
-      {
-        field: 'bookingId',
-        flex: 1,
-        headerName: 'Booking No',
-        minWidth: 210,
-        valueGetter: (_value, row) => labels.getBookingLabel(row.bookingId),
-      },
-      {
-        field: 'vehicleId',
-        headerName: 'Vehicle',
-        minWidth: 160,
-        valueGetter: (_value, row) => labels.getVehicleLabel(row.vehicleId),
-      },
-      {
-        field: 'parkingLotId',
-        flex: 1,
-        headerName: 'Parking Lot',
-        minWidth: 180,
-        valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
-      },
-      {
-        field: 'slotId',
-        headerName: 'Slot',
-        minWidth: 130,
-        valueGetter: (_value, row) => labels.getSlotLabel(row.slotId),
-      },
-      {
-        field: 'status',
-        headerName: 'Status',
-        minWidth: 130,
-        renderCell: ({ row }) => <ParkingEventStatusChip status={row.status} />,
-      },
-      {
-        field: 'checkInTime',
-        headerName: 'Checked In At',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkInTime),
-      },
-      {
-        field: 'checkOutTime',
-        headerName: 'Checked Out At',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkOutTime),
-      },
-      {
-        field: 'durationMinutes',
-        headerName: 'Duration',
-        minWidth: 130,
-        valueGetter: (_value, row) =>
-          row.durationMinutes === null ? '-' : `${row.durationMinutes} min`,
-      },
-      {
-        field: 'feeAmount',
-        headerName: 'Fee',
-        minWidth: 120,
-        valueGetter: (_value, row) => formatRupees(row.feeAmount),
-      },
-      createDetailsColumn<ParkingEvent>(setDetailsEvent),
-    ],
+    () =>
+      buildParkingEventHistoryColumns({
+        isUser,
+        labels,
+        onViewDetails: setDetailsEvent,
+      }),
     [isUser, labels],
   );
 
@@ -263,10 +304,7 @@ export function ParkingEventsPage() {
     const trimmedBookingId = bookingId.trim();
 
     if (!trimmedBookingCode && !trimmedBookingId) {
-      setSnackbar({
-        message: 'Enter booking code or booking ID.',
-        severity: 'error',
-      });
+      showError('Enter booking code or booking ID.');
       return;
     }
 
@@ -278,10 +316,7 @@ export function ParkingEventsPage() {
     const parsedBookingId = Number(trimmedBookingId);
 
     if (!Number.isInteger(parsedBookingId) || parsedBookingId <= 0) {
-      setSnackbar({
-        message: 'Enter a valid booking ID.',
-        severity: 'error',
-      });
+      showError('Enter a valid booking ID.');
       return;
     }
 
@@ -373,11 +408,10 @@ export function ParkingEventsPage() {
       {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
-            <Alert severity={isForbiddenError(activeError) ? 'warning' : 'error'}>
-              {isForbiddenError(activeError)
-                ? 'Access denied.'
-                : getApiErrorMessage(activeError, 'Could not load active parking events.')}
-            </Alert>
+            <QueryErrorAlert
+              error={activeError}
+              fallbackMessage="Could not load active parking events."
+            />
           ) : null}
           <AppDataGrid
             columns={activeColumns}
@@ -397,11 +431,10 @@ export function ParkingEventsPage() {
             </>
           ) : null}
           {historyError ? (
-            <Alert severity={isForbiddenError(historyError) ? 'warning' : 'error'}>
-              {isForbiddenError(historyError)
-                ? 'Access denied.'
-                : getApiErrorMessage(historyError, 'Could not load parking event history.')}
-            </Alert>
+            <QueryErrorAlert
+              error={historyError}
+              fallbackMessage="Could not load parking event history."
+            />
           ) : null}
           <AppDataGrid
             columns={historyColumns}
@@ -434,88 +467,16 @@ export function ParkingEventsPage() {
         onClose={() => setDetailsEvent(null)}
         open={Boolean(detailsEvent)}
         title="Parking Session Details"
-        summaryRows={
-          detailsEvent
-            ? [
-                { label: 'Session No', value: labels.getSessionLabel(detailsEvent.id) },
-                { label: 'Booking No', value: labels.getBookingLabel(detailsEvent.bookingId) },
-                { label: 'Vehicle', value: labels.getVehicleLabel(detailsEvent.vehicleId) },
-                {
-                  label: 'Parking Lot',
-                  value: labels.getParkingLotLabel(detailsEvent.parkingLotId),
-                },
-                { label: 'Slot', value: labels.getSlotLabel(detailsEvent.slotId) },
-                { label: 'Status', value: <ParkingEventStatusChip status={detailsEvent.status} /> },
-                { label: 'Checked In At', value: formatDateTime(detailsEvent.checkInTime) },
-                { label: 'Checked Out At', value: formatDateTime(detailsEvent.checkOutTime) },
-              ]
-            : []
-        }
-        technicalRows={
-          detailsEvent
-            ? [
-                { label: 'Event ID', value: detailsEvent.id },
-                { label: 'Booking ID', value: detailsEvent.bookingId },
-                { label: 'User ID', value: detailsEvent.userId },
-                { label: 'Vehicle ID', value: detailsEvent.vehicleId },
-                { label: 'Slot ID', value: detailsEvent.slotId },
-                { label: 'Lot ID', value: detailsEvent.parkingLotId },
-              ]
-            : []
-        }
+        summaryRows={detailsEvent ? buildParkingEventSummaryRows(detailsEvent, labels) : []}
+        technicalRows={detailsEvent ? buildParkingEventTechnicalRows(detailsEvent) : []}
       />
 
-      <Dialog fullWidth maxWidth="sm" onClose={() => setCheckoutResult(null)} open={Boolean(checkoutResult)}>
-        <DialogTitle>Check-out Result</DialogTitle>
-        <DialogContent>
-          {checkoutResult ? (
-            <Stack spacing={2}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Event</Typography>
-                <Typography fontWeight={700}>#{checkoutResult.parkingEvent.id}</Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Duration</Typography>
-                <Typography fontWeight={700}>
-                  {checkoutResult.parkingEvent.durationMinutes ?? 0} min
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Fee</Typography>
-                <Typography fontWeight={700}>
-                  {formatRupees(checkoutResult.parkingEvent.feeAmount)}
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Payment Initiated</Typography>
-                <Typography fontWeight={700}>
-                  {checkoutResult.paymentInitiated ? 'Yes' : 'No'}
-                </Typography>
-              </Stack>
-              {checkoutResult.payment?.status ? (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography color="text.secondary">Payment Status</Typography>
-                  <Typography fontWeight={700}>{checkoutResult.payment.status}</Typography>
-                </Stack>
-              ) : null}
-              {checkoutResult.paymentError ? (
-                <Alert severity="warning">{checkoutResult.paymentError}</Alert>
-              ) : null}
-            </Stack>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckoutResult(null)} variant="contained">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CheckoutResultDialog
+        checkoutResult={checkoutResult}
+        onClose={() => setCheckoutResult(null)}
+      />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

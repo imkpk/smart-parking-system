@@ -6,7 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -31,36 +30,58 @@ import {
   mockPaymentSuccess,
 } from '../../api/paymentsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
-import { DetailsDialog } from '../../components/common/DetailsDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
+import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatCard } from '../../components/common/StatCard';
-import { createDetailsColumn } from '../../components/common/gridColumns';
+import {
+  createBookingColumn,
+  createDateTimeColumn,
+  createDetailsColumn,
+} from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
-import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { useUserRole } from '../../hooks/useUserRole';
+import { getApiErrorMessage } from '../../lib/apiError';
 import { formatCurrency, formatDateTime } from '../../lib/formatters';
 import { paymentStatusStyles } from '../../lib/paymentStatusStyles';
-import { useAuth } from '../../providers/AuthProvider';
 import { Payment } from '../../types/payment';
-import { SnackbarState } from '../../types/ui';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
 
+function buildPaymentSummaryRows(payment: Payment, labels: ReturnType<typeof useReferenceLabels>): DetailsRow[] {
+  return [
+    { label: 'Receipt No', value: `Receipt #${payment.id}` },
+    { label: 'Booking No', value: labels.getBookingLabel(payment.bookingId) },
+    { label: 'Vehicle', value: labels.getVehicleLabelForBooking(payment.bookingId) },
+    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
+    { label: 'Status', value: <PaymentStatusChip status={payment.status} /> },
+    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+  ];
+}
+
+function buildPaymentTechnicalRows(payment: Payment): DetailsRow[] {
+  return [
+    { label: 'Payment ID', value: payment.id },
+    { label: 'Event ID', value: payment.parkingEventId },
+    { label: 'Booking ID', value: payment.bookingId },
+    { label: 'User ID', value: payment.userId },
+  ];
+}
+
 export function PaymentsPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, isSecurity, isUser, canViewOperationalPayments } = useUserRole();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'ADMIN';
-  const isSecurity = user?.role === 'SECURITY';
-  const isUser = user?.role === 'USER';
-  const canViewOperationalPayments = isAdmin || isSecurity;
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
   const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const summaryQuery = useQuery({
     queryKey: ['payments', 'summary'],
@@ -100,20 +121,20 @@ export function PaymentsPage() {
     mutationFn: mockPaymentSuccess,
     onSuccess: async () => {
       await invalidatePayments();
-      setSnackbar({ message: 'Payment marked SUCCESS.', severity: 'success' });
+      showSuccess('Payment marked SUCCESS.');
       setActionTarget(null);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const mockFailureMutation = useMutation({
     mutationFn: mockPaymentFailure,
     onSuccess: async () => {
       await invalidatePayments();
-      setSnackbar({ message: 'Payment marked FAILED.', severity: 'success' });
+      showSuccess('Payment marked FAILED.');
       setActionTarget(null);
       setFailureReason('Mock provider declined payment');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const baseRows = useMemo(() => {
@@ -170,13 +191,7 @@ export function PaymentsPage() {
         minWidth: 150,
         valueGetter: (_value, row) => labels.getSessionLabel(row.parkingEventId),
       },
-      {
-        field: 'bookingId',
-        flex: 1,
-        headerName: 'Booking No',
-        minWidth: 210,
-        valueGetter: (_value, row) => labels.getBookingLabel(row.bookingId),
-      },
+      createBookingColumn<Payment>((row) => labels.getBookingLabel(row.bookingId)),
       ...(isAdmin || isSecurity
         ? [
             {
@@ -222,12 +237,7 @@ export function PaymentsPage() {
         minWidth: 220,
         valueGetter: (_value, row) => row.failureReason ?? '-',
       },
-      {
-        field: 'createdAt',
-        headerName: 'Paid/Created On',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.createdAt),
-      },
+      createDateTimeColumn<Payment>('createdAt', 'Paid/Created On', (row) => row.createdAt),
       createDetailsColumn<Payment>(setDetailsPayment),
       ...(isAdmin
         ? [
@@ -277,7 +287,7 @@ export function PaymentsPage() {
     const trimmedValue = searchInput.trim();
 
     if (!trimmedValue) {
-      setSnackbar({ message: 'Enter a value to search', severity: 'error' });
+      showError('Enter a value to search');
       return;
     }
 
@@ -323,13 +333,10 @@ export function PaymentsPage() {
         }
       />
 
-      {summaryQuery.error ? (
-        <Alert severity={isForbiddenError(summaryQuery.error) ? 'warning' : 'error'}>
-          {isForbiddenError(summaryQuery.error)
-            ? 'Access denied.'
-            : getApiErrorMessage(summaryQuery.error, 'Could not load payment summary.')}
-        </Alert>
-      ) : null}
+      <QueryErrorAlert
+        error={summaryQuery.error}
+        fallbackMessage="Could not load payment summary."
+      />
 
       {isAdmin ? (
         <Box
@@ -398,13 +405,7 @@ export function PaymentsPage() {
         </Stack>
       </Box>
 
-      {paymentError ? (
-        <Alert severity={isForbiddenError(paymentError) ? 'warning' : 'error'}>
-          {isForbiddenError(paymentError)
-            ? 'Access denied.'
-            : getApiErrorMessage(paymentError, 'Could not load payments.')}
-        </Alert>
-      ) : null}
+      <QueryErrorAlert error={paymentError} fallbackMessage="Could not load payments." />
 
       <AppDataGrid
         columns={columns}
@@ -424,31 +425,8 @@ export function PaymentsPage() {
         onClose={() => setDetailsPayment(null)}
         open={Boolean(detailsPayment)}
         title="Payment Details"
-        summaryRows={
-          detailsPayment
-            ? [
-                { label: 'Receipt No', value: `Receipt #${detailsPayment.id}` },
-                { label: 'Booking No', value: labels.getBookingLabel(detailsPayment.bookingId) },
-                { label: 'Vehicle', value: labels.getVehicleLabelForBooking(detailsPayment.bookingId) },
-                {
-                  label: 'Amount',
-                  value: formatCurrency(detailsPayment.amount, detailsPayment.currency),
-                },
-                { label: 'Status', value: <PaymentStatusChip status={detailsPayment.status} /> },
-                { label: 'Payment Reference', value: detailsPayment.providerReference ?? '-' },
-              ]
-            : []
-        }
-        technicalRows={
-          detailsPayment
-            ? [
-                { label: 'Payment ID', value: detailsPayment.id },
-                { label: 'Event ID', value: detailsPayment.parkingEventId },
-                { label: 'Booking ID', value: detailsPayment.bookingId },
-                { label: 'User ID', value: detailsPayment.userId },
-              ]
-            : []
-        }
+        summaryRows={detailsPayment ? buildPaymentSummaryRows(detailsPayment, labels) : []}
+        technicalRows={detailsPayment ? buildPaymentTechnicalRows(detailsPayment) : []}
       />
 
       <ConfirmDialog
@@ -513,11 +491,7 @@ export function PaymentsPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }
