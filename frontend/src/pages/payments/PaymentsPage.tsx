@@ -12,7 +12,13 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import { CheckCircle, ErrorOutline, Payments, ReceiptLong, Search } from '@mui/icons-material';
+import {
+  CheckCircle,
+  ErrorOutline,
+  Payments,
+  ReceiptLong,
+  Search,
+} from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useMemo, useState } from 'react';
@@ -26,28 +32,20 @@ import {
 } from '../../api/paymentsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
 import { StatCard } from '../../components/common/StatCard';
+import { createDetailsColumn } from '../../components/common/gridColumns';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { formatCurrency, formatDateTime } from '../../lib/formatters';
 import { paymentStatusStyles } from '../../lib/paymentStatusStyles';
 import { useAuth } from '../../providers/AuthProvider';
 import { Payment } from '../../types/payment';
+import { SnackbarState } from '../../types/ui';
 
-type SnackbarState = { message: string; severity: 'success' | 'error' } | null;
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
-
-function formatCurrency(amount: number | string | null | undefined, currency = 'INR') {
-  if (amount === null || amount === undefined) {
-    return '-';
-  }
-
-  return `${currency} ${Number(amount).toFixed(2)}`;
-}
-
-function formatDateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString() : '-';
-}
 
 export function PaymentsPage() {
   const { user } = useAuth();
@@ -60,6 +58,7 @@ export function PaymentsPage() {
   const [appliedSearch, setAppliedSearch] = useState('');
   const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
+  const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
   const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
@@ -83,11 +82,17 @@ export function PaymentsPage() {
     queryFn: () => getPayment(lookupPaymentId!),
     enabled: canViewOperationalPayments && Boolean(lookupPaymentId),
   });
+  const labels = useReferenceLabels({
+    context: 'payment-enrichment',
+    includeUsers: isAdmin,
+    role: user?.role,
+  });
 
   const invalidatePayments = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['payments'] }),
       queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
+      queryClient.invalidateQueries({ queryKey: ['bookings'] }),
     ]);
   };
 
@@ -135,6 +140,8 @@ export function PaymentsPage() {
         payment.id,
         payment.parkingEventId,
         payment.bookingId,
+        labels.getBookingCode(payment.bookingId),
+        labels.getVehicleLabelForBooking(payment.bookingId),
         payment.userId,
         payment.status,
         payment.paymentMethod,
@@ -147,14 +154,46 @@ export function PaymentsPage() {
         String(value ?? '').toLowerCase().includes(trimmedSearch),
       );
     });
-  }, [appliedSearch, baseRows, lookupPaymentQuery.data]);
+  }, [appliedSearch, baseRows, labels, lookupPaymentQuery.data]);
 
   const columns = useMemo<GridColDef<Payment>[]>(
     () => [
-      { field: 'id', headerName: 'Payment ID', minWidth: 120 },
-      { field: 'parkingEventId', headerName: 'Event ID', minWidth: 120 },
-      { field: 'bookingId', headerName: 'Booking ID', minWidth: 120 },
-      { field: 'userId', headerName: 'User ID', minWidth: 110 },
+      {
+        field: 'id',
+        headerName: 'Receipt No',
+        minWidth: 130,
+        valueGetter: (_value, row) => `Receipt #${row.id}`,
+      },
+      {
+        field: 'parkingEventId',
+        headerName: 'Parking Session',
+        minWidth: 150,
+        valueGetter: (_value, row) => labels.getSessionLabel(row.parkingEventId),
+      },
+      {
+        field: 'bookingId',
+        flex: 1,
+        headerName: 'Booking No',
+        minWidth: 210,
+        valueGetter: (_value, row) => labels.getBookingLabel(row.bookingId),
+      },
+      ...(isAdmin || isSecurity
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+            } satisfies GridColDef<Payment>,
+          ]
+        : []),
+      {
+        field: 'vehicle',
+        headerName: 'Vehicle',
+        minWidth: 160,
+        valueGetter: (_value, row) => labels.getVehicleLabelForBooking(row.bookingId),
+      },
       {
         field: 'amount',
         headerName: 'Amount',
@@ -172,7 +211,7 @@ export function PaymentsPage() {
       {
         field: 'providerReference',
         flex: 1,
-        headerName: 'Provider Reference',
+        headerName: 'Payment Reference',
         minWidth: 220,
         valueGetter: (_value, row) => row.providerReference ?? '-',
       },
@@ -185,10 +224,11 @@ export function PaymentsPage() {
       },
       {
         field: 'createdAt',
-        headerName: 'Created At',
+        headerName: 'Paid/Created On',
         minWidth: 190,
         valueGetter: (_value, row) => formatDateTime(row.createdAt),
       },
+      createDetailsColumn<Payment>(setDetailsPayment),
       ...(isAdmin
         ? [
             {
@@ -229,7 +269,7 @@ export function PaymentsPage() {
           ]
         : []),
     ],
-    [isAdmin],
+    [isAdmin, isSecurity, labels],
   );
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -378,6 +418,37 @@ export function PaymentsPage() {
               : 'You have no payment history yet'
         }
         rows={rows}
+      />
+
+      <DetailsDialog
+        onClose={() => setDetailsPayment(null)}
+        open={Boolean(detailsPayment)}
+        title="Payment Details"
+        summaryRows={
+          detailsPayment
+            ? [
+                { label: 'Receipt No', value: `Receipt #${detailsPayment.id}` },
+                { label: 'Booking No', value: labels.getBookingLabel(detailsPayment.bookingId) },
+                { label: 'Vehicle', value: labels.getVehicleLabelForBooking(detailsPayment.bookingId) },
+                {
+                  label: 'Amount',
+                  value: formatCurrency(detailsPayment.amount, detailsPayment.currency),
+                },
+                { label: 'Status', value: <PaymentStatusChip status={detailsPayment.status} /> },
+                { label: 'Payment Reference', value: detailsPayment.providerReference ?? '-' },
+              ]
+            : []
+        }
+        technicalRows={
+          detailsPayment
+            ? [
+                { label: 'Payment ID', value: detailsPayment.id },
+                { label: 'Event ID', value: detailsPayment.parkingEventId },
+                { label: 'Booking ID', value: detailsPayment.bookingId },
+                { label: 'User ID', value: detailsPayment.userId },
+              ]
+            : []
+        }
       />
 
       <ConfirmDialog
