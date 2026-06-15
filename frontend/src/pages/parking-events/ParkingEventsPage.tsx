@@ -8,14 +8,12 @@ import {
   DialogTitle,
   Divider,
   Paper,
-  Snackbar,
   Stack,
   Tab,
   Tabs,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
 import { Login, Logout } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,53 +23,223 @@ import {
   checkOutParkingEvent,
   getActiveParkingEvents,
   getParkingEventHistory,
-  getParkingEvents,
+  getParkingEvents
 } from '../../api/parkingEventsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import {
+  DetailsDialog,
+  DetailsRow
+} from '../../components/common/DetailsDialog';
+import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
-import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { useAuth } from '../../providers/AuthProvider';
+import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
+import {
+  createBookingColumn,
+  createDateTimeColumn,
+  createDetailsColumn,
+  createSessionColumn,
+  createStatusColumn,
+  createVehicleColumn
+} from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
+import { useUserRole } from '../../hooks/useUserRole';
+import { getApiErrorMessage } from '../../lib/apiError';
+import { formatDateTime, formatRupees } from '../../lib/formatters';
 import { CheckOutResult, ParkingEvent } from '../../types/parkingEvent';
 
-type SnackbarState = { message: string; severity: 'success' | 'error' } | null;
 type EventTab = 'active' | 'history';
 
-function formatDateTime(value: string | null) {
-  return value ? new Date(value).toLocaleString() : '-';
+function buildParkingEventSummaryRows(
+  event: ParkingEvent,
+  labels: ReturnType<typeof useReferenceLabels>
+): DetailsRow[] {
+  return [
+    { label: 'Session No', value: labels.getSessionLabel(event.id) },
+    { label: 'Booking No', value: labels.getBookingLabel(event.bookingId) },
+    { label: 'Vehicle', value: labels.getVehicleLabel(event.vehicleId) },
+    {
+      label: 'Parking Lot',
+      value: labels.getParkingLotLabel(event.parkingLotId)
+    },
+    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
+    {
+      label: 'Status',
+      value: <ParkingEventStatusChip status={event.status} />
+    },
+    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
+    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) }
+  ];
 }
 
-function formatCurrency(value: number | string | null) {
-  if (value === null || value === undefined) {
-    return '-';
-  }
+function buildParkingEventTechnicalRows(event: ParkingEvent): DetailsRow[] {
+  return [
+    { label: 'Event ID', value: event.id },
+    { label: 'Booking ID', value: event.bookingId },
+    { label: 'User ID', value: event.userId },
+    { label: 'Vehicle ID', value: event.vehicleId },
+    { label: 'Slot ID', value: event.slotId },
+    { label: 'Lot ID', value: event.parkingLotId }
+  ];
+}
 
-  return `₹${Number(value).toFixed(2)}`;
+function buildParkingEventHistoryColumns({
+  isUser,
+  labels,
+  onViewDetails
+}: {
+  isUser: boolean;
+  labels: ReturnType<typeof useReferenceLabels>;
+  onViewDetails: (event: ParkingEvent) => void;
+}): GridColDef<ParkingEvent>[] {
+  const adminOnlyColumns: GridColDef<ParkingEvent>[] = isUser
+    ? []
+    : [
+        createSessionColumn<ParkingEvent>((row) =>
+          labels.getSessionLabel(row.id)
+        )
+      ];
+
+  return [
+    ...adminOnlyColumns,
+    createBookingColumn<ParkingEvent>((row) =>
+      labels.getBookingLabel(row.bookingId)
+    ),
+    createVehicleColumn<ParkingEvent>((row) =>
+      labels.getVehicleLabel(row.vehicleId)
+    ),
+    {
+      field: 'parkingLotId',
+      flex: 1,
+      headerName: 'Parking Lot',
+      minWidth: 180,
+      valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId)
+    },
+    {
+      field: 'slotId',
+      headerName: 'Slot',
+      minWidth: 130,
+      valueGetter: (_value, row) => labels.getSlotLabel(row.slotId)
+    },
+    createStatusColumn<ParkingEvent>((row) => (
+      <ParkingEventStatusChip status={row.status} />
+    )),
+    createDateTimeColumn<ParkingEvent>(
+      'checkInTime',
+      'Checked In At',
+      (row) => row.checkInTime
+    ),
+    createDateTimeColumn<ParkingEvent>(
+      'checkOutTime',
+      'Checked Out At',
+      (row) => row.checkOutTime
+    ),
+    {
+      field: 'durationMinutes',
+      headerName: 'Duration',
+      minWidth: 130,
+      valueGetter: (_value, row) =>
+        row.durationMinutes === null ? '-' : `${row.durationMinutes} min`
+    },
+    {
+      field: 'feeAmount',
+      headerName: 'Fee',
+      minWidth: 120,
+      valueGetter: (_value, row) => formatRupees(row.feeAmount)
+    },
+    createDetailsColumn<ParkingEvent>(onViewDetails)
+  ];
+}
+
+function buildCheckoutResultRows(checkoutResult: CheckOutResult): DetailsRow[] {
+  return [
+    { label: 'Event', value: `#${checkoutResult.parkingEvent.id}` },
+    {
+      label: 'Duration',
+      value: `${checkoutResult.parkingEvent.durationMinutes ?? 0} min`
+    },
+    {
+      label: 'Fee',
+      value: formatRupees(checkoutResult.parkingEvent.feeAmount)
+    },
+    {
+      label: 'Payment Initiated',
+      value: checkoutResult.paymentInitiated ? 'Yes' : 'No'
+    },
+    ...(checkoutResult.payment?.status
+      ? [{ label: 'Payment Status', value: checkoutResult.payment.status }]
+      : [])
+  ];
+}
+
+function CheckoutResultDialog({
+  checkoutResult,
+  onClose
+}: {
+  checkoutResult: CheckOutResult | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      fullWidth
+      maxWidth='sm'
+      onClose={onClose}
+      open={Boolean(checkoutResult)}>
+      <DialogTitle>Check-out Result</DialogTitle>
+      <DialogContent>
+        {checkoutResult ? (
+          <Stack spacing={2}>
+            <InfoRows rows={buildCheckoutResultRows(checkoutResult)} />
+            {checkoutResult.paymentError ? (
+              <Alert severity='warning'>{checkoutResult.paymentError}</Alert>
+            ) : null}
+          </Stack>
+        ) : null}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} variant='contained'>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 export function ParkingEventsPage() {
-  const { user } = useAuth();
+  const { user, isSecurity, isAdmin, isUser, canOperateParkingEvents } =
+    useUserRole();
   const queryClient = useQueryClient();
-  const isSecurity = user?.role === 'SECURITY';
-  const isAdmin = user?.role === 'ADMIN';
-  const isUser = user?.role === 'USER';
-  const [activeTab, setActiveTab] = useState<EventTab>(isUser ? 'history' : 'active');
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const [activeTab, setActiveTab] = useState<EventTab>(
+    isUser ? 'history' : 'active'
+  );
   const [bookingCode, setBookingCode] = useState('');
   const [bookingId, setBookingId] = useState('');
-  const [checkoutTarget, setCheckoutTarget] = useState<ParkingEvent | null>(null);
-  const [checkoutResult, setCheckoutResult] = useState<CheckOutResult | null>(null);
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
+  const [checkoutTarget, setCheckoutTarget] = useState<ParkingEvent | null>(
+    null
+  );
+  const [checkoutResult, setCheckoutResult] = useState<CheckOutResult | null>(
+    null
+  );
+  const [detailsEvent, setDetailsEvent] = useState<ParkingEvent | null>(null);
 
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
     queryFn: getActiveParkingEvents,
-    enabled: isAdmin || isSecurity,
+    enabled: canOperateParkingEvents
   });
   const historyQuery = useQuery({
     queryKey: ['parking-events', isUser ? 'history' : 'all'],
     queryFn: isUser ? getParkingEventHistory : getParkingEvents,
-    enabled: isUser || isAdmin,
+    enabled: isUser || isAdmin
+  });
+  const labels = useReferenceLabels({
+    context: 'event-enrichment',
+    includeParkingStructure: canOperateParkingEvents,
+    role: user?.role
   });
 
   const invalidateParkingEvents = async () => {
@@ -79,7 +247,7 @@ export function ParkingEventsPage() {
       queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
       queryClient.invalidateQueries({ queryKey: ['bookings'] }),
       queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     ]);
   };
 
@@ -89,12 +257,9 @@ export function ParkingEventsPage() {
       await invalidateParkingEvents();
       setBookingCode('');
       setBookingId('');
-      setSnackbar({
-        message: `Checked in booking #${parkingEvent.bookingId}.`,
-        severity: 'success',
-      });
+      showSuccess(`Checked in booking #${parkingEvent.bookingId}.`);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error))
   });
   const checkOutMutation = useMutation({
     mutationFn: checkOutParkingEvent,
@@ -102,32 +267,47 @@ export function ParkingEventsPage() {
       await invalidateParkingEvents();
       setCheckoutTarget(null);
       setCheckoutResult(result);
-      setSnackbar({ message: 'Parking event checked out.', severity: 'success' });
+      showSuccess('Parking event checked out.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error))
   });
 
   const activeColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () => [
-      { field: 'id', headerName: 'Event ID', minWidth: 110 },
-      { field: 'bookingId', headerName: 'Booking ID', minWidth: 120 },
-      { field: 'vehicleId', headerName: 'Vehicle ID', minWidth: 120 },
-      { field: 'slotId', headerName: 'Slot ID', minWidth: 110 },
-      { field: 'parkingLotId', headerName: 'Lot ID', minWidth: 100 },
+      createSessionColumn<ParkingEvent>((row) =>
+        labels.getSessionLabel(row.id)
+      ),
+      createBookingColumn<ParkingEvent>((row) =>
+        labels.getBookingLabel(row.bookingId)
+      ),
+      createVehicleColumn<ParkingEvent>((row) =>
+        labels.getVehicleLabel(row.vehicleId)
+      ),
       {
-        field: 'status',
-        headerName: 'Status',
+        field: 'slotId',
+        headerName: 'Slot',
         minWidth: 130,
-        renderCell: ({ row }) => <ParkingEventStatusChip status={row.status} />,
+        valueGetter: (_value, row) => labels.getSlotLabel(row.slotId)
       },
       {
-        field: 'checkInTime',
+        field: 'parkingLotId',
         flex: 1,
-        headerName: 'Check-in Time',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkInTime),
+        headerName: 'Parking Lot',
+        minWidth: 180,
+        valueGetter: (_value, row) =>
+          labels.getParkingLotLabel(row.parkingLotId)
       },
-      ...(isSecurity
+      createStatusColumn<ParkingEvent>((row) => (
+        <ParkingEventStatusChip status={row.status} />
+      )),
+      createDateTimeColumn<ParkingEvent>(
+        'checkInTime',
+        'Checked In At',
+        (row) => row.checkInTime,
+        { flex: 1 }
+      ),
+      createDetailsColumn<ParkingEvent>(setDetailsEvent),
+      ...(canOperateParkingEvents
         ? [
             {
               field: 'actions',
@@ -138,65 +318,32 @@ export function ParkingEventsPage() {
               minWidth: 150,
               sortable: false,
               renderCell: ({ row }) => (
-                <Stack direction="row" justifyContent="flex-end" width="100%">
+                <Stack direction='row' justifyContent='flex-end' width='100%'>
                   <Button
-                    color="warning"
+                    color='warning'
                     onClick={() => setCheckoutTarget(row)}
-                    size="small"
+                    size='small'
                     startIcon={<Logout />}
-                    variant="outlined"
-                  >
+                    variant='outlined'>
                     Check out
                   </Button>
                 </Stack>
-              ),
-            } satisfies GridColDef<ParkingEvent>,
+              )
+            } satisfies GridColDef<ParkingEvent>
           ]
-        : []),
+        : [])
     ],
-    [isSecurity],
+    [canOperateParkingEvents, labels]
   );
 
   const historyColumns = useMemo<GridColDef<ParkingEvent>[]>(
-    () => [
-      { field: 'id', headerName: 'Event ID', minWidth: 110 },
-      { field: 'bookingId', headerName: 'Booking ID', minWidth: 120 },
-      { field: 'vehicleId', headerName: 'Vehicle ID', minWidth: 120 },
-      { field: 'slotId', headerName: 'Slot ID', minWidth: 110 },
-      { field: 'parkingLotId', headerName: 'Lot ID', minWidth: 100 },
-      {
-        field: 'status',
-        headerName: 'Status',
-        minWidth: 130,
-        renderCell: ({ row }) => <ParkingEventStatusChip status={row.status} />,
-      },
-      {
-        field: 'checkInTime',
-        headerName: 'Check-in Time',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkInTime),
-      },
-      {
-        field: 'checkOutTime',
-        headerName: 'Check-out Time',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.checkOutTime),
-      },
-      {
-        field: 'durationMinutes',
-        headerName: 'Duration',
-        minWidth: 130,
-        valueGetter: (_value, row) =>
-          row.durationMinutes === null ? '-' : `${row.durationMinutes} min`,
-      },
-      {
-        field: 'feeAmount',
-        headerName: 'Fee',
-        minWidth: 120,
-        valueGetter: (_value, row) => formatCurrency(row.feeAmount),
-      },
-    ],
-    [],
+    () =>
+      buildParkingEventHistoryColumns({
+        isUser,
+        labels,
+        onViewDetails: setDetailsEvent
+      }),
+    [isUser, labels]
   );
 
   const handleCheckIn = (event: FormEvent<HTMLFormElement>) => {
@@ -205,17 +352,23 @@ export function ParkingEventsPage() {
     const trimmedBookingId = bookingId.trim();
 
     if (!trimmedBookingCode && !trimmedBookingId) {
-      setSnackbar({
-        message: 'Enter booking code or booking ID.',
-        severity: 'error',
-      });
+      showError('Enter booking code or booking ID.');
       return;
     }
 
-    checkInMutation.mutate({
-      bookingCode: trimmedBookingCode || undefined,
-      bookingId: trimmedBookingId ? Number(trimmedBookingId) : undefined,
-    });
+    if (trimmedBookingCode) {
+      checkInMutation.mutate({ bookingCode: trimmedBookingCode });
+      return;
+    }
+
+    const parsedBookingId = Number(trimmedBookingId);
+
+    if (!Number.isInteger(parsedBookingId) || parsedBookingId <= 0) {
+      showError('Enter a valid booking ID.');
+      return;
+    }
+
+    checkInMutation.mutate({ bookingId: parsedBookingId });
   };
 
   const activeRows = activeEventsQuery.data ?? [];
@@ -224,97 +377,105 @@ export function ParkingEventsPage() {
   const historyError = historyQuery.error;
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <PageHeader
-        title="Parking Events"
+        title='Parking Events'
         description={
           isSecurity
             ? 'Check in vehicles, monitor active events, and complete check-outs.'
-            : 'Review parking event activity and history.'
+            : isAdmin
+              ? 'Check in vehicles, monitor active events, complete check-outs, and review history.'
+              : 'Review parking event activity and history.'
         }
       />
 
-      {isSecurity ? (
-        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}>
-          <Box component="form" onSubmit={handleCheckIn}>
-            <Stack spacing={2}>
+      {canOperateParkingEvents ? (
+        <Paper
+          elevation={0}
+          sx={{ border: '1px solid', borderColor: 'divider', p: 2 }}>
+          <Box component='form' onSubmit={handleCheckIn}>
+            <Stack spacing={1}>
               <Stack spacing={0.5}>
-                <Typography fontWeight={700}>Security Check-in</Typography>
-                <Typography color="text.secondary" variant="body2">
+                <Typography fontWeight={700}>Vehicle Check-in</Typography>
+                <Typography color='text.secondary' variant='body2'>
                   Search with either booking code or booking ID.
                 </Typography>
               </Stack>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={5}>
-                  <TextField
-                    fullWidth
-                    label="Booking Code"
-                    onChange={(event) => setBookingCode(event.target.value)}
-                    placeholder="BK-..."
-                    value={bookingCode}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Booking ID"
-                    onChange={(event) => setBookingId(event.target.value)}
-                    type="number"
-                    value={bookingId}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', md: '4fr 2fr 2fr' }
+                }}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Booking Code'
+                  onChange={(event) => setBookingCode(event.target.value)}
+                  placeholder='BK-...'
+                  value={bookingCode}
+                />
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Booking ID'
+                  onChange={(event) => setBookingId(event.target.value)}
+                  type='number'
+                  value={bookingId}
+                />
+                <Box>
                   <Button
                     disabled={checkInMutation.isPending}
                     fullWidth
-                    size="large"
+                    size='small'
                     startIcon={<Login />}
                     sx={{ height: '100%' }}
-                    type="submit"
-                    variant="contained"
-                  >
+                    type='submit'
+                    variant='contained'>
                     Check In
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Stack>
           </Box>
         </Paper>
       ) : null}
 
       {isUser ? null : (
-        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <Paper
+          elevation={0}
+          sx={{ border: '1px solid', borderColor: 'divider' }}>
           <Tabs
             onChange={(_event, nextTab: EventTab) => setActiveTab(nextTab)}
             value={activeTab}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab label="Active Events" value="active" />
-            {isAdmin ? <Tab label="Event History" value="history" /> : null}
+            variant='scrollable'
+            scrollButtons='auto'>
+            <Tab label='Active Events' value='active' />
+            {isAdmin ? <Tab label='Event History' value='history' /> : null}
           </Tabs>
         </Paper>
       )}
 
-      {(isSecurity || isAdmin) && activeTab === 'active' ? (
+      {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
-            <Alert severity={isForbiddenError(activeError) ? 'warning' : 'error'}>
-              {isForbiddenError(activeError)
-                ? 'Access denied.'
-                : getApiErrorMessage(activeError, 'Could not load active parking events.')}
-            </Alert>
+            <QueryErrorAlert
+              error={activeError}
+              fallbackMessage='Could not load active parking events.'
+            />
           ) : null}
           <AppDataGrid
             columns={activeColumns}
-            height="calc(100vh - 360px)"
-            loading={activeEventsQuery.isLoading || activeEventsQuery.isFetching}
+            height='calc(100vh - 360px)'
+            loading={
+              activeEventsQuery.isLoading || activeEventsQuery.isFetching
+            }
             rows={activeRows}
           />
         </Stack>
       ) : null}
 
-      {(isUser || (isAdmin && activeTab === 'history')) ? (
+      {isUser || (isAdmin && activeTab === 'history') ? (
         <Stack spacing={2}>
           {isUser ? (
             <>
@@ -323,15 +484,14 @@ export function ParkingEventsPage() {
             </>
           ) : null}
           {historyError ? (
-            <Alert severity={isForbiddenError(historyError) ? 'warning' : 'error'}>
-              {isForbiddenError(historyError)
-                ? 'Access denied.'
-                : getApiErrorMessage(historyError, 'Could not load parking event history.')}
-            </Alert>
+            <QueryErrorAlert
+              error={historyError}
+              fallbackMessage='Could not load parking event history.'
+            />
           ) : null}
           <AppDataGrid
             columns={historyColumns}
-            height="calc(100vh - 300px)"
+            height='calc(100vh - 300px)'
             loading={historyQuery.isLoading || historyQuery.isFetching}
             rows={historyRows}
           />
@@ -339,7 +499,7 @@ export function ParkingEventsPage() {
       ) : null}
 
       <ConfirmDialog
-        confirmLabel="Check Out"
+        confirmLabel='Check Out'
         description={
           checkoutTarget
             ? `Check out active parking event #${checkoutTarget.id}? This will calculate the fee and release the slot.`
@@ -353,60 +513,27 @@ export function ParkingEventsPage() {
           }
         }}
         open={Boolean(checkoutTarget)}
-        title="Confirm Check-out"
+        title='Confirm Check-out'
       />
 
-      <Dialog fullWidth maxWidth="sm" onClose={() => setCheckoutResult(null)} open={Boolean(checkoutResult)}>
-        <DialogTitle>Check-out Result</DialogTitle>
-        <DialogContent>
-          {checkoutResult ? (
-            <Stack spacing={2}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Event</Typography>
-                <Typography fontWeight={700}>#{checkoutResult.parkingEvent.id}</Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Duration</Typography>
-                <Typography fontWeight={700}>
-                  {checkoutResult.parkingEvent.durationMinutes ?? 0} min
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Fee</Typography>
-                <Typography fontWeight={700}>
-                  {formatCurrency(checkoutResult.parkingEvent.feeAmount)}
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Payment Initiated</Typography>
-                <Typography fontWeight={700}>
-                  {checkoutResult.paymentInitiated ? 'Yes' : 'No'}
-                </Typography>
-              </Stack>
-              {checkoutResult.payment?.status ? (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography color="text.secondary">Payment Status</Typography>
-                  <Typography fontWeight={700}>{checkoutResult.payment.status}</Typography>
-                </Stack>
-              ) : null}
-              {checkoutResult.paymentError ? (
-                <Alert severity="warning">{checkoutResult.paymentError}</Alert>
-              ) : null}
-            </Stack>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckoutResult(null)} variant="contained">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <DetailsDialog
+        onClose={() => setDetailsEvent(null)}
+        open={Boolean(detailsEvent)}
+        title='Parking Session Details'
+        summaryRows={
+          detailsEvent ? buildParkingEventSummaryRows(detailsEvent, labels) : []
+        }
+        technicalRows={
+          detailsEvent ? buildParkingEventTechnicalRows(detailsEvent) : []
+        }
+      />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <CheckoutResultDialog
+        checkoutResult={checkoutResult}
+        onClose={() => setCheckoutResult(null)}
+      />
+
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

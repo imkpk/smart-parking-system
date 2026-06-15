@@ -5,6 +5,7 @@ import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
 import com.smartparking.payment.docs.GetPaymentDocs;
+import com.smartparking.payment.docs.GetPaymentsDocs;
 import com.smartparking.payment.docs.GetUserPaymentsDocs;
 import com.smartparking.payment.docs.InitiatePaymentDocs;
 import com.smartparking.payment.docs.MockFailurePaymentDocs;
@@ -86,8 +87,15 @@ public class PaymentController {
         return com.smartparking.payment.dto.ApiResponse.success("Payment marked FAILED", paymentService.markFailure(id, request));
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECURITY')")
+    @GetPaymentsDocs
+    public com.smartparking.payment.dto.ApiResponse<List<PaymentResponse>> findAll() {
+        return com.smartparking.payment.dto.ApiResponse.success("All payments", paymentService.findAll());
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SECURITY')")
     @GetPaymentDocs
     public com.smartparking.payment.dto.ApiResponse<PaymentResponse> findById(
             @PathVariable @Positive Long id,
@@ -95,7 +103,7 @@ public class PaymentController {
     ) {
         return com.smartparking.payment.dto.ApiResponse.success(
                 "Payment details",
-                paymentService.findById(id, AuthUtils.userId(jwt), AuthUtils.isAdmin(jwt))
+                paymentService.findById(id, AuthUtils.userId(jwt), AuthUtils.isAdminOrSecurity(jwt))
         );
     }
 

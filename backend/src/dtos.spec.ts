@@ -23,6 +23,7 @@ import { UpdateParkingLotDto } from './parking-lots/dto/update-parking-lot.dto';
 import { AvailableSlotsQueryDto } from './slots/dto/available-slots-query.dto';
 import { CreateBulkSlotsDto } from './slots/dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './slots/dto/create-slot.dto';
+import { DeleteSlotsDto } from './slots/dto/delete-slots.dto';
 import { UpdateSlotStatusDto } from './slots/dto/update-slot-status.dto';
 import { CreateVehicleDto } from './vehicles/dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './vehicles/dto/update-vehicle.dto';
@@ -98,6 +99,9 @@ describe('DTO validation', () => {
 
     await expectValid(UpdateSlotStatusDto, { status: SlotStatus.MAINTENANCE });
     await expectInvalid(UpdateSlotStatusDto, { status: 'BROKEN' as SlotStatus });
+
+    const deleteSlots = await expectValid(DeleteSlotsDto, { ids: ['1', '2'] as unknown as number[] });
+    expect(deleteSlots.ids).toEqual([1, 2]);
   });
 
   it('validates vehicle, booking, and parking event DTOs', async () => {

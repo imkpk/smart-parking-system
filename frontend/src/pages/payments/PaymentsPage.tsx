@@ -6,64 +6,92 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
   IconButton,
 } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
-import { CheckCircle, ErrorOutline, Payments, ReceiptLong, Search } from '@mui/icons-material';
+import {
+  CheckCircle,
+  ErrorOutline,
+  Payments,
+  ReceiptLong,
+  Search,
+} from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useMemo, useState } from 'react';
 import {
   getPayment,
+  getPayments,
   getPaymentSummary,
   getUserPayments,
   mockPaymentFailure,
   mockPaymentSuccess,
 } from '../../api/paymentsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
+import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatCard } from '../../components/common/StatCard';
-import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import {
+  createBookingColumn,
+  createDateTimeColumn,
+  createDetailsColumn,
+} from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
+import { useUserRole } from '../../hooks/useUserRole';
+import { getApiErrorMessage } from '../../lib/apiError';
+import { formatCurrency, formatDateTime } from '../../lib/formatters';
 import { paymentStatusStyles } from '../../lib/paymentStatusStyles';
-import { useAuth } from '../../providers/AuthProvider';
 import { Payment } from '../../types/payment';
 
-type SnackbarState = { message: string; severity: 'success' | 'error' } | null;
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
 
-function formatCurrency(amount: number | string | null | undefined, currency = 'INR') {
-  if (amount === null || amount === undefined) {
-    return '-';
-  }
-
-  return `${currency} ${Number(amount).toFixed(2)}`;
+function buildPaymentSummaryRows(payment: Payment, labels: ReturnType<typeof useReferenceLabels>): DetailsRow[] {
+  return [
+    { label: 'Receipt No', value: `Receipt #${payment.id}` },
+    { label: 'Booking No', value: labels.getBookingLabel(payment.bookingId) },
+    { label: 'Vehicle', value: labels.getVehicleLabelForBooking(payment.bookingId) },
+    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
+    { label: 'Status', value: <PaymentStatusChip status={payment.status} /> },
+    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+  ];
 }
 
-function formatDateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString() : '-';
+function buildPaymentTechnicalRows(payment: Payment): DetailsRow[] {
+  return [
+    { label: 'Payment ID', value: payment.id },
+    { label: 'Event ID', value: payment.parkingEventId },
+    { label: 'Booking ID', value: payment.bookingId },
+    { label: 'User ID', value: payment.userId },
+  ];
 }
 
 export function PaymentsPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, isSecurity, isUser, canViewOperationalPayments } = useUserRole();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'ADMIN';
-  const isUser = user?.role === 'USER';
-  const [paymentIdInput, setPaymentIdInput] = useState('');
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
+  const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const summaryQuery = useQuery({
     queryKey: ['payments', 'summary'],
     queryFn: getPaymentSummary,
     enabled: isAdmin,
+  });
+  const paymentsQuery = useQuery({
+    queryKey: ['payments', 'all'],
+    queryFn: getPayments,
+    enabled: canViewOperationalPayments,
   });
   const userPaymentsQuery = useQuery({
     queryKey: ['payments', 'user', user?.id],
@@ -73,13 +101,19 @@ export function PaymentsPage() {
   const lookupPaymentQuery = useQuery({
     queryKey: ['payments', 'lookup', lookupPaymentId],
     queryFn: () => getPayment(lookupPaymentId!),
-    enabled: isAdmin && Boolean(lookupPaymentId),
+    enabled: canViewOperationalPayments && Boolean(lookupPaymentId),
+  });
+  const labels = useReferenceLabels({
+    context: 'payment-enrichment',
+    includeUsers: isAdmin,
+    role: user?.role,
   });
 
   const invalidatePayments = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['payments'] }),
       queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
+      queryClient.invalidateQueries({ queryKey: ['bookings'] }),
     ]);
   };
 
@@ -87,36 +121,94 @@ export function PaymentsPage() {
     mutationFn: mockPaymentSuccess,
     onSuccess: async () => {
       await invalidatePayments();
-      setSnackbar({ message: 'Payment marked SUCCESS.', severity: 'success' });
+      showSuccess('Payment marked SUCCESS.');
       setActionTarget(null);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const mockFailureMutation = useMutation({
     mutationFn: mockPaymentFailure,
     onSuccess: async () => {
       await invalidatePayments();
-      setSnackbar({ message: 'Payment marked FAILED.', severity: 'success' });
+      showSuccess('Payment marked FAILED.');
       setActionTarget(null);
       setFailureReason('Mock provider declined payment');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
-  const rows = useMemo(() => {
+  const baseRows = useMemo(() => {
     if (isUser) {
       return userPaymentsQuery.data ?? [];
     }
 
-    return lookupPaymentQuery.data ? [lookupPaymentQuery.data] : [];
-  }, [isUser, lookupPaymentQuery.data, userPaymentsQuery.data]);
+    return paymentsQuery.data ?? [];
+  }, [isUser, paymentsQuery.data, userPaymentsQuery.data]);
+
+  const rows = useMemo(() => {
+    if (lookupPaymentQuery.data) {
+      return [lookupPaymentQuery.data];
+    }
+
+    const trimmedSearch = appliedSearch.trim().toLowerCase();
+
+    if (!trimmedSearch) {
+      return baseRows;
+    }
+
+    return baseRows.filter((payment) => {
+      const searchableValues = [
+        payment.id,
+        payment.parkingEventId,
+        payment.bookingId,
+        labels.getBookingCode(payment.bookingId),
+        labels.getVehicleLabelForBooking(payment.bookingId),
+        payment.userId,
+        payment.status,
+        payment.paymentMethod,
+        payment.providerReference,
+        payment.failureReason,
+        payment.currency,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? '').toLowerCase().includes(trimmedSearch),
+      );
+    });
+  }, [appliedSearch, baseRows, labels, lookupPaymentQuery.data]);
 
   const columns = useMemo<GridColDef<Payment>[]>(
     () => [
-      { field: 'id', headerName: 'Payment ID', minWidth: 120 },
-      { field: 'parkingEventId', headerName: 'Event ID', minWidth: 120 },
-      { field: 'bookingId', headerName: 'Booking ID', minWidth: 120 },
-      { field: 'userId', headerName: 'User ID', minWidth: 110 },
+      {
+        field: 'id',
+        headerName: 'Receipt No',
+        minWidth: 130,
+        valueGetter: (_value, row) => `Receipt #${row.id}`,
+      },
+      {
+        field: 'parkingEventId',
+        headerName: 'Parking Session',
+        minWidth: 150,
+        valueGetter: (_value, row) => labels.getSessionLabel(row.parkingEventId),
+      },
+      createBookingColumn<Payment>((row) => labels.getBookingLabel(row.bookingId)),
+      ...(isAdmin || isSecurity
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+            } satisfies GridColDef<Payment>,
+          ]
+        : []),
+      {
+        field: 'vehicle',
+        headerName: 'Vehicle',
+        minWidth: 160,
+        valueGetter: (_value, row) => labels.getVehicleLabelForBooking(row.bookingId),
+      },
       {
         field: 'amount',
         headerName: 'Amount',
@@ -134,7 +226,7 @@ export function PaymentsPage() {
       {
         field: 'providerReference',
         flex: 1,
-        headerName: 'Provider Reference',
+        headerName: 'Payment Reference',
         minWidth: 220,
         valueGetter: (_value, row) => row.providerReference ?? '-',
       },
@@ -145,12 +237,8 @@ export function PaymentsPage() {
         minWidth: 220,
         valueGetter: (_value, row) => row.failureReason ?? '-',
       },
-      {
-        field: 'createdAt',
-        headerName: 'Created At',
-        minWidth: 190,
-        valueGetter: (_value, row) => formatDateTime(row.createdAt),
-      },
+      createDateTimeColumn<Payment>('createdAt', 'Paid/Created On', (row) => row.createdAt),
+      createDetailsColumn<Payment>(setDetailsPayment),
       ...(isAdmin
         ? [
             {
@@ -191,23 +279,40 @@ export function PaymentsPage() {
           ]
         : []),
     ],
-    [isAdmin],
+    [isAdmin, isSecurity, labels],
   );
 
-  const handleLookup = (event: FormEvent<HTMLFormElement>) => {
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const paymentId = Number(paymentIdInput);
+    const trimmedValue = searchInput.trim();
 
-    if (!paymentId || paymentId < 1) {
-      setSnackbar({ message: 'Enter a valid payment ID.', severity: 'error' });
+    if (!trimmedValue) {
+      showError('Enter a value to search');
       return;
     }
 
-    setLookupPaymentId(paymentId);
+    setAppliedSearch(trimmedValue);
+
+    if (/^\d+$/.test(trimmedValue)) {
+      setLookupPaymentId(Number(trimmedValue));
+      return;
+    }
+
+    setLookupPaymentId(null);
   };
 
-  const paymentError = isUser ? userPaymentsQuery.error : lookupPaymentQuery.error;
+  const clearSearch = () => {
+    setSearchInput('');
+    setAppliedSearch('');
+    setLookupPaymentId(null);
+  };
+
+  const paymentError = isUser
+    ? userPaymentsQuery.error
+    : lookupPaymentQuery.error ?? paymentsQuery.error;
   const isPaymentLoading =
+    paymentsQuery.isLoading ||
+    paymentsQuery.isFetching ||
     userPaymentsQuery.isLoading ||
     userPaymentsQuery.isFetching ||
     lookupPaymentQuery.isLoading ||
@@ -216,93 +321,118 @@ export function PaymentsPage() {
   const summaryStatuses = summary?.paymentsByStatus ?? {};
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <PageHeader
         title="Payments"
         description={
           isAdmin
             ? 'Review payment totals and update mock payment outcomes.'
-            : 'Review your parking payment history.'
+            : isSecurity
+              ? 'Review operational payment status and details.'
+              : 'Review your parking payment history.'
         }
       />
 
-      {summaryQuery.error ? (
-        <Alert severity={isForbiddenError(summaryQuery.error) ? 'warning' : 'error'}>
-          {isForbiddenError(summaryQuery.error)
-            ? 'Access denied.'
-            : getApiErrorMessage(summaryQuery.error, 'Could not load payment summary.')}
-        </Alert>
-      ) : null}
+      <QueryErrorAlert
+        error={summaryQuery.error}
+        fallbackMessage="Could not load payment summary."
+      />
 
       {isAdmin ? (
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} lg={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 1.5,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(3, minmax(0, 1fr))',
+              xl: 'repeat(6, minmax(0, 1fr))',
+            },
+          }}
+        >
+          <Box>
             <StatCard
+              compact
               icon={<ReceiptLong />}
               label="Total Payments"
               value={summary?.totalPayments ?? 0}
             />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
+          </Box>
+          <Box>
             <StatCard
               accentColor="success.main"
+              compact
               icon={<Payments />}
               iconBgcolor="rgba(46, 125, 50, 0.1)"
               label="Successful Amount"
               value={formatCurrency(summary?.successfulAmount ?? 0)}
             />
-          </Grid>
+          </Box>
           {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => {
             const statusStyle = paymentStatusStyles[status];
 
             return (
-              <Grid item key={status} xs={12} sm={6} lg={3}>
+              <Box key={status}>
                 <StatCard
+                  compact
                   label={statusStyle.label}
                   value={summaryStatuses[status] ?? 0}
                 />
-              </Grid>
+              </Box>
             );
           })}
-        </Grid>
-      ) : null}
-
-      {isAdmin ? (
-        <Box component="form" onSubmit={handleLookup}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <TextField
-              fullWidth
-              label="Payment ID"
-              onChange={(event) => setPaymentIdInput(event.target.value)}
-              type="number"
-              value={paymentIdInput}
-            />
-            <Button
-              disabled={lookupPaymentQuery.isFetching}
-              startIcon={<Search />}
-              type="submit"
-              variant="contained"
-              sx={{ minWidth: 150 }}
-            >
-              Find
-            </Button>
-          </Stack>
         </Box>
       ) : null}
 
-      {paymentError ? (
-        <Alert severity={isForbiddenError(paymentError) ? 'warning' : 'error'}>
-          {isForbiddenError(paymentError)
-            ? 'Access denied.'
-            : getApiErrorMessage(paymentError, 'Could not load payments.')}
-        </Alert>
-      ) : null}
+      <Box component="form" onSubmit={handleSearch}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <TextField
+            fullWidth
+            label="Search payments"
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search by payment id, booking id, booking code, event id, or provider ref"
+            size="small"
+            value={searchInput}
+          />
+          <Button
+            disabled={lookupPaymentQuery.isFetching}
+            size="medium"
+            startIcon={<Search />}
+            type="submit"
+            variant="contained"
+            sx={{ minWidth: 120 }}
+          >
+            Search
+          </Button>
+          <Button onClick={clearSearch} size="medium" variant="outlined" sx={{ minWidth: 96 }}>
+            Clear
+          </Button>
+        </Stack>
+      </Box>
+
+      <QueryErrorAlert error={paymentError} fallbackMessage="Could not load payments." />
 
       <AppDataGrid
         columns={columns}
-        height="calc(100vh - 360px)"
+        height={{ xs: 520, md: 'calc(100vh - 430px)', xl: 'calc(100vh - 360px)' }}
         loading={isPaymentLoading}
+        noRowsLabel={
+          isAdmin
+            ? 'No payments found'
+            : isSecurity
+              ? 'No operational payments found'
+              : 'You have no payment history yet'
+        }
         rows={rows}
+      />
+
+      <DetailsDialog
+        onClose={() => setDetailsPayment(null)}
+        open={Boolean(detailsPayment)}
+        title="Payment Details"
+        summaryRows={detailsPayment ? buildPaymentSummaryRows(detailsPayment, labels) : []}
+        technicalRows={detailsPayment ? buildPaymentTechnicalRows(detailsPayment) : []}
       />
 
       <ConfirmDialog
@@ -367,11 +497,7 @@ export function PaymentsPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

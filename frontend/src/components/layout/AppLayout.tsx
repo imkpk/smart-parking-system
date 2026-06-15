@@ -24,6 +24,7 @@ import {
   Menu,
   MenuOpen,
   Payments,
+  ReceiptLong,
   Security,
 } from '@mui/icons-material';
 import { ReactNode, useState } from 'react';
@@ -81,14 +82,14 @@ const navItems: NavItem[] = [
   {
     label: 'Parking Events',
     to: '/parking-events',
-    icon: <Payments />,
+    icon: <LocalParking />,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
   {
     label: 'Payments',
     to: '/payments',
-    icon: <Payments />,
-    roles: ['ADMIN', 'USER'],
+    icon: <ReceiptLong />,
+    roles: ['ADMIN', 'SECURITY', 'USER'],
   },
 ];
 

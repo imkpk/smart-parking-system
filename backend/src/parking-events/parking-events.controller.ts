@@ -21,16 +21,16 @@ import { ParkingEventsService } from './parking-events.service';
 @Controller('parking-events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ParkingEventsController {
-  constructor(private readonly parkingEventsService: ParkingEventsService) {}
+  constructor(private readonly parkingEventsService: ParkingEventsService) { }
 
   @Post('check-in')
-  @Roles(Role.SECURITY)
+  @Roles(Role.ADMIN, Role.SECURITY)
   checkIn(@Body() checkInDto: CheckInDto) {
     return this.parkingEventsService.checkIn(checkInDto);
   }
 
   @Post('check-out')
-  @Roles(Role.SECURITY)
+  @Roles(Role.ADMIN, Role.SECURITY)
   checkOut(
     @Body() checkOutDto: CheckOutDto,
     @Headers('authorization') authorizationHeader?: string,
@@ -45,9 +45,9 @@ export class ParkingEventsController {
   }
 
   @Get('history')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.ADMIN, Role.SECURITY)
   findHistory(@CurrentUser() currentUser: SafeUser) {
-    return this.parkingEventsService.findHistory(currentUser.id);
+    return this.parkingEventsService.findHistory(currentUser);
   }
 
   @Get()

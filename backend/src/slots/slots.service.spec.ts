@@ -15,6 +15,7 @@ describe('SlotsService', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
+      deleteMany: jest.Mock;
     };
   };
 
