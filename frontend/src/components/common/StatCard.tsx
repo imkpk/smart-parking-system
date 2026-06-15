@@ -6,12 +6,14 @@ export function StatCard({
   value,
   icon,
   accentColor = 'primary.main',
+  compact = false,
   iconBgcolor = 'rgba(31, 111, 235, 0.1)',
 }: {
   label: string;
   value: number | string;
   icon?: ReactNode;
   accentColor?: string;
+  compact?: boolean;
   iconBgcolor?: string;
 }) {
   return (
@@ -30,13 +32,28 @@ export function StatCard({
         },
       }}
     >
-      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+      <CardContent
+        sx={{
+          p: compact ? { xs: 1.5, sm: 1.75 } : { xs: 2, sm: 2.5 },
+          '&:last-child': {
+            pb: compact ? { xs: 1.5, sm: 1.75 } : { xs: 2, sm: 2.5 },
+          },
+        }}
+      >
         <Stack direction="row" justifyContent="space-between" spacing={2}>
-          <Stack spacing={1}>
+          <Stack spacing={compact ? 0.5 : 1}>
             <Typography color="text.secondary" fontWeight={600} variant="body2">
               {label}
             </Typography>
-            <Typography sx={{ fontSize: { xs: '2rem', sm: '2.25rem' }, lineHeight: 1 }} variant="h4">
+            <Typography
+              sx={{
+                fontSize: compact
+                  ? { xs: '1.6rem', sm: '1.85rem' }
+                  : { xs: '2rem', sm: '2.25rem' },
+                lineHeight: 1,
+              }}
+              variant="h4"
+            >
               {value}
             </Typography>
           </Stack>
@@ -48,8 +65,8 @@ export function StatCard({
                 bgcolor: iconBgcolor,
                 borderRadius: 1.5,
                 color: accentColor,
-                height: 44,
-                width: 44,
+                height: compact ? 36 : 44,
+                width: compact ? 36 : 44,
               }}
             >
               {icon}

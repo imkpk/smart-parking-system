@@ -321,7 +321,7 @@ export function PaymentsPage() {
   const summaryStatuses = summary?.paymentsByStatus ?? {};
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <PageHeader
         title="Payments"
         description={
@@ -342,16 +342,18 @@ export function PaymentsPage() {
         <Box
           sx={{
             display: 'grid',
-            gap: 2,
+            gap: 1.5,
             gridTemplateColumns: {
               xs: '1fr',
               sm: 'repeat(2, minmax(0, 1fr))',
-              lg: 'repeat(4, minmax(0, 1fr))',
+              lg: 'repeat(3, minmax(0, 1fr))',
+              xl: 'repeat(6, minmax(0, 1fr))',
             },
           }}
         >
           <Box>
             <StatCard
+              compact
               icon={<ReceiptLong />}
               label="Total Payments"
               value={summary?.totalPayments ?? 0}
@@ -360,6 +362,7 @@ export function PaymentsPage() {
           <Box>
             <StatCard
               accentColor="success.main"
+              compact
               icon={<Payments />}
               iconBgcolor="rgba(46, 125, 50, 0.1)"
               label="Successful Amount"
@@ -372,6 +375,7 @@ export function PaymentsPage() {
             return (
               <Box key={status}>
                 <StatCard
+                  compact
                   label={statusStyle.label}
                   value={summaryStatuses[status] ?? 0}
                 />
@@ -388,18 +392,20 @@ export function PaymentsPage() {
             label="Search payments"
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search by payment id, booking id, booking code, event id, or provider ref"
+            size="small"
             value={searchInput}
           />
           <Button
             disabled={lookupPaymentQuery.isFetching}
+            size="medium"
             startIcon={<Search />}
             type="submit"
             variant="contained"
-            sx={{ minWidth: 150 }}
+            sx={{ minWidth: 120 }}
           >
             Search
           </Button>
-          <Button onClick={clearSearch} variant="outlined" sx={{ minWidth: 110 }}>
+          <Button onClick={clearSearch} size="medium" variant="outlined" sx={{ minWidth: 96 }}>
             Clear
           </Button>
         </Stack>
@@ -409,7 +415,7 @@ export function PaymentsPage() {
 
       <AppDataGrid
         columns={columns}
-        height="calc(100vh - 360px)"
+        height={{ xs: 520, md: 'calc(100vh - 430px)', xl: 'calc(100vh - 360px)' }}
         loading={isPaymentLoading}
         noRowsLabel={
           isAdmin

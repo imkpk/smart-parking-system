@@ -23,7 +23,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   checkboxSelection?: boolean;
   columns: GridColDef<Row>[];
   getRowId?: (row: Row) => GridRowId;
-  height?: number | string;
+  height?: number | string | Record<string, number | string>;
   loading?: boolean;
   noRowsLabel?: string;
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
