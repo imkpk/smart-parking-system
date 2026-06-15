@@ -1,4 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { UsersService } from './users.service';
 import { userRecord } from '../test/test-users';
 
@@ -62,6 +63,103 @@ describe('UsersService', () => {
       where: { email: userRecord.email },
     });
     expect(result).toBe(userRecord);
+  });
+
+  it('finds a user by phone', async () => {
+    prisma.user.findUnique.mockResolvedValue(userRecord);
+
+    const result = await service.findByPhone(userRecord.phone!);
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { phone: userRecord.phone },
+    });
+    expect(result).toBe(userRecord);
+  });
+
+  it('maps duplicate email prisma errors to conflict', async () => {
+    prisma.user.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['email'] },
+      }),
+    );
+
+    await expect(
+      service.create({
+        name: userRecord.name,
+        email: userRecord.email,
+        passwordHash: userRecord.passwordHash,
+      }),
+    ).rejects.toThrow('Email already exists');
+  });
+
+  it('maps duplicate phone prisma errors to conflict', async () => {
+    prisma.user.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['phone'] },
+      }),
+    );
+
+    await expect(
+      service.create({
+        name: userRecord.name,
+        email: userRecord.email,
+        phone: userRecord.phone,
+        passwordHash: userRecord.passwordHash,
+      }),
+    ).rejects.toThrow('Phone number already exists');
+  });
+
+  it('maps unknown user unique prisma errors to conflict', async () => {
+    prisma.user.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['unknown'] },
+      }),
+    );
+
+    await expect(
+      service.create({
+        name: userRecord.name,
+        email: userRecord.email,
+        passwordHash: userRecord.passwordHash,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('maps unique prisma errors with non-array targets to generic conflict', async () => {
+    prisma.user.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: 'users_phone_key' },
+      }),
+    );
+
+    await expect(
+      service.create({
+        name: userRecord.name,
+        email: userRecord.email,
+        passwordHash: userRecord.passwordHash,
+      }),
+    ).rejects.toThrow('User already exists');
+  });
+
+  it('rethrows non-unique prisma errors', async () => {
+    const error = new Error('Database unavailable');
+    prisma.user.create.mockRejectedValue(error);
+
+    await expect(
+      service.create({
+        name: userRecord.name,
+        email: userRecord.email,
+        passwordHash: userRecord.passwordHash,
+      }),
+    ).rejects.toBe(error);
   });
 
   it('lists users as safe users', async () => {

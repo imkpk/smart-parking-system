@@ -21,7 +21,17 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
 
     if (existingUser) {
-      throw new ConflictException('Email is already registered');
+      throw new ConflictException('Email already exists');
+    }
+
+    if (registerDto.phone) {
+      const existingPhone = await this.usersService.findByPhone(
+        registerDto.phone,
+      );
+
+      if (existingPhone) {
+        throw new ConflictException('Phone number already exists');
+      }
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 10);

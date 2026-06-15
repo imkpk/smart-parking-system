@@ -15,7 +15,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
 import { Login, Logout } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -56,6 +55,7 @@ export function ParkingEventsPage() {
   const isSecurity = user?.role === 'SECURITY';
   const isAdmin = user?.role === 'ADMIN';
   const isUser = user?.role === 'USER';
+  const canOperateParkingEvents = isAdmin || isSecurity;
   const [activeTab, setActiveTab] = useState<EventTab>(isUser ? 'history' : 'active');
   const [bookingCode, setBookingCode] = useState('');
   const [bookingId, setBookingId] = useState('');
@@ -66,7 +66,7 @@ export function ParkingEventsPage() {
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
     queryFn: getActiveParkingEvents,
-    enabled: isAdmin || isSecurity,
+    enabled: canOperateParkingEvents,
   });
   const historyQuery = useQuery({
     queryKey: ['parking-events', isUser ? 'history' : 'all'],
@@ -127,7 +127,7 @@ export function ParkingEventsPage() {
         minWidth: 190,
         valueGetter: (_value, row) => formatDateTime(row.checkInTime),
       },
-      ...(isSecurity
+      ...(canOperateParkingEvents
         ? [
             {
               field: 'actions',
@@ -154,7 +154,7 @@ export function ParkingEventsPage() {
           ]
         : []),
     ],
-    [isSecurity],
+    [canOperateParkingEvents],
   );
 
   const historyColumns = useMemo<GridColDef<ParkingEvent>[]>(
@@ -212,10 +212,22 @@ export function ParkingEventsPage() {
       return;
     }
 
-    checkInMutation.mutate({
-      bookingCode: trimmedBookingCode || undefined,
-      bookingId: trimmedBookingId ? Number(trimmedBookingId) : undefined,
-    });
+    if (trimmedBookingCode) {
+      checkInMutation.mutate({ bookingCode: trimmedBookingCode });
+      return;
+    }
+
+    const parsedBookingId = Number(trimmedBookingId);
+
+    if (!Number.isInteger(parsedBookingId) || parsedBookingId <= 0) {
+      setSnackbar({
+        message: 'Enter a valid booking ID.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    checkInMutation.mutate({ bookingId: parsedBookingId });
   };
 
   const activeRows = activeEventsQuery.data ?? [];
@@ -230,40 +242,44 @@ export function ParkingEventsPage() {
         description={
           isSecurity
             ? 'Check in vehicles, monitor active events, and complete check-outs.'
+            : isAdmin
+              ? 'Check in vehicles, monitor active events, complete check-outs, and review history.'
             : 'Review parking event activity and history.'
         }
       />
 
-      {isSecurity ? (
+      {canOperateParkingEvents ? (
         <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}>
           <Box component="form" onSubmit={handleCheckIn}>
             <Stack spacing={2}>
               <Stack spacing={0.5}>
-                <Typography fontWeight={700}>Security Check-in</Typography>
+                <Typography fontWeight={700}>Vehicle Check-in</Typography>
                 <Typography color="text.secondary" variant="body2">
                   Search with either booking code or booking ID.
                 </Typography>
               </Stack>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={5}>
-                  <TextField
-                    fullWidth
-                    label="Booking Code"
-                    onChange={(event) => setBookingCode(event.target.value)}
-                    placeholder="BK-..."
-                    value={bookingCode}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Booking ID"
-                    onChange={(event) => setBookingId(event.target.value)}
-                    type="number"
-                    value={bookingId}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', md: '5fr 3fr 4fr' },
+                }}
+              >
+                <TextField
+                  fullWidth
+                  label="Booking Code"
+                  onChange={(event) => setBookingCode(event.target.value)}
+                  placeholder="BK-..."
+                  value={bookingCode}
+                />
+                <TextField
+                  fullWidth
+                  label="Booking ID"
+                  onChange={(event) => setBookingId(event.target.value)}
+                  type="number"
+                  value={bookingId}
+                />
+                <Box>
                   <Button
                     disabled={checkInMutation.isPending}
                     fullWidth
@@ -275,8 +291,8 @@ export function ParkingEventsPage() {
                   >
                     Check In
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Stack>
           </Box>
         </Paper>
@@ -296,7 +312,7 @@ export function ParkingEventsPage() {
         </Paper>
       )}
 
-      {(isSecurity || isAdmin) && activeTab === 'active' ? (
+      {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
             <Alert severity={isForbiddenError(activeError) ? 'warning' : 'error'}>

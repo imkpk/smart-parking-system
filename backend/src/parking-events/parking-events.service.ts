@@ -173,10 +173,23 @@ export class ParkingEventsService {
     });
   }
 
-  findHistory(userId: number) {
+  findHistory(user: SafeUser) {
+    const where =
+      user.role === Role.USER
+        ? { userId: user.id }
+        : {};
+
     return this.prisma.parkingEvent.findMany({
-      where: { userId },
-      orderBy: { checkInTime: 'desc' },
+      where,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        booking: true,
+        vehicle: true,
+        slot: true,
+        parkingLot: true,
+      },
     });
   }
 
