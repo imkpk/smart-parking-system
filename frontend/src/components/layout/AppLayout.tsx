@@ -84,6 +84,12 @@ const navItems: NavItem[] = [
     icon: <Payments />,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
+  {
+    label: 'Payments',
+    to: '/payments',
+    icon: <Payments />,
+    roles: ['ADMIN', 'USER'],
+  },
 ];
 
 export function AppLayout() {
