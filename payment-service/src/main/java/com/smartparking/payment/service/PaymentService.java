@@ -86,6 +86,13 @@ public class PaymentService {
         return PaymentResponse.from(payment);
     }
 
+    public List<PaymentResponse> findAll() {
+        return paymentRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(PaymentResponse::from)
+                .toList();
+    }
+
     public List<PaymentResponse> findByUserId(Long userId, Long currentUserId, boolean admin) {
         ensureUserAccess(userId, currentUserId, admin);
 

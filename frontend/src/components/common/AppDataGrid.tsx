@@ -15,6 +15,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   getRowId,
   height = 500,
   loading = false,
+  noRowsLabel = 'No rows',
   onRowSelectionModelChange,
   rowSelectionModel,
   rows
@@ -24,6 +25,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   getRowId?: (row: Row) => GridRowId;
   height?: number | string;
   loading?: boolean;
+  noRowsLabel?: string;
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
@@ -53,6 +55,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
           }
         }}
         loading={loading}
+        localeText={{ noRowsLabel }}
         onRowSelectionModelChange={(model) =>
           onRowSelectionModelChange?.(Array.from(model.ids))
         }

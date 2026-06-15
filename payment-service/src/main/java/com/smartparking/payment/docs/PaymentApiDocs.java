@@ -14,6 +14,7 @@ public final class PaymentApiDocs {
     public static final String MOCK_FAILURE_DESCRIPTION =
             "Marks an INITIATED payment as FAILED and stores a failure reason.";
     public static final String FIND_BY_ID_SUMMARY = "Get payment by id";
+    public static final String FIND_ALL_SUMMARY = "Get all payments";
     public static final String FIND_BY_USER_SUMMARY = "Get payments by user id";
     public static final String SUMMARY_REPORT_SUMMARY = "Get payment summary report";
 

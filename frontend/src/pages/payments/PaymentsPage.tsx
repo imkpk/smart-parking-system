@@ -12,13 +12,13 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
 import { CheckCircle, ErrorOutline, Payments, ReceiptLong, Search } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useMemo, useState } from 'react';
 import {
   getPayment,
+  getPayments,
   getPaymentSummary,
   getUserPayments,
   mockPaymentFailure,
@@ -53,8 +53,11 @@ export function PaymentsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'ADMIN';
+  const isSecurity = user?.role === 'SECURITY';
   const isUser = user?.role === 'USER';
-  const [paymentIdInput, setPaymentIdInput] = useState('');
+  const canViewOperationalPayments = isAdmin || isSecurity;
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
@@ -65,6 +68,11 @@ export function PaymentsPage() {
     queryFn: getPaymentSummary,
     enabled: isAdmin,
   });
+  const paymentsQuery = useQuery({
+    queryKey: ['payments', 'all'],
+    queryFn: getPayments,
+    enabled: canViewOperationalPayments,
+  });
   const userPaymentsQuery = useQuery({
     queryKey: ['payments', 'user', user?.id],
     queryFn: () => getUserPayments(user!.id),
@@ -73,7 +81,7 @@ export function PaymentsPage() {
   const lookupPaymentQuery = useQuery({
     queryKey: ['payments', 'lookup', lookupPaymentId],
     queryFn: () => getPayment(lookupPaymentId!),
-    enabled: isAdmin && Boolean(lookupPaymentId),
+    enabled: canViewOperationalPayments && Boolean(lookupPaymentId),
   });
 
   const invalidatePayments = async () => {
@@ -103,13 +111,43 @@ export function PaymentsPage() {
     onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
   });
 
-  const rows = useMemo(() => {
+  const baseRows = useMemo(() => {
     if (isUser) {
       return userPaymentsQuery.data ?? [];
     }
 
-    return lookupPaymentQuery.data ? [lookupPaymentQuery.data] : [];
-  }, [isUser, lookupPaymentQuery.data, userPaymentsQuery.data]);
+    return paymentsQuery.data ?? [];
+  }, [isUser, paymentsQuery.data, userPaymentsQuery.data]);
+
+  const rows = useMemo(() => {
+    if (lookupPaymentQuery.data) {
+      return [lookupPaymentQuery.data];
+    }
+
+    const trimmedSearch = appliedSearch.trim().toLowerCase();
+
+    if (!trimmedSearch) {
+      return baseRows;
+    }
+
+    return baseRows.filter((payment) => {
+      const searchableValues = [
+        payment.id,
+        payment.parkingEventId,
+        payment.bookingId,
+        payment.userId,
+        payment.status,
+        payment.paymentMethod,
+        payment.providerReference,
+        payment.failureReason,
+        payment.currency,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? '').toLowerCase().includes(trimmedSearch),
+      );
+    });
+  }, [appliedSearch, baseRows, lookupPaymentQuery.data]);
 
   const columns = useMemo<GridColDef<Payment>[]>(
     () => [
@@ -194,20 +232,37 @@ export function PaymentsPage() {
     [isAdmin],
   );
 
-  const handleLookup = (event: FormEvent<HTMLFormElement>) => {
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const paymentId = Number(paymentIdInput);
+    const trimmedValue = searchInput.trim();
 
-    if (!paymentId || paymentId < 1) {
-      setSnackbar({ message: 'Enter a valid payment ID.', severity: 'error' });
+    if (!trimmedValue) {
+      setSnackbar({ message: 'Enter a value to search', severity: 'error' });
       return;
     }
 
-    setLookupPaymentId(paymentId);
+    setAppliedSearch(trimmedValue);
+
+    if (/^\d+$/.test(trimmedValue)) {
+      setLookupPaymentId(Number(trimmedValue));
+      return;
+    }
+
+    setLookupPaymentId(null);
   };
 
-  const paymentError = isUser ? userPaymentsQuery.error : lookupPaymentQuery.error;
+  const clearSearch = () => {
+    setSearchInput('');
+    setAppliedSearch('');
+    setLookupPaymentId(null);
+  };
+
+  const paymentError = isUser
+    ? userPaymentsQuery.error
+    : lookupPaymentQuery.error ?? paymentsQuery.error;
   const isPaymentLoading =
+    paymentsQuery.isLoading ||
+    paymentsQuery.isFetching ||
     userPaymentsQuery.isLoading ||
     userPaymentsQuery.isFetching ||
     lookupPaymentQuery.isLoading ||
@@ -222,7 +277,9 @@ export function PaymentsPage() {
         description={
           isAdmin
             ? 'Review payment totals and update mock payment outcomes.'
-            : 'Review your parking payment history.'
+            : isSecurity
+              ? 'Review operational payment status and details.'
+              : 'Review your parking payment history.'
         }
       />
 
@@ -235,15 +292,25 @@ export function PaymentsPage() {
       ) : null}
 
       {isAdmin ? (
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} lg={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(4, minmax(0, 1fr))',
+            },
+          }}
+        >
+          <Box>
             <StatCard
               icon={<ReceiptLong />}
               label="Total Payments"
               value={summary?.totalPayments ?? 0}
             />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
+          </Box>
+          <Box>
             <StatCard
               accentColor="success.main"
               icon={<Payments />}
@@ -251,44 +318,45 @@ export function PaymentsPage() {
               label="Successful Amount"
               value={formatCurrency(summary?.successfulAmount ?? 0)}
             />
-          </Grid>
+          </Box>
           {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => {
             const statusStyle = paymentStatusStyles[status];
 
             return (
-              <Grid item key={status} xs={12} sm={6} lg={3}>
+              <Box key={status}>
                 <StatCard
                   label={statusStyle.label}
                   value={summaryStatuses[status] ?? 0}
                 />
-              </Grid>
+              </Box>
             );
           })}
-        </Grid>
-      ) : null}
-
-      {isAdmin ? (
-        <Box component="form" onSubmit={handleLookup}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <TextField
-              fullWidth
-              label="Payment ID"
-              onChange={(event) => setPaymentIdInput(event.target.value)}
-              type="number"
-              value={paymentIdInput}
-            />
-            <Button
-              disabled={lookupPaymentQuery.isFetching}
-              startIcon={<Search />}
-              type="submit"
-              variant="contained"
-              sx={{ minWidth: 150 }}
-            >
-              Find
-            </Button>
-          </Stack>
         </Box>
       ) : null}
+
+      <Box component="form" onSubmit={handleSearch}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <TextField
+            fullWidth
+            label="Search payments"
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search by payment id, booking id, booking code, event id, or provider ref"
+            value={searchInput}
+          />
+          <Button
+            disabled={lookupPaymentQuery.isFetching}
+            startIcon={<Search />}
+            type="submit"
+            variant="contained"
+            sx={{ minWidth: 150 }}
+          >
+            Search
+          </Button>
+          <Button onClick={clearSearch} variant="outlined" sx={{ minWidth: 110 }}>
+            Clear
+          </Button>
+        </Stack>
+      </Box>
 
       {paymentError ? (
         <Alert severity={isForbiddenError(paymentError) ? 'warning' : 'error'}>
@@ -302,6 +370,13 @@ export function PaymentsPage() {
         columns={columns}
         height="calc(100vh - 360px)"
         loading={isPaymentLoading}
+        noRowsLabel={
+          isAdmin
+            ? 'No payments found'
+            : isSecurity
+              ? 'No operational payments found'
+              : 'You have no payment history yet'
+        }
         rows={rows}
       />
 
