@@ -4,12 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from './slot-lifecycle.service';
 
 describe('SlotLifecycleService', () => {
   let service: SlotLifecycleService;
   let prisma: {
     slot: {
+      findFirst: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock;
       updateMany: jest.Mock;
@@ -29,16 +31,18 @@ describe('SlotLifecycleService', () => {
   beforeEach(() => {
     prisma = {
       slot: {
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
     };
-    service = new SlotLifecycleService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    service = new SlotLifecycleService(prisma as never, parkingLotValidationService);
   });
 
   it('validates an available slot and returns it', async () => {
-    prisma.slot.findUnique.mockResolvedValue(slot);
+    prisma.slot.findFirst.mockResolvedValue(slot);
 
     await expect(
       service.validateSlotAvailable(slot.id, VehicleType.CAR),
@@ -46,7 +50,7 @@ describe('SlotLifecycleService', () => {
   });
 
   it('rejects unavailable slots during validation', async () => {
-    prisma.slot.findUnique.mockResolvedValue({
+    prisma.slot.findFirst.mockResolvedValue({
       ...slot,
       status: SlotStatus.RESERVED,
     });
@@ -57,7 +61,7 @@ describe('SlotLifecycleService', () => {
   });
 
   it('rejects missing slots during validation', async () => {
-    prisma.slot.findUnique.mockResolvedValue(null);
+    prisma.slot.findFirst.mockResolvedValue(null);
 
     await expect(
       service.validateSlotAvailable(404, VehicleType.CAR),
@@ -65,13 +69,7 @@ describe('SlotLifecycleService', () => {
   });
 
   it('rejects inactive parking lot slots during validation', async () => {
-    prisma.slot.findUnique.mockResolvedValue({
-      ...slot,
-      floor: {
-        ...slot.floor,
-        parkingLot: { id: 30, isActive: false },
-      },
-    });
+    prisma.slot.findFirst.mockResolvedValue(null);
 
     await expect(
       service.validateSlotAvailable(slot.id, VehicleType.CAR),
@@ -79,7 +77,7 @@ describe('SlotLifecycleService', () => {
   });
 
   it('rejects vehicle and slot type mismatch during validation', async () => {
-    prisma.slot.findUnique.mockResolvedValue(slot);
+    prisma.slot.findFirst.mockResolvedValue(slot);
 
     await expect(
       service.validateSlotAvailable(slot.id, VehicleType.BIKE),

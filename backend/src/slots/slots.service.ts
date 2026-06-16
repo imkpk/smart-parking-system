@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
@@ -8,10 +9,13 @@ import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
 
 @Injectable()
 export class SlotsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   async findByParkingLot(parkingLotId: number) {
-    await this.ensureActiveParkingLot(parkingLotId);
+    await this.parkingLotValidationService.getActiveParkingLotOrThrow(parkingLotId);
 
     return this.prisma.slot.findMany({
       where: {
@@ -28,7 +32,7 @@ export class SlotsService {
     parkingLotId: number,
     vehicleType?: VehicleType,
   ) {
-    await this.ensureActiveParkingLot(parkingLotId);
+    await this.parkingLotValidationService.getActiveParkingLotOrThrow(parkingLotId);
 
     return this.prisma.slot.findMany({
       where: {
@@ -45,16 +49,7 @@ export class SlotsService {
 
   async create(floorId: number, createSlotDto: CreateSlotDto) {
     return this.prisma.$transaction(async (tx) => {
-      const floor = await tx.floor.findFirst({
-        where: {
-          id: floorId,
-          parkingLot: { isActive: true },
-        },
-      });
-
-      if (!floor) {
-        throw new NotFoundException('Floor not found');
-      }
+      await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
       return tx.slot.create({
         data: {
@@ -67,16 +62,7 @@ export class SlotsService {
 
   async createBulk(floorId: number, createBulkSlotsDto: CreateBulkSlotsDto) {
     return this.prisma.$transaction(async (tx) => {
-      const floor = await tx.floor.findFirst({
-        where: {
-          id: floorId,
-          parkingLot: { isActive: true },
-        },
-      });
-
-      if (!floor) {
-        throw new NotFoundException('Floor not found');
-      }
+      await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
       await tx.slot.createMany({
         data: createBulkSlotsDto.slots.map((slot) => ({
@@ -142,15 +128,5 @@ export class SlotsService {
     }
 
     return slot;
-  }
-
-  private async ensureActiveParkingLot(id: number) {
-    const parkingLot = await this.prisma.parkingLot.findFirst({
-      where: { id, isActive: true },
-    });
-
-    if (!parkingLot) {
-      throw new NotFoundException('Parking lot not found');
-    }
   }
 }

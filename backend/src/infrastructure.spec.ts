@@ -18,6 +18,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { DashboardService } from './dashboard/dashboard.service';
 import { FloorsModule } from './floors/floors.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
+import { ParkingLotValidationService } from './parking-lots/parking-lot-validation.service';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
 import { PaymentClientModule } from './integrations/payment-service/payment-client.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -192,6 +193,8 @@ describe('Infrastructure', () => {
       service: 'smart-parking-backend',
     });
     expect(new AssignmentsService()).toBeInstanceOf(AssignmentsService);
-    expect(new DashboardService({} as never)).toBeInstanceOf(DashboardService);
+    expect(
+      new DashboardService({} as never, new ParkingLotValidationService({} as never)),
+    ).toBeInstanceOf(DashboardService);
   });
 });

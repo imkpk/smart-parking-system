@@ -1,21 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
 
 @Injectable()
 export class FloorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   async create(parkingLotId: number, createFloorDto: CreateFloorDto) {
     return this.prisma.$transaction(async (tx) => {
-      const parkingLot = await tx.parkingLot.findFirst({
-        where: { id: parkingLotId, isActive: true },
-      });
-
-      if (!parkingLot) {
-        throw new NotFoundException('Parking lot not found');
-      }
+      await this.parkingLotValidationService.getActiveParkingLotOrThrow(
+        parkingLotId,
+        tx,
+      );
 
       return tx.floor.create({
         data: {
@@ -27,13 +28,7 @@ export class FloorsService {
   }
 
   async findByParkingLot(parkingLotId: number) {
-    const parkingLot = await this.prisma.parkingLot.findFirst({
-      where: { id: parkingLotId, isActive: true },
-    });
-
-    if (!parkingLot) {
-      throw new NotFoundException('Parking lot not found');
-    }
+    await this.parkingLotValidationService.getActiveParkingLotOrThrow(parkingLotId);
 
     return this.prisma.floor.findMany({
       where: { parkingLotId },

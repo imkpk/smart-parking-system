@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, ParkingEventStatus, Role, SlotStatus } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { ParkingEventsService } from './parking-events.service';
 import { adminUser, normalUser } from '../test/test-users';
@@ -72,7 +73,11 @@ describe('ParkingEventsService', () => {
       }),
     };
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
-    const slotLifecycleService = new SlotLifecycleService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    const slotLifecycleService = new SlotLifecycleService(
+      prisma as never,
+      parkingLotValidationService,
+    );
     service = new ParkingEventsService(
       prisma as never,
       paymentClientService as never,
