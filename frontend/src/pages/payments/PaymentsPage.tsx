@@ -46,7 +46,12 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatCurrency, formatDateTime, formatStatusLabel } from '../../lib/formatters';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatReceiptNo,
+  formatStatusLabel,
+} from '../../lib/formatters';
 import { Payment } from '../../types/payment';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
@@ -182,15 +187,9 @@ export function PaymentsPage() {
         field: 'id',
         headerName: 'Receipt No',
         minWidth: 130,
-        valueGetter: (_value, row) => `Receipt #${row.id}`,
+        valueGetter: (_value, row) => formatReceiptNo(row.id),
       },
-      {
-        field: 'parkingEventId',
-        headerName: 'Parking Session',
-        minWidth: 150,
-        valueGetter: (_value, row) => labels.getSessionLabel(row.parkingEventId),
-      },
-      createBookingColumn<Payment>((row) => labels.getBookingLabel(row.bookingId)),
+      createBookingColumn<Payment>(),
       ...(isAdmin || isSecurity
         ? [
             {
@@ -204,7 +203,7 @@ export function PaymentsPage() {
         : []),
       {
         field: 'vehicle',
-        headerName: 'Vehicle',
+        headerName: 'Vehicle Number',
         minWidth: 160,
         valueGetter: (_value, row) => labels.getVehicleLabelForBooking(row.bookingId),
       },
@@ -229,14 +228,7 @@ export function PaymentsPage() {
         minWidth: 220,
         valueGetter: (_value, row) => row.providerReference ?? '-',
       },
-      {
-        field: 'failureReason',
-        flex: 1,
-        headerName: 'Failure Reason',
-        minWidth: 220,
-        valueGetter: (_value, row) => row.failureReason ?? '-',
-      },
-      createDateTimeColumn<Payment>('createdAt', 'Paid/Created On', (row) => row.createdAt),
+      createDateTimeColumn<Payment>('createdAt', 'Created On', (row) => row.createdAt),
       createDetailsColumn<Payment>(setDetailsPayment),
       ...(isAdmin
         ? [

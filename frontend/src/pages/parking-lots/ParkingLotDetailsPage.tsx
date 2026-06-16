@@ -668,8 +668,8 @@ function FloorsSection({
 }) {
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
-      { field: 'name', flex: 1, headerName: 'Name', minWidth: 180 },
-      { field: 'level', headerName: 'Level', minWidth: 120 },
+      { field: 'name', flex: 1, headerName: 'Floor Name', minWidth: 180 },
+      { field: 'level', headerName: 'Floor Number', minWidth: 120 },
       {
         field: 'actions',
         align: 'right',
@@ -749,7 +749,7 @@ function SlotsSection({
 }) {
   const columns = useMemo<GridColDef<Slot>[]>(
     () => [
-      { field: 'slotNumber', headerName: 'Slot', minWidth: 130 },
+      { field: 'slotNumber', headerName: 'Slot Number', minWidth: 130 },
       {
         field: 'floorId',
         flex: 1,
@@ -757,7 +757,7 @@ function SlotsSection({
         minWidth: 160,
         valueGetter: (_value, row) => floorNameById.get(row.floorId) ?? `Floor #${row.floorId}`,
       },
-      { field: 'slotType', headerName: 'Type', minWidth: 140 },
+      { field: 'slotType', headerName: 'Vehicle Type', minWidth: 140 },
       {
         field: 'status',
         headerName: 'Status',

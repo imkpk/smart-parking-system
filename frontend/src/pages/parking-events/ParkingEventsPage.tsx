@@ -48,7 +48,7 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatDateTime, formatRupees } from '../../lib/formatters';
+import { formatCurrency, formatDateTime, formatDuration, formatRupees } from '../../lib/formatters';
 import { CheckOutResult, ParkingEvent } from '../../types/parkingEvent';
 
 type EventTab = 'active' | 'history';
@@ -87,30 +87,35 @@ function buildParkingEventTechnicalRows(event: ParkingEvent): DetailsRow[] {
 }
 
 function buildParkingEventHistoryColumns({
+  canViewCustomer,
   isUser,
   labels,
   onViewDetails
 }: {
+  canViewCustomer: boolean;
   isUser: boolean;
   labels: ReturnType<typeof useReferenceLabels>;
   onViewDetails: (event: ParkingEvent) => void;
 }): GridColDef<ParkingEvent>[] {
   const adminOnlyColumns: GridColDef<ParkingEvent>[] = isUser
     ? []
-    : [
-        createSessionColumn<ParkingEvent>((row) =>
-          labels.getSessionLabel(row.id)
-        )
-      ];
+    : [createSessionColumn<ParkingEvent>()];
 
   return [
     ...adminOnlyColumns,
-    createBookingColumn<ParkingEvent>((row) =>
-      labels.getBookingLabel(row.bookingId)
-    ),
-    createVehicleColumn<ParkingEvent>((row) =>
-      labels.getVehicleLabel(row.vehicleId)
-    ),
+    createBookingColumn<ParkingEvent>(),
+    ...(canViewCustomer
+      ? [
+          {
+            field: 'userId',
+            flex: 1,
+            headerName: 'Customer',
+            minWidth: 220,
+            valueGetter: (_value, row) => labels.getCustomerLabel(row.userId)
+          } satisfies GridColDef<ParkingEvent>
+        ]
+      : []),
+    createVehicleColumn<ParkingEvent>((vehicleId) => labels.getVehicleLabel(vehicleId)),
     {
       field: 'parkingLotId',
       flex: 1,
@@ -141,14 +146,13 @@ function buildParkingEventHistoryColumns({
       field: 'durationMinutes',
       headerName: 'Duration',
       minWidth: 130,
-      valueGetter: (_value, row) =>
-        row.durationMinutes === null ? '-' : `${row.durationMinutes} min`
+      valueGetter: (_value, row) => formatDuration(row.durationMinutes)
     },
     {
       field: 'feeAmount',
       headerName: 'Fee',
       minWidth: 120,
-      valueGetter: (_value, row) => formatRupees(row.feeAmount)
+      valueGetter: (_value, row) => formatCurrency(row.feeAmount)
     },
     createDetailsColumn<ParkingEvent>(onViewDetails)
   ];
@@ -238,7 +242,8 @@ export function ParkingEventsPage() {
   });
   const labels = useReferenceLabels({
     context: 'event-enrichment',
-    includeParkingStructure: canOperateParkingEvents,
+    includeParkingStructure: canOperateParkingEvents || isUser,
+    includeUsers: isAdmin,
     role: user?.role
   });
 
@@ -274,15 +279,20 @@ export function ParkingEventsPage() {
 
   const activeColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () => [
-      createSessionColumn<ParkingEvent>((row) =>
-        labels.getSessionLabel(row.id)
-      ),
-      createBookingColumn<ParkingEvent>((row) =>
-        labels.getBookingLabel(row.bookingId)
-      ),
-      createVehicleColumn<ParkingEvent>((row) =>
-        labels.getVehicleLabel(row.vehicleId)
-      ),
+      createSessionColumn<ParkingEvent>(),
+      createBookingColumn<ParkingEvent>(),
+      ...(canOperateParkingEvents
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId)
+            } satisfies GridColDef<ParkingEvent>
+          ]
+        : []),
+      createVehicleColumn<ParkingEvent>((vehicleId) => labels.getVehicleLabel(vehicleId)),
       {
         field: 'slotId',
         headerName: 'Slot',
@@ -339,11 +349,12 @@ export function ParkingEventsPage() {
   const historyColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () =>
       buildParkingEventHistoryColumns({
+        canViewCustomer: canOperateParkingEvents,
         isUser,
         labels,
         onViewDetails: setDetailsEvent
       }),
-    [isUser, labels]
+    [canOperateParkingEvents, isUser, labels]
   );
 
   const handleCheckIn = (event: FormEvent<HTMLFormElement>) => {

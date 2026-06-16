@@ -22,7 +22,6 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
-  Typography,
 } from '@mui/material';
 import { Add, Delete, Edit, Search, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -145,16 +144,8 @@ export function ParkingLotsPage() {
       {
         field: 'name',
         flex: 1.1,
-        headerName: 'Name',
+        headerName: 'Parking Lot Name',
         minWidth: 180,
-        renderCell: ({ row }) => (
-          <Stack spacing={0.25}>
-            <Typography fontWeight={600}>{row.name}</Typography>
-            <Typography color="text.secondary" variant="body2">
-              ID #{row.id}
-            </Typography>
-          </Stack>
-        ),
       },
       { field: 'type', headerName: 'Type', minWidth: 140 },
       {

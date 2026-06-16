@@ -35,9 +35,10 @@ import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { formatDateTime } from '../../lib/formatters';
+import { formatBookingNo, formatDateTime } from '../../lib/formatters';
 import { Booking } from '../../types/booking';
 import { VehicleType } from '../../types/vehicle';
 
@@ -67,9 +68,15 @@ function toLocalDateTimeValue(date = new Date()) {
 }
 
 export function BookingsPage() {
-  const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
+  const { user, isAdmin, isUser, canOperateParkingEvents } = useUserRole();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const labels = useReferenceLabels({
+    context: 'bookings',
+    includeParkingStructure: true,
+    includeUsers: isAdmin,
+    role: user?.role,
+  });
   const [formOpen, setFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
     ...emptyBookingForm,
@@ -102,18 +109,6 @@ export function BookingsPage() {
   const vehicles = vehiclesQuery.data ?? [];
   const parkingLots = parkingLotsQuery.data ?? [];
   const availableSlots = availableSlotsQuery.data ?? [];
-  const vehicleById = useMemo(
-    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
-    [vehicles],
-  );
-  const parkingLotById = useMemo(
-    () => new Map(parkingLots.map((parkingLot) => [parkingLot.id, parkingLot])),
-    [parkingLots],
-  );
-  const slotById = useMemo(
-    () => new Map(availableSlots.map((slot) => [slot.id, slot])),
-    [availableSlots],
-  );
 
   const createMutation = useMutation({
     mutationFn: createBooking,
@@ -143,25 +138,41 @@ export function BookingsPage() {
 
   const columns = useMemo<GridColDef<Booking>[]>(
     () => [
+      {
+        field: 'id',
+        headerName: 'Booking No',
+        minWidth: 150,
+        valueGetter: (_value, row) => formatBookingNo(row.id),
+      },
       { field: 'bookingCode', flex: 1, headerName: 'Booking Code', minWidth: 220 },
+      ...(canOperateParkingEvents
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+            } satisfies GridColDef<Booking>,
+          ]
+        : []),
+      {
+        field: 'vehicleId',
+        headerName: 'Vehicle Number',
+        minWidth: 170,
+        valueGetter: (_value, row) => labels.getVehicleLabel(row.vehicleId),
+      },
       {
         field: 'parkingLotId',
         headerName: 'Parking Lot',
         minWidth: 170,
-        valueGetter: (_value, row) => parkingLotById.get(row.parkingLotId)?.name ?? `Lot #${row.parkingLotId}`,
-      },
-      {
-        field: 'vehicleId',
-        headerName: 'Vehicle',
-        minWidth: 170,
-        valueGetter: (_value, row) =>
-          vehicleById.get(row.vehicleId)?.vehicleNumber ?? `Vehicle #${row.vehicleId}`,
+        valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
       },
       {
         field: 'slotId',
         headerName: 'Slot',
         minWidth: 130,
-        valueGetter: (_value, row) => slotById.get(row.slotId)?.slotNumber ?? `Slot #${row.slotId}`,
+        valueGetter: (_value, row) => labels.getSlotLabel(row.slotId),
       },
       {
         field: 'status',
@@ -210,7 +221,7 @@ export function BookingsPage() {
           ]
         : []),
     ],
-    [isUser, parkingLotById, slotById, vehicleById],
+    [canOperateParkingEvents, isUser, labels],
   );
 
   const openCreateForm = () => {

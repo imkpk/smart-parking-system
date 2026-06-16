@@ -30,6 +30,8 @@ export function useReferenceLabels({
   const isSecurity = role === 'SECURITY';
   const isUser = role === 'USER';
   const canUseOperationalData = isAdmin || isSecurity;
+  const canLoadParkingStructure =
+    includeParkingStructure && (canUseOperationalData || isUser);
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', isUser ? 'my' : 'all', context],
@@ -52,7 +54,7 @@ export function useReferenceLabels({
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots', context],
     queryFn: getParkingLots,
-    enabled: includeParkingStructure && canUseOperationalData,
+    enabled: canLoadParkingStructure,
   });
 
   const slotsQuery = useQuery({
@@ -62,7 +64,7 @@ export function useReferenceLabels({
       const nestedSlots = await Promise.all(lots.map((lot) => getSlots(lot.id)));
       return nestedSlots.flat();
     },
-    enabled: includeParkingStructure && Boolean(parkingLotsQuery.data?.length),
+    enabled: canLoadParkingStructure && Boolean(parkingLotsQuery.data?.length),
   });
 
   const bookingById = useMemo(() => asMap<Booking>(bookingsQuery.data), [bookingsQuery.data]);

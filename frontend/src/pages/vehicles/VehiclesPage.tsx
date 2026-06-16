@@ -31,6 +31,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
@@ -44,9 +45,14 @@ const emptyVehicleForm: VehiclePayload = {
 };
 
 export function VehiclesPage() {
-  const { isAdmin, isUser } = useUserRole();
+  const { user, isAdmin, isUser } = useUserRole();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const labels = useReferenceLabels({
+    context: 'vehicles',
+    includeUsers: isAdmin,
+    role: user?.role,
+  });
   const canManageVehicles = isAdmin || isUser;
   const [formOpen, setFormOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -94,12 +100,20 @@ export function VehiclesPage() {
   const columns = useMemo<GridColDef<Vehicle>[]>(
     () => [
       { field: 'vehicleNumber', flex: 1, headerName: 'Vehicle Number', minWidth: 170 },
-      { field: 'vehicleType', headerName: 'Type', minWidth: 120 },
+      { field: 'vehicleType', headerName: 'Vehicle Type', minWidth: 120 },
       { field: 'brand', headerName: 'Brand', minWidth: 140 },
       { field: 'model', headerName: 'Model', minWidth: 140 },
       { field: 'color', headerName: 'Color', minWidth: 120 },
       ...(isAdmin
-        ? [{ field: 'userId', headerName: 'User ID', minWidth: 110 } satisfies GridColDef<Vehicle>]
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Owner',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+            } satisfies GridColDef<Vehicle>,
+          ]
         : []),
       {
         field: 'actions',
@@ -125,7 +139,7 @@ export function VehiclesPage() {
         ),
       },
     ],
-    [isAdmin],
+    [isAdmin, labels],
   );
 
   const closeForm = () => {
