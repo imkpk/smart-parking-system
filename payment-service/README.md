@@ -103,6 +103,42 @@ GET  /api/payments/user/{userId}
 GET  /api/payments/reports/summary
 ```
 
+## NestJS Contract (`POST /api/payments/initiate`)
+
+Request fields (NestJS backend → payment-service):
+
+```json
+{
+  "parkingEventId": 1,
+  "bookingId": 1,
+  "userId": 1,
+  "amount": 80,
+  "currency": "INR",
+  "paymentMethod": "MOCK"
+}
+```
+
+Response fields (`ApiResponse.data`):
+
+```json
+{
+  "id": 1,
+  "parkingEventId": 1,
+  "bookingId": 1,
+  "userId": 1,
+  "amount": 80,
+  "currency": "INR",
+  "status": "INITIATED",
+  "paymentMethod": "MOCK",
+  "providerReference": null,
+  "failureReason": null,
+  "createdAt": "2026-06-17T10:00:00",
+  "updatedAt": "2026-06-17T10:00:00"
+}
+```
+
+NestJS checkout forwards the caller `Authorization` header and uses `PAYMENT_SERVICE_URL` (default `http://localhost:8081`). Amount must be at least `0.01`.
+
 ## Authorization
 
 All payment APIs except health and Swagger require a JWT from the NestJS backend.
