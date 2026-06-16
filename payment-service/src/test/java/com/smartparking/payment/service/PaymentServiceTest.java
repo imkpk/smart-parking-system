@@ -161,6 +161,26 @@ class PaymentServiceTest {
     }
 
     @Test
+    void markSuccessRejectsRefundedPayment() {
+        Payment payment = PaymentTestFixtures.payment(1L, 1L, PaymentStatus.REFUNDED, new BigDecimal("80.00"));
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.markSuccess(1L))
+                .isInstanceOf(PaymentStateException.class)
+                .hasMessage("REFUNDED payment cannot be changed.");
+    }
+
+    @Test
+    void markFailureRejectsRefundedPayment() {
+        Payment payment = PaymentTestFixtures.payment(1L, 1L, PaymentStatus.REFUNDED, new BigDecimal("80.00"));
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.markFailure(1L, new MockFailureRequest("Too late")))
+                .isInstanceOf(PaymentStateException.class)
+                .hasMessage("REFUNDED payment cannot be changed.");
+    }
+
+    @Test
     void markFailureRejectsSuccessfulPayment() {
         Payment payment = PaymentTestFixtures.payment(1L, 1L, PaymentStatus.SUCCESS, new BigDecimal("80.00"));
         when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));

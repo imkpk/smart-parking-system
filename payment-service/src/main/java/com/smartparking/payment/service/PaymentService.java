@@ -4,7 +4,6 @@ import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
-import com.smartparking.payment.exception.PaymentStateException;
 import com.smartparking.payment.exception.ResourceNotFoundException;
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentStatus;
@@ -47,13 +46,11 @@ public class PaymentService {
     public PaymentResponse markSuccess(Long id) {
         Payment payment = findPayment(id);
 
-        if (payment.getStatus() == PaymentStatus.FAILED) {
-            throw new PaymentStateException("FAILED payment cannot be marked SUCCESS. Create a new payment.");
-        }
-
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+        if (PaymentStatusPolicy.isSuccessIdempotent(payment.getStatus())) {
             return PaymentResponse.from(payment);
         }
+
+        PaymentStatusPolicy.assertCanMarkSuccess(payment.getStatus());
 
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setProviderReference("MOCK-" + UUID.randomUUID());
@@ -66,13 +63,11 @@ public class PaymentService {
     public PaymentResponse markFailure(Long id, MockFailureRequest request) {
         Payment payment = findPayment(id);
 
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            throw new PaymentStateException("SUCCESS payment cannot be marked FAILED.");
-        }
-
-        if (payment.getStatus() == PaymentStatus.FAILED) {
+        if (PaymentStatusPolicy.isFailureIdempotent(payment.getStatus())) {
             return PaymentResponse.from(payment);
         }
+
+        PaymentStatusPolicy.assertCanMarkFailure(payment.getStatus());
 
         payment.setStatus(PaymentStatus.FAILED);
         payment.setFailureReason(request.failureReason());

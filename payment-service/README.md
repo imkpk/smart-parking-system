@@ -208,6 +208,9 @@ PaymentSummaryResponse
 - Mock failure stores `failureReason`.
 - `SUCCESS` payment cannot be marked `FAILED`.
 - `FAILED` payment cannot be marked `SUCCESS`; create a new payment instead.
+- `REFUNDED` payments cannot be changed by mock success/failure.
+- `INITIATED` can become `SUCCESS` or `FAILED`.
+- USER can list/read only own payments; ADMIN can access all; SECURITY can list/read operational payments.
 
 ## Enums
 
