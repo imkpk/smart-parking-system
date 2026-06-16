@@ -10,7 +10,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -31,11 +30,14 @@ import {
 import { getParkingLots } from '../../api/parkingLotsApi';
 import { getMyVehicles, getVehicles } from '../../api/vehiclesApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { useAuth } from '../../providers/AuthProvider';
+import { formatDateTime } from '../../lib/formatters';
 import { Booking } from '../../types/booking';
 import { VehicleType } from '../../types/vehicle';
 
@@ -65,23 +67,20 @@ function toLocalDateTimeValue(date = new Date()) {
 }
 
 export function BookingsPage() {
-  const { user } = useAuth();
+  const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
   const queryClient = useQueryClient();
-  const isUser = user?.role === 'USER';
-  const isAdmin = user?.role === 'ADMIN';
-  const canViewAll = user?.role === 'ADMIN' || user?.role === 'SECURITY';
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [formOpen, setFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
     ...emptyBookingForm,
     startTime: toLocalDateTimeValue(),
   });
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
-  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', isUser ? 'my' : 'all'],
     queryFn: isUser ? getMyBookings : getBookings,
-    enabled: Boolean(isUser || canViewAll),
+    enabled: Boolean(isUser || canOperateParkingEvents),
   });
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
@@ -91,7 +90,7 @@ export function BookingsPage() {
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
-    enabled: Boolean(isUser || canViewAll),
+    enabled: Boolean(isUser || canOperateParkingEvents),
   });
   const availableSlotsQuery = useQuery({
     queryKey: ['parking-lots', bookingForm.parkingLotId, 'available-slots', bookingForm.vehicleType],
@@ -123,11 +122,11 @@ export function BookingsPage() {
         queryClient.invalidateQueries({ queryKey: ['bookings'] }),
         queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
       ]);
-      setSnackbar({ message: 'Booking created.', severity: 'success' });
+      showSuccess('Booking created.');
       setFormOpen(false);
       setBookingForm({ ...emptyBookingForm, startTime: toLocalDateTimeValue() });
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const cancelMutation = useMutation({
     mutationFn: cancelBooking,
@@ -136,10 +135,10 @@ export function BookingsPage() {
         queryClient.invalidateQueries({ queryKey: ['bookings'] }),
         queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
       ]);
-      setSnackbar({ message: 'Booking cancelled.', severity: 'success' });
+      showSuccess('Booking cancelled.');
       setCancelTarget(null);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const columns = useMemo<GridColDef<Booking>[]>(
@@ -174,13 +173,13 @@ export function BookingsPage() {
         field: 'startTime',
         headerName: 'Start Time',
         minWidth: 190,
-        valueGetter: (_value, row) => new Date(row.startTime).toLocaleString(),
+        valueGetter: (_value, row) => formatDateTime(row.startTime),
       },
       {
         field: 'endTime',
         headerName: 'End Time',
         minWidth: 190,
-        valueGetter: (_value, row) => (row.endTime ? new Date(row.endTime).toLocaleString() : '-'),
+        valueGetter: (_value, row) => formatDateTime(row.endTime),
       },
       ...(isUser
         ? [
@@ -233,7 +232,7 @@ export function BookingsPage() {
     event.preventDefault();
 
     if (!bookingForm.vehicleId || !bookingForm.slotId) {
-      setSnackbar({ message: 'Please select a vehicle and slot.', severity: 'error' });
+      showError('Please select a vehicle and slot.');
       return;
     }
 
@@ -390,11 +389,7 @@ export function BookingsPage() {
         title="Cancel Booking"
       />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

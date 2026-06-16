@@ -16,7 +16,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -36,9 +35,11 @@ import {
   getParkingLots,
   updateParkingLot,
 } from '../../api/parkingLotsApi';
-import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import {
   ParkingLot,
@@ -59,6 +60,7 @@ const emptyForm: ParkingLotPayload = {
 
 export function ParkingLotsPage() {
   const queryClient = useQueryClient();
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const theme = useTheme();
   const isCompactAction = useMediaQuery(theme.breakpoints.down('md'));
   const [formOpen, setFormOpen] = useState(false);
@@ -66,10 +68,6 @@ export function ParkingLotsPage() {
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
   const [search, setSearch] = useState('');
-  const [snackbar, setSnackbar] = useState<{
-    message: string;
-    severity: 'success' | 'error';
-  } | null>(null);
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
@@ -83,14 +81,11 @@ export function ParkingLotsPage() {
     mutationFn: createParkingLot,
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot created.', severity: 'success' });
+      showSuccess('Parking lot created.');
       closeForm();
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not create parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not create parking lot.'));
     },
   });
 
@@ -99,14 +94,11 @@ export function ParkingLotsPage() {
       updateParkingLot(id, payload),
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot updated.', severity: 'success' });
+      showSuccess('Parking lot updated.');
       closeForm();
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not update parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not update parking lot.'));
     },
   });
 
@@ -114,14 +106,11 @@ export function ParkingLotsPage() {
     mutationFn: deleteParkingLot,
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot deleted.', severity: 'success' });
+      showSuccess('Parking lot deleted.');
       setDeleteTarget(null);
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not delete parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not delete parking lot.'));
     },
   });
 
@@ -448,19 +437,7 @@ export function ParkingLotsPage() {
         title="Delete Parking Lot"
       />
 
-      <Snackbar
-        autoHideDuration={3500}
-        onClose={() => setSnackbar(null)}
-        open={Boolean(snackbar)}
-      >
-        <Alert
-          onClose={() => setSnackbar(null)}
-          severity={snackbar?.severity ?? 'success'}
-          variant="filled"
-        >
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

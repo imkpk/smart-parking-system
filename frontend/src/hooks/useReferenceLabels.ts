@@ -6,6 +6,7 @@ import { getSlots } from '../api/slotsApi';
 import { getUsers } from '../api/usersApi';
 import { getMyVehicles, getVehicles } from '../api/vehiclesApi';
 import { asMap } from '../lib/collection';
+import { formatBookingNo, formatSessionNo } from '../lib/formatters';
 import { Role, User } from '../types/auth';
 import { Booking } from '../types/booking';
 import { ParkingLot } from '../types/parkingLot';
@@ -82,14 +83,14 @@ export function useReferenceLabels({
       slotById,
       getBookingCode: (bookingId: number) => bookingById.get(bookingId)?.bookingCode,
       getBookingLabel: (bookingId: number) =>
-        bookingById.get(bookingId)?.bookingCode ?? `Booking #${bookingId}`,
+        bookingById.get(bookingId)?.bookingCode ?? formatBookingNo(bookingId),
       getCustomerLabel: (userId: number) => {
         const customer = userById.get(userId);
         return customer ? `${customer.name} · ${customer.email}` : `Customer #${userId}`;
       },
       getParkingLotLabel: (parkingLotId: number) =>
         parkingLotById.get(parkingLotId)?.name ?? `Lot #${parkingLotId}`,
-      getSessionLabel: (sessionId: number) => `Session #${sessionId}`,
+      getSessionLabel: (sessionId: number) => formatSessionNo(sessionId),
       getSlotLabel: (slotId: number) => slotById.get(slotId)?.slotNumber ?? `Slot #${slotId}`,
       getVehicleLabel: (vehicleId: number) =>
         vehicleById.get(vehicleId)?.vehicleNumber ?? `Vehicle #${vehicleId}`,

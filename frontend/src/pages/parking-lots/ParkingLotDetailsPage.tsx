@@ -13,7 +13,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Stack,
   Tab,
   Tabs,
@@ -37,13 +36,15 @@ import {
   getSlots,
   updateSlotStatus,
 } from '../../api/slotsApi';
-import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { slotStatusStyles } from '../../lib/slotStatusStyles';
+import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
   BulkSlotForm,
@@ -54,8 +55,6 @@ import {
   slotStatusOptions,
   slotTypeOptions,
 } from '../../types/slot';
-
-type SnackbarState = { message: string; severity: 'success' | 'error' } | null;
 
 const emptyFloorForm: FloorPayload = {
   name: '',
@@ -95,6 +94,7 @@ export function ParkingLotDetailsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const activeTab = getTabFromPath(location.pathname);
 
   const [floorFormOpen, setFloorFormOpen] = useState(false);
@@ -111,7 +111,6 @@ export function ParkingLotDetailsPage() {
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
   const [deleteSlotTarget, setDeleteSlotTarget] = useState<Slot | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const parkingLotQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId],
@@ -176,7 +175,7 @@ export function ParkingLotDetailsPage() {
 
   const floorMutationOptions = {
     onError: (error: unknown) => {
-      setSnackbar({ message: getApiErrorMessage(error), severity: 'error' });
+      showError(getApiErrorMessage(error));
     },
   };
 
@@ -184,7 +183,7 @@ export function ParkingLotDetailsPage() {
     mutationFn: (payload: FloorPayload) => createFloor(parkingLotId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor created.', severity: 'success' });
+      showSuccess('Floor created.');
       closeFloorForm();
     },
     ...floorMutationOptions,
@@ -194,7 +193,7 @@ export function ParkingLotDetailsPage() {
       updateFloor(floorId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor updated.', severity: 'success' });
+      showSuccess('Floor updated.');
       closeFloorForm();
     },
     ...floorMutationOptions,
@@ -203,7 +202,7 @@ export function ParkingLotDetailsPage() {
     mutationFn: deleteFloor,
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor deleted.', severity: 'success' });
+      showSuccess('Floor deleted.');
       setDeleteFloorTarget(null);
     },
     ...floorMutationOptions,
@@ -213,11 +212,11 @@ export function ParkingLotDetailsPage() {
       createSlot(floorId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Slot created.', severity: 'success' });
+      showSuccess('Slot created.');
       setSlotFormOpen(false);
       setSlotForm(emptySlotForm);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const bulkSlotMutation = useMutation({
     mutationFn: (payload: BulkSlotForm) => {
@@ -230,20 +229,20 @@ export function ParkingLotDetailsPage() {
     },
     onSuccess: async (_createdSlots, variables) => {
       await invalidateStructure();
-      setSnackbar({ message: `${variables.count} slots created.`, severity: 'success' });
+      showSuccess(`${variables.count} slots created.`);
       setBulkFormOpen(false);
       setBulkForm({ ...emptyBulkForm, floorId: floors[0]?.id ?? 0 });
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const updateStatusMutation = useMutation({
     mutationFn: ({ slotId, status }: { slotId: number; status: SlotStatus }) =>
       updateSlotStatus(slotId, status),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Slot status updated.', severity: 'success' });
+      showSuccess('Slot status updated.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const deleteSlotMutation = useMutation({
     mutationFn: deleteSlot,
@@ -251,9 +250,9 @@ export function ParkingLotDetailsPage() {
       await invalidateStructure();
       setSelectedSlotIds((current) => current.filter((id) => id !== slotId));
       setDeleteSlotTarget(null);
-      setSnackbar({ message: 'Slot deleted.', severity: 'success' });
+      showSuccess('Slot deleted.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const bulkDeleteSlotsMutation = useMutation({
     mutationFn: deleteSlots,
@@ -261,9 +260,9 @@ export function ParkingLotDetailsPage() {
       await invalidateStructure();
       setSelectedSlotIds((current) => current.filter((id) => !ids.includes(id)));
       setBulkDeleteOpen(false);
-      setSnackbar({ message: `${ids.length} slots deleted.`, severity: 'success' });
+      showSuccess(`${ids.length} slots deleted.`);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const closeFloorForm = () => {
@@ -310,7 +309,7 @@ export function ParkingLotDetailsPage() {
     event.preventDefault();
 
     if (!slotForm.floorId) {
-      setSnackbar({ message: 'Please select a floor.', severity: 'error' });
+      showError('Please select a floor.');
       return;
     }
 
@@ -328,7 +327,7 @@ export function ParkingLotDetailsPage() {
     event.preventDefault();
 
     if (!bulkForm.floorId || bulkForm.count < 1) {
-      setSnackbar({ message: 'Please select a floor and valid slot count.', severity: 'error' });
+      showError('Please select a floor and valid slot count.');
       return;
     }
 
@@ -427,17 +426,17 @@ export function ParkingLotDetailsPage() {
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard
-                  accentColor={slotStatusStyles.AVAILABLE.borderColor}
+                  accentColor={statusStyles.AVAILABLE.borderColor}
                   icon={<LocalParking />}
-                  iconBgcolor={slotStatusStyles.AVAILABLE.bgcolor}
+                  iconBgcolor={statusStyles.AVAILABLE.bgcolor}
                   label="Available"
                   value={slotStatusCounts.AVAILABLE}
                 />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard
-                  accentColor={slotStatusStyles.OCCUPIED.borderColor}
-                  iconBgcolor={slotStatusStyles.OCCUPIED.bgcolor}
+                  accentColor={statusStyles.OCCUPIED.borderColor}
+                  iconBgcolor={statusStyles.OCCUPIED.bgcolor}
                   label="Occupied"
                   value={slotStatusCounts.OCCUPIED}
                 />
@@ -651,11 +650,7 @@ export function ParkingLotDetailsPage() {
         title="Bulk Delete Slots"
       />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

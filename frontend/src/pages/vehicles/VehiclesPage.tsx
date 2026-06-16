@@ -10,7 +10,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -28,10 +27,12 @@ import {
   updateVehicle,
 } from '../../api/vehiclesApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { useAuth } from '../../providers/AuthProvider';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
 const emptyVehicleForm: VehiclePayload = {
@@ -43,15 +44,14 @@ const emptyVehicleForm: VehiclePayload = {
 };
 
 export function VehiclesPage() {
-  const { user } = useAuth();
+  const { isAdmin, isUser } = useUserRole();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'ADMIN';
-  const canManageVehicles = user?.role === 'ADMIN' || user?.role === 'USER';
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const canManageVehicles = isAdmin || isUser;
   const [formOpen, setFormOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState<VehiclePayload>(emptyVehicleForm);
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
-  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
 
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
@@ -66,29 +66,29 @@ export function VehiclesPage() {
     mutationFn: createVehicle,
     onSuccess: async () => {
       await invalidateVehicles();
-      setSnackbar({ message: 'Vehicle created.', severity: 'success' });
+      showSuccess('Vehicle created.');
       closeForm();
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: VehiclePayload }) =>
       updateVehicle(id, payload),
     onSuccess: async () => {
       await invalidateVehicles();
-      setSnackbar({ message: 'Vehicle updated.', severity: 'success' });
+      showSuccess('Vehicle updated.');
       closeForm();
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteVehicle,
     onSuccess: async () => {
       await invalidateVehicles();
-      setSnackbar({ message: 'Vehicle deleted.', severity: 'success' });
+      showSuccess('Vehicle deleted.');
       setDeleteTarget(null);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const columns = useMemo<GridColDef<Vehicle>[]>(
@@ -279,11 +279,7 @@ export function VehiclesPage() {
         title="Delete Vehicle"
       />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }
