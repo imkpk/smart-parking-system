@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus, Role, SlotStatus } from '@prisma/client';
+import { BookingStatus, ParkingEventStatus, Prisma, Role, SlotStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
@@ -142,6 +142,25 @@ describe('ParkingEventsService', () => {
       where: { id: booking.id },
       include: { slot: true },
     });
+  });
+
+  it('maps duplicate parking event prisma errors to conflict', async () => {
+    prisma.booking.findFirst.mockResolvedValue(booking);
+    prisma.parkingEvent.findFirst.mockResolvedValue(null);
+    prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue(booking.slot);
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parkingEvent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['bookingId'] },
+      }),
+    );
+
+    await expect(service.checkIn({ bookingId: booking.id })).rejects.toThrow(
+      'Parking event already exists for this booking',
+    );
   });
 
   it('throws when check-in booking is missing', async () => {

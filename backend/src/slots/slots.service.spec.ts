@@ -1,5 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
-import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma, SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotsService } from './slots.service';
 
@@ -120,6 +120,44 @@ describe('SlotsService', () => {
       },
     });
     expect(result.id).toBe(10);
+  });
+
+  it('maps duplicate slot prisma errors to conflict', async () => {
+    prisma.floor.findFirst.mockResolvedValue({ id: 1 });
+    prisma.slot.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['floorId', 'slotNumber'] },
+      }),
+    );
+
+    await expect(
+      service.create(1, {
+        slotNumber: 'A-01',
+        slotType: SlotType.CAR,
+        status: SlotStatus.AVAILABLE,
+      }),
+    ).rejects.toThrow('Slot already exists');
+  });
+
+  it('maps duplicate slot prisma errors during bulk create', async () => {
+    prisma.floor.findFirst.mockResolvedValue({ id: 1 });
+    prisma.slot.createMany.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['floorId', 'slotNumber'] },
+      }),
+    );
+
+    await expect(
+      service.createBulk(1, {
+        slots: [
+          { slotNumber: 'A-01', slotType: SlotType.CAR, status: SlotStatus.AVAILABLE },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('throws when creating a slot on a missing floor', async () => {

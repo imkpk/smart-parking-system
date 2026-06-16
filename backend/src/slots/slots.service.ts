@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
+import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+
+const SLOT_UNIQUE_MESSAGES = {
+  'floorId,slotNumber': 'Slot already exists',
+  slotNumber: 'Slot already exists',
+};
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { DeleteSlotsDto } from './dto/delete-slots.dto';
@@ -48,39 +54,47 @@ export class SlotsService {
   }
 
   async create(floorId: number, createSlotDto: CreateSlotDto) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
-      return tx.slot.create({
-        data: {
-          ...createSlotDto,
-          floorId,
-        },
+        return tx.slot.create({
+          data: {
+            ...createSlotDto,
+            floorId,
+          },
+        });
       });
-    });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, SLOT_UNIQUE_MESSAGES, 'Slot already exists');
+    }
   }
 
   async createBulk(floorId: number, createBulkSlotsDto: CreateBulkSlotsDto) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
-      await tx.slot.createMany({
-        data: createBulkSlotsDto.slots.map((slot) => ({
-          ...slot,
-          floorId,
-        })),
-      });
+        await tx.slot.createMany({
+          data: createBulkSlotsDto.slots.map((slot) => ({
+            ...slot,
+            floorId,
+          })),
+        });
 
-      return tx.slot.findMany({
-        where: {
-          floorId,
-          slotNumber: {
-            in: createBulkSlotsDto.slots.map((slot) => slot.slotNumber),
+        return tx.slot.findMany({
+          where: {
+            floorId,
+            slotNumber: {
+              in: createBulkSlotsDto.slots.map((slot) => slot.slotNumber),
+            },
           },
-        },
-        orderBy: { slotNumber: 'asc' },
+          orderBy: { slotNumber: 'asc' },
+        });
       });
-    });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, SLOT_UNIQUE_MESSAGES, 'Slot already exists');
+    }
   }
 
   async updateStatus(id: number, updateSlotStatusDto: UpdateSlotStatusDto) {

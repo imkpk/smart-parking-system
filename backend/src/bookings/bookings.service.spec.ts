@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { BookingStatus, Prisma, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
@@ -109,6 +109,28 @@ describe('BookingsService', () => {
       }),
     });
     expect(result).toBe(booking);
+  });
+
+  it('maps duplicate booking code prisma errors to conflict', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
+    prisma.slot.findFirst.mockResolvedValue(slot);
+    prisma.booking.count.mockResolvedValue(0);
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+    prisma.booking.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['bookingCode'] },
+      }),
+    );
+
+    await expect(
+      service.create(normalUser, {
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        startTime: '2026-06-14T10:00:00.000Z',
+      }),
+    ).rejects.toThrow('Booking code already exists');
   });
 
   it('prevents booking with someone else vehicle', async () => {

@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
+import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+
+const BOOKING_UNIQUE_MESSAGES = {
+  bookingCode: 'Booking code already exists',
+};
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -26,52 +31,60 @@ export class BookingsService {
   ) {}
 
   async create(currentUser: SafeUser, createBookingDto: CreateBookingDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const vehicle = await tx.vehicle.findFirst({
-        where: {
-          id: createBookingDto.vehicleId,
-          userId: currentUser.id,
-        },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const vehicle = await tx.vehicle.findFirst({
+          where: {
+            id: createBookingDto.vehicleId,
+            userId: currentUser.id,
+          },
+        });
+
+        if (!vehicle) {
+          throw new ForbiddenException('You can only book with your own vehicle');
+        }
+
+        const slot = await this.slotLifecycleService.validateSlotAvailable(
+          createBookingDto.slotId,
+          vehicle.vehicleType,
+          tx,
+        );
+
+        const activeBookingCount = await tx.booking.count({
+          where: {
+            slotId: slot.id,
+            status: { in: ACTIVE_BOOKING_STATUSES },
+          },
+        });
+
+        if (activeBookingCount > 0) {
+          throw new ConflictException('Slot is already booked');
+        }
+
+        await this.slotLifecycleService.reserveSlot(slot.id, tx);
+
+        return tx.booking.create({
+          data: {
+            userId: currentUser.id,
+            vehicleId: vehicle.id,
+            slotId: slot.id,
+            parkingLotId: slot.floor.parkingLotId,
+            status: BookingStatus.CONFIRMED,
+            startTime: new Date(createBookingDto.startTime),
+            endTime: createBookingDto.endTime
+              ? new Date(createBookingDto.endTime)
+              : undefined,
+            bookingCode: this.generateBookingCode(),
+          },
+        });
       });
-
-      if (!vehicle) {
-        throw new ForbiddenException('You can only book with your own vehicle');
-      }
-
-      const slot = await this.slotLifecycleService.validateSlotAvailable(
-        createBookingDto.slotId,
-        vehicle.vehicleType,
-        tx,
+    } catch (error) {
+      handlePrismaUniqueConstraint(
+        error,
+        BOOKING_UNIQUE_MESSAGES,
+        'Booking code already exists',
       );
-
-      const activeBookingCount = await tx.booking.count({
-        where: {
-          slotId: slot.id,
-          status: { in: ACTIVE_BOOKING_STATUSES },
-        },
-      });
-
-      if (activeBookingCount > 0) {
-        throw new ConflictException('Slot is already booked');
-      }
-
-      await this.slotLifecycleService.reserveSlot(slot.id, tx);
-
-      return tx.booking.create({
-        data: {
-          userId: currentUser.id,
-          vehicleId: vehicle.id,
-          slotId: slot.id,
-          parkingLotId: slot.floor.parkingLotId,
-          status: BookingStatus.CONFIRMED,
-          startTime: new Date(createBookingDto.startTime),
-          endTime: createBookingDto.endTime
-            ? new Date(createBookingDto.endTime)
-            : undefined,
-          bookingCode: this.generateBookingCode(),
-        },
-      });
-    });
+    }
   }
 
   findMine(userId: number) {
