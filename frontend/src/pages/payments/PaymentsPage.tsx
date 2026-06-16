@@ -46,8 +46,7 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatCurrency, formatDateTime } from '../../lib/formatters';
-import { paymentStatusStyles } from '../../lib/paymentStatusStyles';
+import { formatCurrency, formatDateTime, formatStatusLabel } from '../../lib/formatters';
 import { Payment } from '../../types/payment';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
@@ -369,19 +368,15 @@ export function PaymentsPage() {
               value={formatCurrency(summary?.successfulAmount ?? 0)}
             />
           </Box>
-          {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => {
-            const statusStyle = paymentStatusStyles[status];
-
-            return (
-              <Box key={status}>
-                <StatCard
-                  compact
-                  label={statusStyle.label}
-                  value={summaryStatuses[status] ?? 0}
-                />
-              </Box>
-            );
-          })}
+          {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => (
+            <Box key={status}>
+              <StatCard
+                compact
+                label={formatStatusLabel(status)}
+                value={summaryStatuses[status] ?? 0}
+              />
+            </Box>
+          ))}
         </Box>
       ) : null}
 
