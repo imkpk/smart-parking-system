@@ -490,13 +490,15 @@ export function ParkingEventsPage() {
         </Paper>
       )}
 
-      <SearchField
-        label='Search parking events'
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch('')}
-        placeholder='Search by session no, booking no, vehicle number, customer, parking lot, slot, or status'
-        value={search}
-      />
+      <Box sx={{ mt: 2 }}>
+        <SearchField
+          // label='Search parking events'
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch('')}
+          placeholder='Search by session no, booking no, vehicle number, customer, parking lot, slot, or status'
+          value={search}
+        />
+      </Box>
 
       {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
