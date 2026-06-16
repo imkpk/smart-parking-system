@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { BookingsService } from './bookings.service';
 import { adminUser, normalUser } from '../test/test-users';
 
@@ -61,7 +62,8 @@ describe('BookingsService', () => {
       },
       vehicle: { findFirst: jest.fn() },
     };
-    service = new BookingsService(prisma as never);
+    const slotLifecycleService = new SlotLifecycleService(prisma as never);
+    service = new BookingsService(prisma as never, slotLifecycleService);
   });
 
   it('creates a confirmed booking and reserves the slot', async () => {

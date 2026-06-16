@@ -67,8 +67,10 @@ $env:SERVER_PORT="8081"
 $env:DB_URL="jdbc:mysql://localhost:3306/parking_payment_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 $env:DB_USERNAME="parking_user"
 $env:DB_PASSWORD="your_password"
-$env:JWT_SECRET="same_secret_as_nest_backend"
+$env:JWT_SECRET="smart_parking_dev_jwt_secret_32_chars_minimum"
 ```
+
+`JWT_SECRET` must be **at least 32 characters** and must **exactly match** `JWT_SECRET` in `backend/.env`.
 
 ## Run
 
@@ -127,7 +129,7 @@ GET  /api/payments/reports/summary          ADMIN
 The Spring Boot service validates the same HS256 JWT secret used by the NestJS backend:
 
 ```powershell
-$env:JWT_SECRET="same_secret_as_nest_backend"
+$env:JWT_SECRET="smart_parking_dev_jwt_secret_32_chars_minimum"
 ```
 
 Use the token as:

@@ -76,8 +76,18 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder(@Value("${security.jwt.secret}") String jwtSecret) {
+        byte[] secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+
+        if (secretBytes.length < 32) {
+            throw new IllegalStateException(
+                    "security.jwt.secret must be at least 32 bytes (256 bits) for HS256. "
+                            + "Set JWT_SECRET to the exact value from backend/.env "
+                            + "(for example: smart_parking_dev_jwt_secret_32_chars_minimum)."
+            );
+        }
+
         SecretKeySpec secretKey = new SecretKeySpec(
-                jwtSecret.getBytes(StandardCharsets.UTF_8),
+                secretBytes,
                 "HmacSHA256"
         );
 

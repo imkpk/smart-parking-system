@@ -9,10 +9,10 @@ import {
   BookingStatus,
   ParkingEventStatus,
   Role,
-  SlotStatus,
 } from '@prisma/client';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
@@ -22,6 +22,7 @@ export class ParkingEventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentClientService: PaymentClientService,
+    private readonly slotLifecycleService: SlotLifecycleService,
   ) {}
 
   async checkIn(checkInDto: CheckInDto) {
@@ -66,23 +67,8 @@ export class ParkingEventsService {
         throw new ConflictException('Parking event already exists for this booking');
       }
 
-      if (booking.slot.status !== SlotStatus.RESERVED) {
-        throw new BadRequestException('Booking slot must be RESERVED before check-in');
-      }
-
-      const updatedSlots = await tx.slot.updateMany({
-        where: {
-          id: booking.slotId,
-          status: SlotStatus.RESERVED,
-        },
-        data: {
-          status: SlotStatus.OCCUPIED,
-        },
-      });
-
-      if (updatedSlots.count !== 1) {
-        throw new ConflictException('Slot is no longer reserved');
-      }
+      await this.slotLifecycleService.validateSlotReserved(booking.slotId, tx);
+      await this.slotLifecycleService.occupySlot(booking.slotId, tx);
 
       return tx.parkingEvent.create({
         data: {
@@ -138,12 +124,7 @@ export class ParkingEventsService {
         },
       });
 
-      await tx.slot.update({
-        where: { id: parkingEvent.slotId },
-        data: {
-          status: SlotStatus.AVAILABLE,
-        },
-      });
+      await this.slotLifecycleService.releaseSlot(parkingEvent.slotId, tx);
 
       return completedEvent;
     });
