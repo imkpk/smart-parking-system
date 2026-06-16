@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
+import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+
+const FLOOR_UNIQUE_MESSAGES = {
+  'parkingLotId,name': 'Floor already exists',
+  name: 'Floor already exists',
+};
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
 
@@ -12,19 +18,23 @@ export class FloorsService {
   ) {}
 
   async create(parkingLotId: number, createFloorDto: CreateFloorDto) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.parkingLotValidationService.getActiveParkingLotOrThrow(
-        parkingLotId,
-        tx,
-      );
-
-      return tx.floor.create({
-        data: {
-          ...createFloorDto,
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.parkingLotValidationService.getActiveParkingLotOrThrow(
           parkingLotId,
-        },
+          tx,
+        );
+
+        return tx.floor.create({
+          data: {
+            ...createFloorDto,
+            parkingLotId,
+          },
+        });
       });
-    });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, FLOOR_UNIQUE_MESSAGES, 'Floor already exists');
+    }
   }
 
   async findByParkingLot(parkingLotId: number) {
@@ -39,10 +49,14 @@ export class FloorsService {
   async update(id: number, updateFloorDto: UpdateFloorDto) {
     await this.findOne(id);
 
-    return this.prisma.floor.update({
-      where: { id },
-      data: updateFloorDto,
-    });
+    try {
+      return await this.prisma.floor.update({
+        where: { id },
+        data: updateFloorDto,
+      });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, FLOOR_UNIQUE_MESSAGES, 'Floor already exists');
+    }
   }
 
   async remove(id: number) {
