@@ -13,7 +13,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Stack,
   Tab,
   Tabs,
@@ -37,13 +36,20 @@ import {
   getSlots,
   updateSlotStatus,
 } from '../../api/slotsApi';
-import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
+import { createDetailsColumn } from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { slotStatusStyles } from '../../lib/slotStatusStyles';
+import { formatStatusLabel } from '../../lib/formatters';
+import { filterSlots } from '../../lib/searchFilters';
+import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
   BulkSlotForm,
@@ -54,8 +60,6 @@ import {
   slotStatusOptions,
   slotTypeOptions,
 } from '../../types/slot';
-
-type SnackbarState = { message: string; severity: 'success' | 'error' } | null;
 
 const emptyFloorForm: FloorPayload = {
   name: '',
@@ -77,6 +81,55 @@ const emptyBulkForm: BulkSlotForm = {
   slotType: 'CAR',
 };
 
+function buildFloorSummaryRows(
+  floor: Floor,
+  parkingLotName: string,
+  totalSlots?: number,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Floor Name', value: floor.name },
+    { label: 'Floor Number', value: floor.level ?? '-' },
+    { label: 'Parking Lot', value: parkingLotName },
+  ];
+
+  if (totalSlots !== undefined) {
+    rows.push({ label: 'Total Slots', value: totalSlots });
+  }
+
+  return rows;
+}
+
+function buildFloorTechnicalRows(floor: Floor): DetailsRow[] {
+  return [
+    { label: 'floorId', value: floor.id },
+    { label: 'parkingLotId', value: floor.parkingLotId },
+  ];
+}
+
+function buildSlotSummaryRows(
+  slot: Slot,
+  floorName: string,
+  parkingLotName: string,
+): DetailsRow[] {
+  return [
+    { label: 'Slot Number', value: slot.slotNumber },
+    { label: 'Floor', value: floorName },
+    { label: 'Parking Lot', value: parkingLotName },
+    { label: 'Vehicle Type', value: formatStatusLabel(slot.slotType) },
+    { label: 'Status', value: <SlotStatusChip status={slot.status} /> },
+  ];
+}
+
+function buildSlotTechnicalRows(slot: Slot, parkingLotId: number): DetailsRow[] {
+  return [
+    { label: 'slotId', value: slot.id },
+    { label: 'floorId', value: slot.floorId },
+    { label: 'parkingLotId', value: parkingLotId },
+    { label: 'status', value: slot.status },
+    { label: 'vehicleType', value: slot.slotType },
+  ];
+}
+
 function getTabFromPath(pathname: string) {
   if (pathname.endsWith('/floors')) {
     return 'floors';
@@ -95,6 +148,7 @@ export function ParkingLotDetailsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const activeTab = getTabFromPath(location.pathname);
 
   const [floorFormOpen, setFloorFormOpen] = useState(false);
@@ -108,10 +162,10 @@ export function ParkingLotDetailsPage() {
   const [slotFloorFilter, setSlotFloorFilter] = useState<number | 'ALL'>('ALL');
   const [slotStatusFilter, setSlotStatusFilter] = useState<SlotStatus | 'ALL'>('ALL');
   const [slotTypeFilter, setSlotTypeFilter] = useState<SlotType | 'ALL'>('ALL');
+  const [slotSearch, setSlotSearch] = useState('');
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
   const [deleteSlotTarget, setDeleteSlotTarget] = useState<Slot | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<SnackbarState>(null);
 
   const parkingLotQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId],
@@ -135,16 +189,30 @@ export function ParkingLotDetailsPage() {
     () => new Map(floors.map((floor) => [floor.id, floor.name])),
     [floors],
   );
-  const filteredSlots = useMemo(
-    () =>
-      slots.filter((slot) => {
-        const floorMatches = slotFloorFilter === 'ALL' || slot.floorId === slotFloorFilter;
-        const statusMatches = slotStatusFilter === 'ALL' || slot.status === slotStatusFilter;
-        const typeMatches = slotTypeFilter === 'ALL' || slot.slotType === slotTypeFilter;
-        return floorMatches && statusMatches && typeMatches;
-      }),
-    [slotFloorFilter, slotStatusFilter, slotTypeFilter, slots],
-  );
+  const parkingLotName = parkingLotQuery.data?.name ?? `Lot #${parkingLotId}`;
+  const filteredSlots = useMemo(() => {
+    const dropdownFiltered = slots.filter((slot) => {
+      const floorMatches = slotFloorFilter === 'ALL' || slot.floorId === slotFloorFilter;
+      const statusMatches = slotStatusFilter === 'ALL' || slot.status === slotStatusFilter;
+      const typeMatches = slotTypeFilter === 'ALL' || slot.slotType === slotTypeFilter;
+      return floorMatches && statusMatches && typeMatches;
+    });
+
+    return filterSlots(dropdownFiltered, slotSearch, floorNameById, parkingLotName);
+  }, [
+    floorNameById,
+    parkingLotName,
+    slotFloorFilter,
+    slotSearch,
+    slotStatusFilter,
+    slotTypeFilter,
+    slots,
+  ]);
+  const hasSlotFilters =
+    slotSearch.trim().length > 0 ||
+    slotFloorFilter !== 'ALL' ||
+    slotStatusFilter !== 'ALL' ||
+    slotTypeFilter !== 'ALL';
   const filteredSlotIds = useMemo(
     () => filteredSlots.map((slot) => slot.id),
     [filteredSlots],
@@ -165,6 +233,15 @@ export function ParkingLotDetailsPage() {
       ),
     [slots],
   );
+  const slotCountByFloorId = useMemo(() => {
+    const counts = new Map<number, number>();
+
+    for (const slot of slots) {
+      counts.set(slot.floorId, (counts.get(slot.floorId) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [slots]);
 
   const invalidateStructure = async () => {
     await Promise.all([
@@ -176,7 +253,7 @@ export function ParkingLotDetailsPage() {
 
   const floorMutationOptions = {
     onError: (error: unknown) => {
-      setSnackbar({ message: getApiErrorMessage(error), severity: 'error' });
+      showError(getApiErrorMessage(error));
     },
   };
 
@@ -184,7 +261,7 @@ export function ParkingLotDetailsPage() {
     mutationFn: (payload: FloorPayload) => createFloor(parkingLotId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor created.', severity: 'success' });
+      showSuccess('Floor created.');
       closeFloorForm();
     },
     ...floorMutationOptions,
@@ -194,7 +271,7 @@ export function ParkingLotDetailsPage() {
       updateFloor(floorId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor updated.', severity: 'success' });
+      showSuccess('Floor updated.');
       closeFloorForm();
     },
     ...floorMutationOptions,
@@ -203,7 +280,7 @@ export function ParkingLotDetailsPage() {
     mutationFn: deleteFloor,
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Floor deleted.', severity: 'success' });
+      showSuccess('Floor deleted.');
       setDeleteFloorTarget(null);
     },
     ...floorMutationOptions,
@@ -213,11 +290,11 @@ export function ParkingLotDetailsPage() {
       createSlot(floorId, payload),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Slot created.', severity: 'success' });
+      showSuccess('Slot created.');
       setSlotFormOpen(false);
       setSlotForm(emptySlotForm);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const bulkSlotMutation = useMutation({
     mutationFn: (payload: BulkSlotForm) => {
@@ -230,20 +307,20 @@ export function ParkingLotDetailsPage() {
     },
     onSuccess: async (_createdSlots, variables) => {
       await invalidateStructure();
-      setSnackbar({ message: `${variables.count} slots created.`, severity: 'success' });
+      showSuccess(`${variables.count} slots created.`);
       setBulkFormOpen(false);
       setBulkForm({ ...emptyBulkForm, floorId: floors[0]?.id ?? 0 });
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const updateStatusMutation = useMutation({
     mutationFn: ({ slotId, status }: { slotId: number; status: SlotStatus }) =>
       updateSlotStatus(slotId, status),
     onSuccess: async () => {
       await invalidateStructure();
-      setSnackbar({ message: 'Slot status updated.', severity: 'success' });
+      showSuccess('Slot status updated.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const deleteSlotMutation = useMutation({
     mutationFn: deleteSlot,
@@ -251,9 +328,9 @@ export function ParkingLotDetailsPage() {
       await invalidateStructure();
       setSelectedSlotIds((current) => current.filter((id) => id !== slotId));
       setDeleteSlotTarget(null);
-      setSnackbar({ message: 'Slot deleted.', severity: 'success' });
+      showSuccess('Slot deleted.');
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const bulkDeleteSlotsMutation = useMutation({
     mutationFn: deleteSlots,
@@ -261,9 +338,9 @@ export function ParkingLotDetailsPage() {
       await invalidateStructure();
       setSelectedSlotIds((current) => current.filter((id) => !ids.includes(id)));
       setBulkDeleteOpen(false);
-      setSnackbar({ message: `${ids.length} slots deleted.`, severity: 'success' });
+      showSuccess(`${ids.length} slots deleted.`);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
 
   const closeFloorForm = () => {
@@ -310,7 +387,7 @@ export function ParkingLotDetailsPage() {
     event.preventDefault();
 
     if (!slotForm.floorId) {
-      setSnackbar({ message: 'Please select a floor.', severity: 'error' });
+      showError('Please select a floor.');
       return;
     }
 
@@ -328,7 +405,7 @@ export function ParkingLotDetailsPage() {
     event.preventDefault();
 
     if (!bulkForm.floorId || bulkForm.count < 1) {
-      setSnackbar({ message: 'Please select a floor and valid slot count.', severity: 'error' });
+      showError('Please select a floor and valid slot count.');
       return;
     }
 
@@ -427,17 +504,17 @@ export function ParkingLotDetailsPage() {
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard
-                  accentColor={slotStatusStyles.AVAILABLE.borderColor}
+                  accentColor={statusStyles.AVAILABLE.borderColor}
                   icon={<LocalParking />}
-                  iconBgcolor={slotStatusStyles.AVAILABLE.bgcolor}
+                  iconBgcolor={statusStyles.AVAILABLE.bgcolor}
                   label="Available"
                   value={slotStatusCounts.AVAILABLE}
                 />
               </Grid>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard
-                  accentColor={slotStatusStyles.OCCUPIED.borderColor}
-                  iconBgcolor={slotStatusStyles.OCCUPIED.bgcolor}
+                  accentColor={statusStyles.OCCUPIED.borderColor}
+                  iconBgcolor={statusStyles.OCCUPIED.bgcolor}
                   label="Occupied"
                   value={slotStatusCounts.OCCUPIED}
                 />
@@ -473,6 +550,8 @@ export function ParkingLotDetailsPage() {
           {activeTab === 'floors' ? (
             <FloorsSection
               floors={floors}
+              parkingLotName={parkingLotName}
+              slotCountByFloorId={slotCountByFloorId}
               onCreate={openCreateFloorForm}
               onDelete={setDeleteFloorTarget}
               onEdit={openEditFloorForm}
@@ -484,6 +563,8 @@ export function ParkingLotDetailsPage() {
               floors={floors}
               floorNameById={floorNameById}
               filteredSlots={filteredSlots}
+              parkingLotId={parkingLotId}
+              parkingLotName={parkingLotName}
               onBulkCreate={openBulkForm}
               onCreate={openCreateSlotForm}
               onDelete={setDeleteSlotTarget}
@@ -496,6 +577,9 @@ export function ParkingLotDetailsPage() {
               selectedSlotIds={selectedSlotIds}
               slotFloorFilter={slotFloorFilter}
               filteredSlotIds={filteredSlotIds}
+              hasSlotFilters={hasSlotFilters}
+              onSlotSearchChange={setSlotSearch}
+              slotSearch={slotSearch}
               slotStatusFilter={slotStatusFilter}
               slotTypeFilter={slotTypeFilter}
             />
@@ -651,30 +735,33 @@ export function ParkingLotDetailsPage() {
         title="Bulk Delete Slots"
       />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }
 
 function FloorsSection({
   floors,
+  parkingLotName,
+  slotCountByFloorId,
   onCreate,
   onDelete,
   onEdit,
 }: {
   floors: Floor[];
+  parkingLotName: string;
+  slotCountByFloorId: Map<number, number>;
   onCreate: () => void;
   onDelete: (floor: Floor) => void;
   onEdit: (floor: Floor) => void;
 }) {
+  const [detailsFloor, setDetailsFloor] = useState<Floor | null>(null);
+
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
-      { field: 'name', flex: 1, headerName: 'Name', minWidth: 180 },
-      { field: 'level', headerName: 'Level', minWidth: 120 },
+      { field: 'name', flex: 1, headerName: 'Floor Name', minWidth: 180 },
+      { field: 'level', headerName: 'Floor Number', minWidth: 120 },
+      createDetailsColumn<Floor>(setDetailsFloor),
       {
         field: 'actions',
         align: 'right',
@@ -710,7 +797,30 @@ function FloorsSection({
           Create Floor
         </Button>
       </Stack>
-      <AppDataGrid columns={columns} height={420} rows={floors} />
+      <AppDataGrid
+        columns={columns}
+        emptyState={{
+          description: 'Create a floor to start adding slots.',
+          title: 'No floors found',
+        }}
+        height={420}
+        rows={floors}
+      />
+      <DetailsDialog
+        onClose={() => setDetailsFloor(null)}
+        open={Boolean(detailsFloor)}
+        summaryRows={
+          detailsFloor
+            ? buildFloorSummaryRows(
+                detailsFloor,
+                parkingLotName,
+                slotCountByFloorId.get(detailsFloor.id),
+              )
+            : []
+        }
+        technicalRows={detailsFloor ? buildFloorTechnicalRows(detailsFloor) : []}
+        title="Floor Details"
+      />
     </Paper>
   );
 }
@@ -720,17 +830,22 @@ function SlotsSection({
   filteredSlotIds,
   floorNameById,
   floors,
+  hasSlotFilters,
+  parkingLotId,
+  parkingLotName,
   onBulkCreate,
   onBulkDelete,
   onCreate,
   onDelete,
   onFloorFilterChange,
   onSelectionChange,
+  onSlotSearchChange,
   onStatusChange,
   onStatusFilterChange,
   onTypeFilterChange,
   selectedSlotIds,
   slotFloorFilter,
+  slotSearch,
   slotStatusFilter,
   slotTypeFilter,
 }: {
@@ -738,23 +853,30 @@ function SlotsSection({
   filteredSlotIds: number[];
   floorNameById: Map<number, string>;
   floors: Floor[];
+  hasSlotFilters: boolean;
+  parkingLotId: number;
+  parkingLotName: string;
   onBulkCreate: () => void;
   onBulkDelete: () => void;
   onCreate: () => void;
   onDelete: (slot: Slot) => void;
   onFloorFilterChange: (floorId: number | 'ALL') => void;
   onSelectionChange: (ids: GridRowId[]) => void;
+  onSlotSearchChange: (value: string) => void;
   onStatusChange: (slotId: number, status: SlotStatus) => void;
   onStatusFilterChange: (status: SlotStatus | 'ALL') => void;
   onTypeFilterChange: (slotType: SlotType | 'ALL') => void;
   selectedSlotIds: number[];
   slotFloorFilter: number | 'ALL';
+  slotSearch: string;
   slotStatusFilter: SlotStatus | 'ALL';
   slotTypeFilter: SlotType | 'ALL';
 }) {
+  const [detailsSlot, setDetailsSlot] = useState<Slot | null>(null);
+
   const columns = useMemo<GridColDef<Slot>[]>(
     () => [
-      { field: 'slotNumber', headerName: 'Slot', minWidth: 130 },
+      { field: 'slotNumber', headerName: 'Slot Number', minWidth: 130 },
       {
         field: 'floorId',
         flex: 1,
@@ -762,13 +884,14 @@ function SlotsSection({
         minWidth: 160,
         valueGetter: (_value, row) => floorNameById.get(row.floorId) ?? `Floor #${row.floorId}`,
       },
-      { field: 'slotType', headerName: 'Type', minWidth: 140 },
+      { field: 'slotType', headerName: 'Vehicle Type', minWidth: 140 },
       {
         field: 'status',
         headerName: 'Status',
         minWidth: 150,
         renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
       },
+      createDetailsColumn<Slot>(setDetailsSlot),
       {
         field: 'actions',
         align: 'right',
@@ -803,8 +926,33 @@ function SlotsSection({
     [floorNameById, onDelete, onStatusChange],
   );
 
+  const slotEmptyState = hasSlotFilters
+    ? {
+        description: 'Try a slot number, floor, status, or vehicle type.',
+        title: 'No matching slots',
+      }
+    : {
+        description: 'Create slots on a floor to manage parking capacity.',
+        title: 'No slots found',
+      };
+
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          p: 2,
+        }}
+      >
+        <SearchField
+          label="Search slots"
+          onChange={(event) => onSlotSearchChange(event.target.value)}
+          onClear={() => onSlotSearchChange('')}
+          placeholder="Search by slot number, floor, status, or vehicle type"
+          value={slotSearch}
+        />
+      </Box>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} p={2}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -875,10 +1023,28 @@ function SlotsSection({
       <AppDataGrid
         checkboxSelection
         columns={columns}
+        emptyState={slotEmptyState}
         height={520}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}
+      />
+      <DetailsDialog
+        onClose={() => setDetailsSlot(null)}
+        open={Boolean(detailsSlot)}
+        summaryRows={
+          detailsSlot
+            ? buildSlotSummaryRows(
+                detailsSlot,
+                floorNameById.get(detailsSlot.floorId) ?? `Floor #${detailsSlot.floorId}`,
+                parkingLotName,
+              )
+            : []
+        }
+        technicalRows={
+          detailsSlot ? buildSlotTechnicalRows(detailsSlot, parkingLotId) : []
+        }
+        title="Slot Details"
       />
     </Paper>
   );

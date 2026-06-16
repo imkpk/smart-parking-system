@@ -2,39 +2,39 @@ import { Visibility } from '@mui/icons-material';
 import { IconButton, Stack, Tooltip } from '@mui/material';
 import { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import { ReactNode } from 'react';
-import { formatDateTime } from '../../lib/formatters';
+import { formatBookingNo, formatDateTime, formatSessionNo } from '../../lib/formatters';
 
-export function createSessionColumn<Row extends GridValidRowModel>(
-  getSessionLabel: (row: Row) => string,
+export function createSessionColumn<Row extends GridValidRowModel & { id: number }>(
+  getSessionNo: (sessionId: number) => string = formatSessionNo,
 ): GridColDef<Row> {
   return {
     field: 'id',
     headerName: 'Session No',
     minWidth: 130,
-    valueGetter: (_value, row) => getSessionLabel(row),
+    valueGetter: (_value, row) => getSessionNo(row.id),
   };
 }
 
-export function createBookingColumn<Row extends GridValidRowModel>(
-  getBookingLabel: (row: Row) => string,
+export function createBookingColumn<Row extends GridValidRowModel & { bookingId: number }>(
+  getBookingNo: (bookingId: number) => string = formatBookingNo,
 ): GridColDef<Row> {
   return {
     field: 'bookingId',
     flex: 1,
     headerName: 'Booking No',
     minWidth: 210,
-    valueGetter: (_value, row) => getBookingLabel(row),
+    valueGetter: (_value, row) => getBookingNo(row.bookingId),
   };
 }
 
-export function createVehicleColumn<Row extends GridValidRowModel>(
-  getVehicleLabel: (row: Row) => string,
+export function createVehicleColumn<Row extends GridValidRowModel & { vehicleId: number }>(
+  getVehicleLabel: (vehicleId: number) => string,
 ): GridColDef<Row> {
   return {
     field: 'vehicleId',
-    headerName: 'Vehicle',
+    headerName: 'Vehicle Number',
     minWidth: 160,
-    valueGetter: (_value, row) => getVehicleLabel(row),
+    valueGetter: (_value, row) => getVehicleLabel(row.vehicleId),
   };
 }
 

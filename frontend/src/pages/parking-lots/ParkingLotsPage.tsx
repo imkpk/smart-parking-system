@@ -11,24 +11,21 @@ import {
   FormControl,
   FormControlLabel,
   IconButton,
-  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Stack,
   Switch,
   TextField,
   useMediaQuery,
   useTheme,
   Tooltip,
-  Typography,
 } from '@mui/material';
-import { Add, Delete, Edit, Search, Visibility } from '@mui/icons-material';
+import { Add, Delete, Edit, OpenInNew } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   createParkingLot,
@@ -36,16 +33,38 @@ import {
   getParkingLots,
   updateParkingLot,
 } from '../../api/parkingLotsApi';
-import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
+import { createDetailsColumn } from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { formatDateTime } from '../../lib/formatters';
+import { filterParkingLots } from '../../lib/searchFilters';
 import {
   ParkingLot,
   ParkingLotPayload,
   ParkingLotType,
   parkingLotTypeOptions,
 } from '../../types/parkingLot';
+
+function buildParkingLotSummaryRows(lot: ParkingLot): DetailsRow[] {
+  return [
+    { label: 'Parking Lot Name', value: lot.name },
+    { label: 'Address', value: lot.address ?? '-' },
+    { label: 'City', value: lot.city ?? '-' },
+    { label: 'Status', value: lot.isActive ? 'Active' : 'Inactive' },
+    { label: 'Created On', value: formatDateTime(lot.createdAt) },
+    { label: 'Updated On', value: formatDateTime(lot.updatedAt) },
+  ];
+}
+
+function buildParkingLotTechnicalRows(lot: ParkingLot): DetailsRow[] {
+  return [{ label: 'parkingLotId', value: lot.id }];
+}
 
 const emptyForm: ParkingLotPayload = {
   name: '',
@@ -59,6 +78,7 @@ const emptyForm: ParkingLotPayload = {
 
 export function ParkingLotsPage() {
   const queryClient = useQueryClient();
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const theme = useTheme();
   const isCompactAction = useMediaQuery(theme.breakpoints.down('md'));
   const [formOpen, setFormOpen] = useState(false);
@@ -66,10 +86,7 @@ export function ParkingLotsPage() {
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
   const [search, setSearch] = useState('');
-  const [snackbar, setSnackbar] = useState<{
-    message: string;
-    severity: 'success' | 'error';
-  } | null>(null);
+  const [detailsParkingLot, setDetailsParkingLot] = useState<ParkingLot | null>(null);
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
@@ -83,14 +100,11 @@ export function ParkingLotsPage() {
     mutationFn: createParkingLot,
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot created.', severity: 'success' });
+      showSuccess('Parking lot created.');
       closeForm();
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not create parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not create parking lot.'));
     },
   });
 
@@ -99,14 +113,11 @@ export function ParkingLotsPage() {
       updateParkingLot(id, payload),
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot updated.', severity: 'success' });
+      showSuccess('Parking lot updated.');
       closeForm();
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not update parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not update parking lot.'));
     },
   });
 
@@ -114,14 +125,11 @@ export function ParkingLotsPage() {
     mutationFn: deleteParkingLot,
     onSuccess: async () => {
       await invalidateParkingLots();
-      setSnackbar({ message: 'Parking lot deleted.', severity: 'success' });
+      showSuccess('Parking lot deleted.');
       setDeleteTarget(null);
     },
     onError: (error) => {
-      setSnackbar({
-        message: getApiErrorMessage(error, 'Could not delete parking lot.'),
-        severity: 'error',
-      });
+      showError(getApiErrorMessage(error, 'Could not delete parking lot.'));
     },
   });
 
@@ -131,41 +139,17 @@ export function ParkingLotsPage() {
     () => parkingLotsQuery.data ?? [],
     [parkingLotsQuery.data],
   );
-  const filteredParkingLots = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return sortedParkingLots;
-    }
-
-    return sortedParkingLots.filter((parkingLot) =>
-      [
-        parkingLot.name,
-        parkingLot.type,
-        parkingLot.address,
-        parkingLot.city,
-        parkingLot.state,
-        parkingLot.pincode,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query)),
-    );
-  }, [search, sortedParkingLots]);
+  const filteredParkingLots = useMemo(
+    () => filterParkingLots(sortedParkingLots, search),
+    [search, sortedParkingLots],
+  );
   const columns = useMemo<GridColDef<ParkingLot>[]>(
     () => [
       {
         field: 'name',
         flex: 1.1,
-        headerName: 'Name',
+        headerName: 'Parking Lot Name',
         minWidth: 180,
-        renderCell: ({ row }) => (
-          <Stack spacing={0.25}>
-            <Typography fontWeight={600}>{row.name}</Typography>
-            <Typography color="text.secondary" variant="body2">
-              ID #{row.id}
-            </Typography>
-          </Stack>
-        ),
       },
       { field: 'type', headerName: 'Type', minWidth: 140 },
       {
@@ -189,6 +173,7 @@ export function ParkingLotsPage() {
           />
         ),
       },
+      createDetailsColumn<ParkingLot>(setDetailsParkingLot),
       {
         field: 'actions',
         align: 'right',
@@ -199,9 +184,9 @@ export function ParkingLotsPage() {
         sortable: false,
         renderCell: ({ row }) => (
           <Stack direction="row" justifyContent="flex-end" width="100%">
-            <Tooltip title="View Details">
+            <Tooltip title="Manage Lot">
               <IconButton component={RouterLink} to={`/parking-lots/${row.id}`}>
-                <Visibility />
+                <OpenInNew />
               </IconButton>
             </Tooltip>
             <Tooltip title="Edit">
@@ -279,10 +264,6 @@ export function ParkingLotsPage() {
     createMutation.mutate(payload);
   };
 
-  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearch(event.target.value);
-  };
-
   return (
     <Stack spacing={3}>
       <PageHeader
@@ -337,24 +318,22 @@ export function ParkingLotsPage() {
               p: 2,
             }}
           >
-            <TextField
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
+            <SearchField
               label="Search parking lots"
-              onChange={handleSearchChange}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch('')}
               placeholder="Search by name, type, city, state, or pincode"
-              size="small"
               value={search}
             />
           </Box>
           <AppDataGrid
             columns={columns}
+            emptyState={{
+              description: search
+                ? 'Try a parking lot name, city, state, or pincode.'
+                : 'Create a parking lot to start managing floors and slots.',
+              title: search ? 'No matching parking lots' : 'No parking lots found',
+            }}
             height="calc(100vh - 290px)"
             loading={parkingLotsQuery.isFetching}
             rows={filteredParkingLots}
@@ -430,6 +409,14 @@ export function ParkingLotsPage() {
         </Box>
       </Dialog>
 
+      <DetailsDialog
+        onClose={() => setDetailsParkingLot(null)}
+        open={Boolean(detailsParkingLot)}
+        summaryRows={detailsParkingLot ? buildParkingLotSummaryRows(detailsParkingLot) : []}
+        technicalRows={detailsParkingLot ? buildParkingLotTechnicalRows(detailsParkingLot) : []}
+        title="Parking Lot Details"
+      />
+
       <ConfirmDialog
         confirmLabel="Delete"
         description={
@@ -448,19 +435,7 @@ export function ParkingLotsPage() {
         title="Delete Parking Lot"
       />
 
-      <Snackbar
-        autoHideDuration={3500}
-        onClose={() => setSnackbar(null)}
-        open={Boolean(snackbar)}
-      >
-        <Alert
-          onClose={() => setSnackbar(null)}
-          severity={snackbar?.severity ?? 'success'}
-          variant="filled"
-        >
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }
