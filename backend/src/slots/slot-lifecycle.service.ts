@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type PrismaClient = Prisma.TransactionClient | PrismaService;
 
 @Injectable()
 export class SlotLifecycleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   private getClient(tx?: Prisma.TransactionClient): PrismaClient {
     return tx ?? this.prisma;
@@ -22,21 +26,10 @@ export class SlotLifecycleService {
     vehicleType: VehicleType,
     tx?: Prisma.TransactionClient,
   ) {
-    const client = this.getClient(tx);
-    const slot = await client.slot.findUnique({
-      where: { id: slotId },
-      include: {
-        floor: {
-          include: {
-            parkingLot: true,
-          },
-        },
-      },
-    });
-
-    if (!slot || !slot.floor.parkingLot.isActive) {
-      throw new NotFoundException('Slot not found');
-    }
+    const slot = await this.parkingLotValidationService.getActiveSlotOrThrow(
+      slotId,
+      tx,
+    );
 
     if (slot.status !== SlotStatus.AVAILABLE) {
       throw new ConflictException('Slot is not available');

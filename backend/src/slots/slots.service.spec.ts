@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotsService } from './slots.service';
 
 describe('SlotsService', () => {
@@ -34,7 +35,8 @@ describe('SlotsService', () => {
         deleteMany: jest.fn(),
       },
     };
-    service = new SlotsService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    service = new SlotsService(prisma as never, parkingLotValidationService);
   });
 
   it('filters available slots by parking lot and vehicle type', async () => {

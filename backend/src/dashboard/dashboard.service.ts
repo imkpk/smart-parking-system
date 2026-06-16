@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ParkingEventStatus, SlotStatus } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   async getAdminSummary() {
     const [
@@ -44,14 +48,9 @@ export class DashboardService {
   }
 
   async getParkingLotSummary(id: number) {
-    const parkingLot = await this.prisma.parkingLot.findFirst({
-      where: { id, isActive: true },
-      select: { id: true, name: true },
-    });
-
-    if (!parkingLot) {
-      throw new NotFoundException('Parking lot not found');
-    }
+    const parkingLot = await this.parkingLotValidationService.getActiveParkingLotOrThrow(
+      id,
+    );
 
     const todayRange = this.getTodayRange();
     const [

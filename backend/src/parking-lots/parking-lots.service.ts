@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateParkingLotDto } from './dto/create-parking-lot.dto';
 import { UpdateParkingLotDto } from './dto/update-parking-lot.dto';
+import { ParkingLotValidationService } from './parking-lot-validation.service';
 
 @Injectable()
 export class ParkingLotsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   create(createParkingLotDto: CreateParkingLotDto) {
     return this.prisma.parkingLot.create({
@@ -20,16 +24,8 @@ export class ParkingLotsService {
     });
   }
 
-  async findOne(id: number) {
-    const parkingLot = await this.prisma.parkingLot.findFirst({
-      where: { id, isActive: true },
-    });
-
-    if (!parkingLot) {
-      throw new NotFoundException('Parking lot not found');
-    }
-
-    return parkingLot;
+  findOne(id: number) {
+    return this.parkingLotValidationService.getActiveParkingLotOrThrow(id);
   }
 
   async update(id: number, updateParkingLotDto: UpdateParkingLotDto) {
