@@ -372,7 +372,7 @@ describe('ParkingEventsService', () => {
     });
   });
 
-  it('sends zero payment amount when completed event has no fee amount', async () => {
+  it('skips payment initiation when completed event has no fee amount', async () => {
     const activeEvent = {
       id: 100,
       bookingId: booking.id,
@@ -389,12 +389,14 @@ describe('ParkingEventsService', () => {
       feeAmount: null,
     });
 
-    await service.checkOut({ parkingEventId: activeEvent.id });
+    const result = await service.checkOut({ parkingEventId: activeEvent.id });
 
-    expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 0 }),
-      undefined,
-    );
+    expect(paymentClientService.initiatePayment).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      parkingEvent: expect.objectContaining({ status: ParkingEventStatus.COMPLETED }),
+      paymentInitiated: false,
+      paymentError: 'Payment not required for zero fee',
+    });
   });
 
   it('passes authorization header to payment client during checkout', async () => {
