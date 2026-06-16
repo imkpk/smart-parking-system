@@ -178,14 +178,41 @@ describe('SlotLifecycleService', () => {
     );
   });
 
-  it('releases a slot back to available', async () => {
-    prisma.slot.update.mockResolvedValue({ id: slot.id, status: SlotStatus.AVAILABLE });
+  it('releases a reserved slot back to available', async () => {
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
-    await service.releaseSlot(slot.id);
+    await service.releaseReservedSlot(slot.id);
 
-    expect(prisma.slot.update).toHaveBeenCalledWith({
-      where: { id: slot.id },
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: slot.id, status: SlotStatus.RESERVED },
       data: { status: SlotStatus.AVAILABLE },
     });
+  });
+
+  it('rejects stale reserved slot release attempts', async () => {
+    prisma.slot.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.releaseReservedSlot(slot.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
+  it('releases an occupied slot back to available', async () => {
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+
+    await service.releaseOccupiedSlot(slot.id);
+
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: slot.id, status: SlotStatus.OCCUPIED },
+      data: { status: SlotStatus.AVAILABLE },
+    });
+  });
+
+  it('rejects stale occupied slot release attempts', async () => {
+    prisma.slot.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.releaseOccupiedSlot(slot.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 });

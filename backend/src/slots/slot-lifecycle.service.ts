@@ -117,12 +117,38 @@ export class SlotLifecycleService {
     return slot;
   }
 
-  async releaseSlot(slotId: number, tx?: Prisma.TransactionClient) {
+  async releaseReservedSlot(slotId: number, tx?: Prisma.TransactionClient) {
     const client = this.getClient(tx);
-    await client.slot.update({
-      where: { id: slotId },
-      data: { status: SlotStatus.AVAILABLE },
+    const updatedSlots = await client.slot.updateMany({
+      where: {
+        id: slotId,
+        status: SlotStatus.RESERVED,
+      },
+      data: {
+        status: SlotStatus.AVAILABLE,
+      },
     });
+
+    if (updatedSlots.count !== 1) {
+      throw new ConflictException('Slot is no longer reserved');
+    }
+  }
+
+  async releaseOccupiedSlot(slotId: number, tx?: Prisma.TransactionClient) {
+    const client = this.getClient(tx);
+    const updatedSlots = await client.slot.updateMany({
+      where: {
+        id: slotId,
+        status: SlotStatus.OCCUPIED,
+      },
+      data: {
+        status: SlotStatus.AVAILABLE,
+      },
+    });
+
+    if (updatedSlots.count !== 1) {
+      throw new ConflictException('Slot is no longer occupied');
+    }
   }
 
   private toSlotType(vehicleType: VehicleType): SlotType {

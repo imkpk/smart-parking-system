@@ -71,6 +71,7 @@ describe('ParkingEventsService', () => {
         payment: { id: 1, status: 'INITIATED' },
       }),
     };
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
     const slotLifecycleService = new SlotLifecycleService(prisma as never);
     service = new ParkingEventsService(
       prisma as never,
@@ -218,6 +219,7 @@ describe('ParkingEventsService', () => {
       durationMinutes: 121,
       feeAmount: 110,
     });
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.checkOut({ parkingEventId: activeEvent.id });
 
@@ -233,8 +235,8 @@ describe('ParkingEventsService', () => {
       where: { id: booking.id },
       data: { status: BookingStatus.COMPLETED },
     });
-    expect(prisma.slot.update).toHaveBeenCalledWith({
-      where: { id: booking.slotId },
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: booking.slotId, status: SlotStatus.OCCUPIED },
       data: { status: SlotStatus.AVAILABLE },
     });
     expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(

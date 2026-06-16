@@ -124,7 +124,7 @@ export class ParkingEventsService {
         },
       });
 
-      await this.slotLifecycleService.releaseSlot(parkingEvent.slotId, tx);
+      await this.slotLifecycleService.releaseOccupiedSlot(parkingEvent.slotId, tx);
 
       return completedEvent;
     });

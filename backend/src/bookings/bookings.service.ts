@@ -128,7 +128,7 @@ export class BookingsService {
         data: { status: BookingStatus.CANCELLED },
       });
 
-      await this.slotLifecycleService.releaseSlot(booking.slotId, tx);
+      await this.slotLifecycleService.releaseReservedSlot(booking.slotId, tx);
 
       return cancelledBooking;
     });
