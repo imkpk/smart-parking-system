@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
+import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+
+const SLOT_UNIQUE_MESSAGES = {
+  'floorId,slotNumber': 'Slot already exists',
+  slotNumber: 'Slot already exists',
+};
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { DeleteSlotsDto } from './dto/delete-slots.dto';
@@ -8,10 +15,13 @@ import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
 
 @Injectable()
 export class SlotsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parkingLotValidationService: ParkingLotValidationService,
+  ) {}
 
   async findByParkingLot(parkingLotId: number) {
-    await this.ensureActiveParkingLot(parkingLotId);
+    await this.parkingLotValidationService.getActiveParkingLotOrThrow(parkingLotId);
 
     return this.prisma.slot.findMany({
       where: {
@@ -28,7 +38,7 @@ export class SlotsService {
     parkingLotId: number,
     vehicleType?: VehicleType,
   ) {
-    await this.ensureActiveParkingLot(parkingLotId);
+    await this.parkingLotValidationService.getActiveParkingLotOrThrow(parkingLotId);
 
     return this.prisma.slot.findMany({
       where: {
@@ -44,57 +54,47 @@ export class SlotsService {
   }
 
   async create(floorId: number, createSlotDto: CreateSlotDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const floor = await tx.floor.findFirst({
-        where: {
-          id: floorId,
-          parkingLot: { isActive: true },
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
-      if (!floor) {
-        throw new NotFoundException('Floor not found');
-      }
-
-      return tx.slot.create({
-        data: {
-          ...createSlotDto,
-          floorId,
-        },
+        return tx.slot.create({
+          data: {
+            ...createSlotDto,
+            floorId,
+          },
+        });
       });
-    });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, SLOT_UNIQUE_MESSAGES, 'Slot already exists');
+    }
   }
 
   async createBulk(floorId: number, createBulkSlotsDto: CreateBulkSlotsDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const floor = await tx.floor.findFirst({
-        where: {
-          id: floorId,
-          parkingLot: { isActive: true },
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.parkingLotValidationService.getActiveFloorOrThrow(floorId, tx);
 
-      if (!floor) {
-        throw new NotFoundException('Floor not found');
-      }
+        await tx.slot.createMany({
+          data: createBulkSlotsDto.slots.map((slot) => ({
+            ...slot,
+            floorId,
+          })),
+        });
 
-      await tx.slot.createMany({
-        data: createBulkSlotsDto.slots.map((slot) => ({
-          ...slot,
-          floorId,
-        })),
-      });
-
-      return tx.slot.findMany({
-        where: {
-          floorId,
-          slotNumber: {
-            in: createBulkSlotsDto.slots.map((slot) => slot.slotNumber),
+        return tx.slot.findMany({
+          where: {
+            floorId,
+            slotNumber: {
+              in: createBulkSlotsDto.slots.map((slot) => slot.slotNumber),
+            },
           },
-        },
-        orderBy: { slotNumber: 'asc' },
+          orderBy: { slotNumber: 'asc' },
+        });
       });
-    });
+    } catch (error) {
+      handlePrismaUniqueConstraint(error, SLOT_UNIQUE_MESSAGES, 'Slot already exists');
+    }
   }
 
   async updateStatus(id: number, updateSlotStatusDto: UpdateSlotStatusDto) {
@@ -142,15 +142,5 @@ export class SlotsService {
     }
 
     return slot;
-  }
-
-  private async ensureActiveParkingLot(id: number) {
-    const parkingLot = await this.prisma.parkingLot.findFirst({
-      where: { id, isActive: true },
-    });
-
-    if (!parkingLot) {
-      throw new NotFoundException('Parking lot not found');
-    }
   }
 }

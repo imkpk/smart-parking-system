@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { ParkingLotType } from '@prisma/client';
+import { ParkingLotValidationService } from './parking-lot-validation.service';
 import { ParkingLotsService } from './parking-lots.service';
 
 describe('ParkingLotsService', () => {
@@ -33,7 +34,8 @@ describe('ParkingLotsService', () => {
         update: jest.fn(),
       },
     };
-    service = new ParkingLotsService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    service = new ParkingLotsService(prisma as never, parkingLotValidationService);
   });
 
   it('creates a parking lot', async () => {

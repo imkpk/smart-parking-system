@@ -1,4 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { FloorsService } from './floors.service';
 
 describe('FloorsService', () => {
@@ -27,7 +29,8 @@ describe('FloorsService', () => {
       },
       parkingLot: { findFirst: jest.fn() },
     };
-    service = new FloorsService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    service = new FloorsService(prisma as never, parkingLotValidationService);
   });
 
   it('creates a floor under an active parking lot', async () => {
@@ -40,6 +43,36 @@ describe('FloorsService', () => {
       data: { name: 'Basement 1', level: -1, parkingLotId: 1 },
     });
     expect(result.id).toBe(10);
+  });
+
+  it('maps duplicate floor prisma errors to conflict', async () => {
+    prisma.parkingLot.findFirst.mockResolvedValue({ id: 1, isActive: true });
+    prisma.floor.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['parkingLotId', 'name'] },
+      }),
+    );
+
+    await expect(service.create(1, { name: 'Basement 1', level: -1 })).rejects.toThrow(
+      'Floor already exists',
+    );
+  });
+
+  it('maps duplicate floor prisma errors during update', async () => {
+    prisma.floor.findUnique.mockResolvedValue({ id: 10 });
+    prisma.floor.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['parkingLotId', 'name'] },
+      }),
+    );
+
+    await expect(service.update(10, { name: 'Basement 1' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   it('throws when creating a floor under a missing parking lot', async () => {

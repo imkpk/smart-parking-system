@@ -16,13 +16,11 @@ import {
   ErrorOutline,
   Payments,
   ReceiptLong,
-  Search,
 } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  getPayment,
   getPayments,
   getPaymentSummary,
   getUserPayments,
@@ -34,6 +32,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatCard } from '../../components/common/StatCard';
@@ -46,29 +45,63 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatCurrency, formatDateTime } from '../../lib/formatters';
-import { paymentStatusStyles } from '../../lib/paymentStatusStyles';
+import { filterPayments } from '../../lib/searchFilters';
+import {
+  formatBookingNo,
+  formatCurrency,
+  formatDateTime,
+  formatReceiptNo,
+  formatStatusLabel,
+} from '../../lib/formatters';
 import { Payment } from '../../types/payment';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
 
-function buildPaymentSummaryRows(payment: Payment, labels: ReturnType<typeof useReferenceLabels>): DetailsRow[] {
-  return [
-    { label: 'Receipt No', value: `Receipt #${payment.id}` },
-    { label: 'Booking No', value: labels.getBookingLabel(payment.bookingId) },
-    { label: 'Vehicle', value: labels.getVehicleLabelForBooking(payment.bookingId) },
-    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
-    { label: 'Status', value: <PaymentStatusChip status={payment.status} /> },
-    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+function buildPaymentSummaryRows(
+  payment: Payment,
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Receipt No', value: formatReceiptNo(payment.id) },
+    { label: 'Booking No', value: formatBookingNo(payment.bookingId) },
   ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(payment.userId) });
+  }
+
+  const vehicleNumber = labels.getVehicleLabelForBooking(payment.bookingId);
+  if (vehicleNumber !== '-') {
+    rows.push({ label: 'Vehicle Number', value: vehicleNumber });
+  }
+
+  rows.push(
+    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
+    { label: 'Currency', value: payment.currency },
+    { label: 'Payment Status', value: <PaymentStatusChip status={payment.status} /> },
+    { label: 'Method', value: formatStatusLabel(payment.paymentMethod) },
+    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+  );
+
+  if (payment.failureReason) {
+    rows.push({ label: 'Failure Reason', value: payment.failureReason });
+  }
+
+  rows.push({ label: 'Created On', value: formatDateTime(payment.createdAt) });
+
+  return rows;
 }
 
 function buildPaymentTechnicalRows(payment: Payment): DetailsRow[] {
   return [
-    { label: 'Payment ID', value: payment.id },
-    { label: 'Event ID', value: payment.parkingEventId },
-    { label: 'Booking ID', value: payment.bookingId },
-    { label: 'User ID', value: payment.userId },
+    { label: 'paymentId', value: payment.id },
+    { label: 'parkingEventId', value: payment.parkingEventId },
+    { label: 'bookingId', value: payment.bookingId },
+    { label: 'userId', value: payment.userId },
+    { label: 'providerReference', value: payment.providerReference ?? '-' },
+    { label: 'status', value: payment.status },
+    { label: 'paymentMethod', value: payment.paymentMethod },
   ];
 }
 
@@ -76,9 +109,7 @@ export function PaymentsPage() {
   const { user, isAdmin, isSecurity, isUser, canViewOperationalPayments } = useUserRole();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
-  const [searchInput, setSearchInput] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
   const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
@@ -97,11 +128,6 @@ export function PaymentsPage() {
     queryKey: ['payments', 'user', user?.id],
     queryFn: () => getUserPayments(user!.id),
     enabled: isUser && Boolean(user?.id),
-  });
-  const lookupPaymentQuery = useQuery({
-    queryKey: ['payments', 'lookup', lookupPaymentId],
-    queryFn: () => getPayment(lookupPaymentId!),
-    enabled: canViewOperationalPayments && Boolean(lookupPaymentId),
   });
   const labels = useReferenceLabels({
     context: 'payment-enrichment',
@@ -145,37 +171,10 @@ export function PaymentsPage() {
     return paymentsQuery.data ?? [];
   }, [isUser, paymentsQuery.data, userPaymentsQuery.data]);
 
-  const rows = useMemo(() => {
-    if (lookupPaymentQuery.data) {
-      return [lookupPaymentQuery.data];
-    }
-
-    const trimmedSearch = appliedSearch.trim().toLowerCase();
-
-    if (!trimmedSearch) {
-      return baseRows;
-    }
-
-    return baseRows.filter((payment) => {
-      const searchableValues = [
-        payment.id,
-        payment.parkingEventId,
-        payment.bookingId,
-        labels.getBookingCode(payment.bookingId),
-        labels.getVehicleLabelForBooking(payment.bookingId),
-        payment.userId,
-        payment.status,
-        payment.paymentMethod,
-        payment.providerReference,
-        payment.failureReason,
-        payment.currency,
-      ];
-
-      return searchableValues.some((value) =>
-        String(value ?? '').toLowerCase().includes(trimmedSearch),
-      );
-    });
-  }, [appliedSearch, baseRows, labels, lookupPaymentQuery.data]);
+  const rows = useMemo(
+    () => filterPayments(baseRows, search, labels),
+    [baseRows, labels, search],
+  );
 
   const columns = useMemo<GridColDef<Payment>[]>(
     () => [
@@ -183,15 +182,9 @@ export function PaymentsPage() {
         field: 'id',
         headerName: 'Receipt No',
         minWidth: 130,
-        valueGetter: (_value, row) => `Receipt #${row.id}`,
+        valueGetter: (_value, row) => formatReceiptNo(row.id),
       },
-      {
-        field: 'parkingEventId',
-        headerName: 'Parking Session',
-        minWidth: 150,
-        valueGetter: (_value, row) => labels.getSessionLabel(row.parkingEventId),
-      },
-      createBookingColumn<Payment>((row) => labels.getBookingLabel(row.bookingId)),
+      createBookingColumn<Payment>(),
       ...(isAdmin || isSecurity
         ? [
             {
@@ -205,7 +198,7 @@ export function PaymentsPage() {
         : []),
       {
         field: 'vehicle',
-        headerName: 'Vehicle',
+        headerName: 'Vehicle Number',
         minWidth: 160,
         valueGetter: (_value, row) => labels.getVehicleLabelForBooking(row.bookingId),
       },
@@ -230,14 +223,7 @@ export function PaymentsPage() {
         minWidth: 220,
         valueGetter: (_value, row) => row.providerReference ?? '-',
       },
-      {
-        field: 'failureReason',
-        flex: 1,
-        headerName: 'Failure Reason',
-        minWidth: 220,
-        valueGetter: (_value, row) => row.failureReason ?? '-',
-      },
-      createDateTimeColumn<Payment>('createdAt', 'Paid/Created On', (row) => row.createdAt),
+      createDateTimeColumn<Payment>('createdAt', 'Created On', (row) => row.createdAt),
       createDetailsColumn<Payment>(setDetailsPayment),
       ...(isAdmin
         ? [
@@ -282,41 +268,32 @@ export function PaymentsPage() {
     [isAdmin, isSecurity, labels],
   );
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedValue = searchInput.trim();
-
-    if (!trimmedValue) {
-      showError('Enter a value to search');
-      return;
-    }
-
-    setAppliedSearch(trimmedValue);
-
-    if (/^\d+$/.test(trimmedValue)) {
-      setLookupPaymentId(Number(trimmedValue));
-      return;
-    }
-
-    setLookupPaymentId(null);
-  };
-
-  const clearSearch = () => {
-    setSearchInput('');
-    setAppliedSearch('');
-    setLookupPaymentId(null);
-  };
-
-  const paymentError = isUser
-    ? userPaymentsQuery.error
-    : lookupPaymentQuery.error ?? paymentsQuery.error;
+  const paymentError = isUser ? userPaymentsQuery.error : paymentsQuery.error;
   const isPaymentLoading =
     paymentsQuery.isLoading ||
     paymentsQuery.isFetching ||
     userPaymentsQuery.isLoading ||
-    userPaymentsQuery.isFetching ||
-    lookupPaymentQuery.isLoading ||
-    lookupPaymentQuery.isFetching;
+    userPaymentsQuery.isFetching;
+  const paymentEmptyState = isAdmin
+    ? {
+        description: search
+          ? 'Try a receipt no, booking no, vehicle number, status, or payment reference.'
+          : 'Payments will appear here after parking check-outs.',
+        title: search ? 'No matching payments' : 'No payments found',
+      }
+    : isSecurity
+      ? {
+          description: search
+            ? 'Try a receipt no, booking no, vehicle number, or status.'
+            : 'Operational payments will appear here after check-outs.',
+          title: search ? 'No matching payments' : 'No operational payments found',
+        }
+      : {
+          description: search
+            ? 'Try a receipt no, booking no, or status from your history.'
+            : 'Your payment history will appear here after parking sessions.',
+          title: search ? 'No matching payments' : 'You have no payment history yet',
+        };
   const summary = summaryQuery.data;
   const summaryStatuses = summary?.paymentsByStatus ?? {};
 
@@ -369,61 +346,33 @@ export function PaymentsPage() {
               value={formatCurrency(summary?.successfulAmount ?? 0)}
             />
           </Box>
-          {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => {
-            const statusStyle = paymentStatusStyles[status];
-
-            return (
-              <Box key={status}>
-                <StatCard
-                  compact
-                  label={statusStyle.label}
-                  value={summaryStatuses[status] ?? 0}
-                />
-              </Box>
-            );
-          })}
+          {(['INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map((status) => (
+            <Box key={status}>
+              <StatCard
+                compact
+                label={formatStatusLabel(status)}
+                value={summaryStatuses[status] ?? 0}
+              />
+            </Box>
+          ))}
         </Box>
       ) : null}
 
-      <Box component="form" onSubmit={handleSearch}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <TextField
-            fullWidth
-            label="Search payments"
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by payment id, booking id, booking code, event id, or provider ref"
-            size="small"
-            value={searchInput}
-          />
-          <Button
-            disabled={lookupPaymentQuery.isFetching}
-            size="medium"
-            startIcon={<Search />}
-            type="submit"
-            variant="contained"
-            sx={{ minWidth: 120 }}
-          >
-            Search
-          </Button>
-          <Button onClick={clearSearch} size="medium" variant="outlined" sx={{ minWidth: 96 }}>
-            Clear
-          </Button>
-        </Stack>
-      </Box>
+      <SearchField
+        label="Search payments"
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder="Search by receipt no, booking no, vehicle number, status, or payment reference"
+        value={search}
+      />
 
       <QueryErrorAlert error={paymentError} fallbackMessage="Could not load payments." />
 
       <AppDataGrid
         columns={columns}
-        height={{ xs: 520, md: 'calc(100vh - 430px)', xl: 'calc(100vh - 360px)' }}
+        emptyState={paymentEmptyState}
+        height={520}
         loading={isPaymentLoading}
-        noRowsLabel={
-          isAdmin
-            ? 'No payments found'
-            : isSecurity
-              ? 'No operational payments found'
-              : 'You have no payment history yet'
-        }
         rows={rows}
       />
 
@@ -431,7 +380,11 @@ export function PaymentsPage() {
         onClose={() => setDetailsPayment(null)}
         open={Boolean(detailsPayment)}
         title="Payment Details"
-        summaryRows={detailsPayment ? buildPaymentSummaryRows(detailsPayment, labels) : []}
+        summaryRows={
+          detailsPayment
+            ? buildPaymentSummaryRows(detailsPayment, labels, isAdmin || isSecurity)
+            : []
+        }
         technicalRows={detailsPayment ? buildPaymentTechnicalRows(detailsPayment) : []}
       />
 

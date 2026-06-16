@@ -1,7 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from './types/safe-user.type';
+
+const USER_UNIQUE_MESSAGES = {
+  email: 'Email already exists',
+  phone: 'Phone number already exists',
+};
 
 @Injectable()
 export class UsersService {
@@ -12,26 +18,7 @@ export class UsersService {
       const user = await this.prisma.user.create({ data });
       return this.toSafeUser(user);
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        const fields = Array.isArray(error.meta?.target)
-          ? error.meta.target
-          : [];
-
-        if (fields.includes('email')) {
-          throw new ConflictException('Email already exists');
-        }
-
-        if (fields.includes('phone')) {
-          throw new ConflictException('Phone number already exists');
-        }
-
-        throw new ConflictException('User already exists');
-      }
-
-      throw error;
+      handlePrismaUniqueConstraint(error, USER_UNIQUE_MESSAGES, 'User already exists');
     }
   }
 

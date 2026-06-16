@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { ParkingEventStatus, SlotStatus } from '@prisma/client';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { DashboardService } from './dashboard.service';
 
 describe('DashboardService', () => {
@@ -23,7 +24,8 @@ describe('DashboardService', () => {
       user: { count: jest.fn() },
     };
 
-    service = new DashboardService(prisma as never);
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    service = new DashboardService(prisma as never, parkingLotValidationService);
   });
 
   it('returns admin summary', async () => {
@@ -88,7 +90,6 @@ describe('DashboardService', () => {
     });
     expect(prisma.parkingLot.findFirst).toHaveBeenCalledWith({
       where: { id: 1, isActive: true },
-      select: { id: true, name: true },
     });
     expect(prisma.slot.groupBy).toHaveBeenCalledWith({
       by: ['status'],

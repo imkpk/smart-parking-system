@@ -26,6 +26,16 @@ function DetailRow({ label, value }: DetailsRow) {
   );
 }
 
+export function DetailsRows({ rows }: { rows: DetailsRow[] }) {
+  return (
+    <Stack spacing={2}>
+      {rows.map((row) => (
+        <DetailRow key={row.label} {...row} />
+      ))}
+    </Stack>
+  );
+}
+
 export function DetailsDialog({
   onClose,
   open,
@@ -44,19 +54,14 @@ export function DetailsDialog({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          {summaryRows.map((row) => (
-            <DetailRow key={row.label} {...row} />
-          ))}
+          <Typography fontWeight={700}>Business Details</Typography>
+          <DetailsRows rows={summaryRows} />
 
           {technicalRows?.length ? (
             <>
               <Divider />
               <Typography fontWeight={700}>Technical Details</Typography>
-              <Stack spacing={1}>
-                {technicalRows.map((row) => (
-                  <DetailRow key={row.label} {...row} />
-                ))}
-              </Stack>
+              <DetailsRows rows={technicalRows} />
             </>
           ) : null}
         </Stack>

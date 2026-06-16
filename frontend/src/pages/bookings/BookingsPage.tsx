@@ -10,7 +10,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -31,11 +30,19 @@ import {
 import { getParkingLots } from '../../api/parkingLotsApi';
 import { getMyVehicles, getVehicles } from '../../api/vehiclesApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
+import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
+import { createDetailsColumn } from '../../components/common/gridColumns';
+import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useReferenceLabels } from '../../hooks/useReferenceLabels';
+import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { useAuth } from '../../providers/AuthProvider';
+import { formatBookingNo, formatDateTime } from '../../lib/formatters';
+import { filterBookings } from '../../lib/searchFilters';
 import { Booking } from '../../types/booking';
 import { VehicleType } from '../../types/vehicle';
 
@@ -59,29 +66,71 @@ const emptyBookingForm: BookingFormState = {
 
 const activeBookingStatuses = ['PENDING', 'CONFIRMED'];
 
+function buildBookingSummaryRows(
+  booking: Booking,
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Booking No', value: formatBookingNo(booking.id) },
+    { label: 'Booking Code', value: booking.bookingCode },
+  ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(booking.userId) });
+  }
+
+  rows.push(
+    { label: 'Vehicle Number', value: labels.getVehicleLabel(booking.vehicleId) },
+    { label: 'Parking Lot', value: labels.getParkingLotLabel(booking.parkingLotId) },
+    { label: 'Slot', value: labels.getSlotLabel(booking.slotId) },
+    { label: 'Start Time', value: formatDateTime(booking.startTime) },
+    { label: 'End Time', value: formatDateTime(booking.endTime) },
+    { label: 'Status', value: <BookingStatusChip status={booking.status} /> },
+  );
+
+  return rows;
+}
+
+function buildBookingTechnicalRows(booking: Booking): DetailsRow[] {
+  return [
+    { label: 'bookingId', value: booking.id },
+    { label: 'userId', value: booking.userId },
+    { label: 'vehicleId', value: booking.vehicleId },
+    { label: 'slotId', value: booking.slotId },
+    { label: 'parkingLotId', value: booking.parkingLotId },
+    { label: 'status', value: booking.status },
+  ];
+}
+
 function toLocalDateTimeValue(date = new Date()) {
   const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
 }
 
 export function BookingsPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, isUser, canOperateParkingEvents } = useUserRole();
   const queryClient = useQueryClient();
-  const isUser = user?.role === 'USER';
-  const isAdmin = user?.role === 'ADMIN';
-  const canViewAll = user?.role === 'ADMIN' || user?.role === 'SECURITY';
+  const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const labels = useReferenceLabels({
+    context: 'bookings',
+    includeParkingStructure: true,
+    includeUsers: isAdmin,
+    role: user?.role,
+  });
   const [formOpen, setFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
     ...emptyBookingForm,
     startTime: toLocalDateTimeValue(),
   });
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
-  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
+  const [detailsBooking, setDetailsBooking] = useState<Booking | null>(null);
+  const [search, setSearch] = useState('');
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', isUser ? 'my' : 'all'],
     queryFn: isUser ? getMyBookings : getBookings,
-    enabled: Boolean(isUser || canViewAll),
+    enabled: Boolean(isUser || canOperateParkingEvents),
   });
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
@@ -91,7 +140,7 @@ export function BookingsPage() {
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
-    enabled: Boolean(isUser || canViewAll),
+    enabled: Boolean(isUser || canOperateParkingEvents),
   });
   const availableSlotsQuery = useQuery({
     queryKey: ['parking-lots', bookingForm.parkingLotId, 'available-slots', bookingForm.vehicleType],
@@ -103,18 +152,6 @@ export function BookingsPage() {
   const vehicles = vehiclesQuery.data ?? [];
   const parkingLots = parkingLotsQuery.data ?? [];
   const availableSlots = availableSlotsQuery.data ?? [];
-  const vehicleById = useMemo(
-    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
-    [vehicles],
-  );
-  const parkingLotById = useMemo(
-    () => new Map(parkingLots.map((parkingLot) => [parkingLot.id, parkingLot])),
-    [parkingLots],
-  );
-  const slotById = useMemo(
-    () => new Map(availableSlots.map((slot) => [slot.id, slot])),
-    [availableSlots],
-  );
 
   const createMutation = useMutation({
     mutationFn: createBooking,
@@ -123,11 +160,11 @@ export function BookingsPage() {
         queryClient.invalidateQueries({ queryKey: ['bookings'] }),
         queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
       ]);
-      setSnackbar({ message: 'Booking created.', severity: 'success' });
+      showSuccess('Booking created.');
       setFormOpen(false);
       setBookingForm({ ...emptyBookingForm, startTime: toLocalDateTimeValue() });
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
   const cancelMutation = useMutation({
     mutationFn: cancelBooking,
@@ -136,33 +173,54 @@ export function BookingsPage() {
         queryClient.invalidateQueries({ queryKey: ['bookings'] }),
         queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
       ]);
-      setSnackbar({ message: 'Booking cancelled.', severity: 'success' });
+      showSuccess('Booking cancelled.');
       setCancelTarget(null);
     },
-    onError: (error) => setSnackbar({ message: getApiErrorMessage(error), severity: 'error' }),
+    onError: (error) => showError(getApiErrorMessage(error)),
   });
+
+  const bookingRows = useMemo(
+    () => filterBookings(bookingsQuery.data ?? [], search, labels),
+    [bookingsQuery.data, labels, search],
+  );
 
   const columns = useMemo<GridColDef<Booking>[]>(
     () => [
+      {
+        field: 'id',
+        headerName: 'Booking No',
+        minWidth: 150,
+        valueGetter: (_value, row) => formatBookingNo(row.id),
+      },
       { field: 'bookingCode', flex: 1, headerName: 'Booking Code', minWidth: 220 },
+      ...(canOperateParkingEvents
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+            } satisfies GridColDef<Booking>,
+          ]
+        : []),
+      {
+        field: 'vehicleId',
+        headerName: 'Vehicle Number',
+        minWidth: 170,
+        valueGetter: (_value, row) => labels.getVehicleLabel(row.vehicleId),
+      },
       {
         field: 'parkingLotId',
         headerName: 'Parking Lot',
         minWidth: 170,
-        valueGetter: (_value, row) => parkingLotById.get(row.parkingLotId)?.name ?? `Lot #${row.parkingLotId}`,
-      },
-      {
-        field: 'vehicleId',
-        headerName: 'Vehicle',
-        minWidth: 170,
-        valueGetter: (_value, row) =>
-          vehicleById.get(row.vehicleId)?.vehicleNumber ?? `Vehicle #${row.vehicleId}`,
+        valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
       },
       {
         field: 'slotId',
         headerName: 'Slot',
         minWidth: 130,
-        valueGetter: (_value, row) => slotById.get(row.slotId)?.slotNumber ?? `Slot #${row.slotId}`,
+        valueGetter: (_value, row) => labels.getSlotLabel(row.slotId),
       },
       {
         field: 'status',
@@ -174,14 +232,15 @@ export function BookingsPage() {
         field: 'startTime',
         headerName: 'Start Time',
         minWidth: 190,
-        valueGetter: (_value, row) => new Date(row.startTime).toLocaleString(),
+        valueGetter: (_value, row) => formatDateTime(row.startTime),
       },
       {
         field: 'endTime',
         headerName: 'End Time',
         minWidth: 190,
-        valueGetter: (_value, row) => (row.endTime ? new Date(row.endTime).toLocaleString() : '-'),
+        valueGetter: (_value, row) => formatDateTime(row.endTime),
       },
+      createDetailsColumn<Booking>(setDetailsBooking),
       ...(isUser
         ? [
             {
@@ -211,7 +270,7 @@ export function BookingsPage() {
           ]
         : []),
     ],
-    [isUser, parkingLotById, slotById, vehicleById],
+    [canOperateParkingEvents, isUser, labels],
   );
 
   const openCreateForm = () => {
@@ -233,7 +292,7 @@ export function BookingsPage() {
     event.preventDefault();
 
     if (!bookingForm.vehicleId || !bookingForm.slotId) {
-      setSnackbar({ message: 'Please select a vehicle and slot.', severity: 'error' });
+      showError('Please select a vehicle and slot.');
       return;
     }
 
@@ -267,11 +326,27 @@ export function BookingsPage() {
         </Alert>
       ) : null}
 
+      <SearchField
+        label="Search bookings"
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder="Search by booking no, booking code, customer, vehicle number, parking lot, slot, or status"
+        value={search}
+      />
+
       <AppDataGrid
         columns={columns}
+        emptyState={{
+          description: search
+            ? 'Try a booking code, vehicle number, parking lot, or status.'
+            : isUser
+              ? 'Create a booking to reserve a parking slot.'
+              : 'Bookings will appear here when customers reserve slots.',
+          title: search ? 'No matching bookings' : 'No bookings found',
+        }}
         height="calc(100vh - 245px)"
         loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
-        rows={bookingsQuery.data ?? []}
+        rows={bookingRows}
       />
 
       <Dialog fullWidth maxWidth="sm" onClose={() => setFormOpen(false)} open={formOpen}>
@@ -376,6 +451,18 @@ export function BookingsPage() {
         </Box>
       </Dialog>
 
+      <DetailsDialog
+        onClose={() => setDetailsBooking(null)}
+        open={Boolean(detailsBooking)}
+        summaryRows={
+          detailsBooking
+            ? buildBookingSummaryRows(detailsBooking, labels, canOperateParkingEvents)
+            : []
+        }
+        technicalRows={detailsBooking ? buildBookingTechnicalRows(detailsBooking) : []}
+        title="Booking Details"
+      />
+
       <ConfirmDialog
         confirmLabel="Cancel Booking"
         description={cancelTarget ? `Cancel booking ${cancelTarget.bookingCode}?` : ''}
@@ -390,11 +477,7 @@ export function BookingsPage() {
         title="Cancel Booking"
       />
 
-      <Snackbar autoHideDuration={3500} onClose={() => setSnackbar(null)} open={Boolean(snackbar)}>
-        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? 'success'} variant="filled">
-          {snackbar?.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
   );
 }

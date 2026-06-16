@@ -34,6 +34,7 @@ import {
 } from '../../components/common/DetailsDialog';
 import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import {
@@ -48,69 +49,89 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatDateTime, formatRupees } from '../../lib/formatters';
+import { filterParkingEvents } from '../../lib/searchFilters';
+import {
+  formatBookingNo,
+  formatCurrency,
+  formatDateTime,
+  formatDuration,
+  formatRupees,
+  formatSessionNo,
+} from '../../lib/formatters';
 import { CheckOutResult, ParkingEvent } from '../../types/parkingEvent';
 
 type EventTab = 'active' | 'history';
 
 function buildParkingEventSummaryRows(
   event: ParkingEvent,
-  labels: ReturnType<typeof useReferenceLabels>
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
 ): DetailsRow[] {
-  return [
-    { label: 'Session No', value: labels.getSessionLabel(event.id) },
-    { label: 'Booking No', value: labels.getBookingLabel(event.bookingId) },
-    { label: 'Vehicle', value: labels.getVehicleLabel(event.vehicleId) },
-    {
-      label: 'Parking Lot',
-      value: labels.getParkingLotLabel(event.parkingLotId)
-    },
-    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
-    {
-      label: 'Status',
-      value: <ParkingEventStatusChip status={event.status} />
-    },
-    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
-    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) }
+  const rows: DetailsRow[] = [
+    { label: 'Session No', value: formatSessionNo(event.id) },
+    { label: 'Booking No', value: formatBookingNo(event.bookingId) },
   ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(event.userId) });
+  }
+
+  rows.push(
+    { label: 'Vehicle Number', value: labels.getVehicleLabel(event.vehicleId) },
+    { label: 'Parking Lot', value: labels.getParkingLotLabel(event.parkingLotId) },
+    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
+    { label: 'Status', value: <ParkingEventStatusChip status={event.status} /> },
+    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
+    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) },
+    { label: 'Duration', value: formatDuration(event.durationMinutes) },
+    { label: 'Fee', value: formatCurrency(event.feeAmount) },
+  );
+
+  return rows;
 }
 
 function buildParkingEventTechnicalRows(event: ParkingEvent): DetailsRow[] {
   return [
-    { label: 'Event ID', value: event.id },
-    { label: 'Booking ID', value: event.bookingId },
-    { label: 'User ID', value: event.userId },
-    { label: 'Vehicle ID', value: event.vehicleId },
-    { label: 'Slot ID', value: event.slotId },
-    { label: 'Lot ID', value: event.parkingLotId }
+    { label: 'parkingEventId', value: event.id },
+    { label: 'bookingId', value: event.bookingId },
+    { label: 'userId', value: event.userId },
+    { label: 'vehicleId', value: event.vehicleId },
+    { label: 'slotId', value: event.slotId },
+    { label: 'parkingLotId', value: event.parkingLotId },
+    { label: 'status', value: event.status },
   ];
 }
 
 function buildParkingEventHistoryColumns({
+  canViewCustomer,
   isUser,
   labels,
   onViewDetails
 }: {
+  canViewCustomer: boolean;
   isUser: boolean;
   labels: ReturnType<typeof useReferenceLabels>;
   onViewDetails: (event: ParkingEvent) => void;
 }): GridColDef<ParkingEvent>[] {
   const adminOnlyColumns: GridColDef<ParkingEvent>[] = isUser
     ? []
-    : [
-        createSessionColumn<ParkingEvent>((row) =>
-          labels.getSessionLabel(row.id)
-        )
-      ];
+    : [createSessionColumn<ParkingEvent>()];
 
   return [
     ...adminOnlyColumns,
-    createBookingColumn<ParkingEvent>((row) =>
-      labels.getBookingLabel(row.bookingId)
-    ),
-    createVehicleColumn<ParkingEvent>((row) =>
-      labels.getVehicleLabel(row.vehicleId)
-    ),
+    createBookingColumn<ParkingEvent>(),
+    ...(canViewCustomer
+      ? [
+          {
+            field: 'userId',
+            flex: 1,
+            headerName: 'Customer',
+            minWidth: 220,
+            valueGetter: (_value, row) => labels.getCustomerLabel(row.userId)
+          } satisfies GridColDef<ParkingEvent>
+        ]
+      : []),
+    createVehicleColumn<ParkingEvent>((vehicleId) => labels.getVehicleLabel(vehicleId)),
     {
       field: 'parkingLotId',
       flex: 1,
@@ -141,14 +162,13 @@ function buildParkingEventHistoryColumns({
       field: 'durationMinutes',
       headerName: 'Duration',
       minWidth: 130,
-      valueGetter: (_value, row) =>
-        row.durationMinutes === null ? '-' : `${row.durationMinutes} min`
+      valueGetter: (_value, row) => formatDuration(row.durationMinutes)
     },
     {
       field: 'feeAmount',
       headerName: 'Fee',
       minWidth: 120,
-      valueGetter: (_value, row) => formatRupees(row.feeAmount)
+      valueGetter: (_value, row) => formatCurrency(row.feeAmount)
     },
     createDetailsColumn<ParkingEvent>(onViewDetails)
   ];
@@ -225,6 +245,7 @@ export function ParkingEventsPage() {
     null
   );
   const [detailsEvent, setDetailsEvent] = useState<ParkingEvent | null>(null);
+  const [search, setSearch] = useState('');
 
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
@@ -238,7 +259,8 @@ export function ParkingEventsPage() {
   });
   const labels = useReferenceLabels({
     context: 'event-enrichment',
-    includeParkingStructure: canOperateParkingEvents,
+    includeParkingStructure: canOperateParkingEvents || isUser,
+    includeUsers: isAdmin,
     role: user?.role
   });
 
@@ -274,15 +296,20 @@ export function ParkingEventsPage() {
 
   const activeColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () => [
-      createSessionColumn<ParkingEvent>((row) =>
-        labels.getSessionLabel(row.id)
-      ),
-      createBookingColumn<ParkingEvent>((row) =>
-        labels.getBookingLabel(row.bookingId)
-      ),
-      createVehicleColumn<ParkingEvent>((row) =>
-        labels.getVehicleLabel(row.vehicleId)
-      ),
+      createSessionColumn<ParkingEvent>(),
+      createBookingColumn<ParkingEvent>(),
+      ...(canOperateParkingEvents
+        ? [
+            {
+              field: 'userId',
+              flex: 1,
+              headerName: 'Customer',
+              minWidth: 220,
+              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId)
+            } satisfies GridColDef<ParkingEvent>
+          ]
+        : []),
+      createVehicleColumn<ParkingEvent>((vehicleId) => labels.getVehicleLabel(vehicleId)),
       {
         field: 'slotId',
         headerName: 'Slot',
@@ -339,11 +366,12 @@ export function ParkingEventsPage() {
   const historyColumns = useMemo<GridColDef<ParkingEvent>[]>(
     () =>
       buildParkingEventHistoryColumns({
+        canViewCustomer: canOperateParkingEvents,
         isUser,
         labels,
         onViewDetails: setDetailsEvent
       }),
-    [isUser, labels]
+    [canOperateParkingEvents, isUser, labels]
   );
 
   const handleCheckIn = (event: FormEvent<HTMLFormElement>) => {
@@ -371,8 +399,14 @@ export function ParkingEventsPage() {
     checkInMutation.mutate({ bookingId: parsedBookingId });
   };
 
-  const activeRows = activeEventsQuery.data ?? [];
-  const historyRows = historyQuery.data ?? [];
+  const activeRows = useMemo(
+    () => filterParkingEvents(activeEventsQuery.data ?? [], search, labels),
+    [activeEventsQuery.data, labels, search],
+  );
+  const historyRows = useMemo(
+    () => filterParkingEvents(historyQuery.data ?? [], search, labels),
+    [historyQuery.data, labels, search],
+  );
   const activeError = activeEventsQuery.error;
   const historyError = historyQuery.error;
 
@@ -420,7 +454,7 @@ export function ParkingEventsPage() {
                   size='small'
                   label='Booking ID'
                   onChange={(event) => setBookingId(event.target.value)}
-                  type='number'
+                  type='text'
                   value={bookingId}
                 />
                 <Box>
@@ -456,6 +490,16 @@ export function ParkingEventsPage() {
         </Paper>
       )}
 
+      <Box sx={{ mt: 2 }}>
+        <SearchField
+          // label='Search parking events'
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch('')}
+          placeholder='Search by session no, booking no, vehicle number, customer, parking lot, slot, or status'
+          value={search}
+        />
+      </Box>
+
       {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
@@ -466,6 +510,12 @@ export function ParkingEventsPage() {
           ) : null}
           <AppDataGrid
             columns={activeColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : 'Active parking sessions will appear here after check-in.',
+              title: search ? 'No matching active events' : 'No active parking events',
+            }}
             height='calc(100vh - 360px)'
             loading={
               activeEventsQuery.isLoading || activeEventsQuery.isFetching
@@ -491,6 +541,14 @@ export function ParkingEventsPage() {
           ) : null}
           <AppDataGrid
             columns={historyColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : isUser
+                  ? 'Your completed parking sessions will appear here.'
+                  : 'Completed parking sessions will appear here.',
+              title: search ? 'No matching parking events' : 'No parking event history',
+            }}
             height='calc(100vh - 300px)'
             loading={historyQuery.isLoading || historyQuery.isFetching}
             rows={historyRows}
@@ -521,7 +579,9 @@ export function ParkingEventsPage() {
         open={Boolean(detailsEvent)}
         title='Parking Session Details'
         summaryRows={
-          detailsEvent ? buildParkingEventSummaryRows(detailsEvent, labels) : []
+          detailsEvent
+            ? buildParkingEventSummaryRows(detailsEvent, labels, canOperateParkingEvents)
+            : []
         }
         technicalRows={
           detailsEvent ? buildParkingEventTechnicalRows(detailsEvent) : []

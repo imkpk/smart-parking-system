@@ -4,7 +4,10 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus, Role, SlotStatus } from '@prisma/client';
+import { BookingStatus, ParkingEventStatus, Prisma, Role, SlotStatus } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
+import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { ParkingEventsService } from './parking-events.service';
 import { adminUser, normalUser } from '../test/test-users';
 
@@ -27,6 +30,7 @@ describe('ParkingEventsService', () => {
       update: jest.Mock;
     };
     slot: {
+      findUnique: jest.Mock;
       update: jest.Mock;
       updateMany: jest.Mock;
     };
@@ -58,6 +62,7 @@ describe('ParkingEventsService', () => {
         update: jest.fn(),
       },
       slot: {
+        findUnique: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
@@ -68,7 +73,18 @@ describe('ParkingEventsService', () => {
         payment: { id: 1, status: 'INITIATED' },
       }),
     };
-    service = new ParkingEventsService(prisma as never, paymentClientService as never);
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+    const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
+    const slotLifecycleService = new SlotLifecycleService(
+      prisma as never,
+      parkingLotValidationService,
+    );
+    service = new ParkingEventsService(
+      prisma as never,
+      new AccessPolicyService(),
+      paymentClientService as never,
+      slotLifecycleService,
+    );
     jest.useRealTimers();
   });
 
@@ -85,6 +101,7 @@ describe('ParkingEventsService', () => {
     prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue(booking.slot);
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
     prisma.parkingEvent.create.mockResolvedValue(parkingEvent);
 
@@ -115,6 +132,7 @@ describe('ParkingEventsService', () => {
     prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue(booking.slot);
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
     prisma.parkingEvent.create.mockResolvedValue({ id: 100 });
 
@@ -124,6 +142,25 @@ describe('ParkingEventsService', () => {
       where: { id: booking.id },
       include: { slot: true },
     });
+  });
+
+  it('maps duplicate parking event prisma errors to conflict', async () => {
+    prisma.booking.findFirst.mockResolvedValue(booking);
+    prisma.parkingEvent.findFirst.mockResolvedValue(null);
+    prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue(booking.slot);
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parkingEvent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['bookingId'] },
+      }),
+    );
+
+    await expect(service.checkIn({ bookingId: booking.id })).rejects.toThrow(
+      'Parking event already exists for this booking',
+    );
   });
 
   it('throws when check-in booking is missing', async () => {
@@ -171,6 +208,10 @@ describe('ParkingEventsService', () => {
     });
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue({
+      ...booking.slot,
+      status: SlotStatus.AVAILABLE,
+    });
 
     await expect(service.checkIn({ bookingId: booking.id })).rejects.toBeInstanceOf(
       BadRequestException,
@@ -181,6 +222,7 @@ describe('ParkingEventsService', () => {
     prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
+    prisma.slot.findUnique.mockResolvedValue(booking.slot);
     prisma.slot.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(service.checkIn({ bookingId: booking.id })).rejects.toBeInstanceOf(ConflictException);
@@ -203,6 +245,7 @@ describe('ParkingEventsService', () => {
       durationMinutes: 121,
       feeAmount: 110,
     });
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.checkOut({ parkingEventId: activeEvent.id });
 
@@ -218,8 +261,8 @@ describe('ParkingEventsService', () => {
       where: { id: booking.id },
       data: { status: BookingStatus.COMPLETED },
     });
-    expect(prisma.slot.update).toHaveBeenCalledWith({
-      where: { id: booking.slotId },
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: booking.slotId, status: SlotStatus.OCCUPIED },
       data: { status: SlotStatus.AVAILABLE },
     });
     expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
@@ -409,11 +452,17 @@ describe('ParkingEventsService', () => {
   it('lists current user parking history', async () => {
     prisma.parkingEvent.findMany.mockResolvedValue([{ id: 1, userId: normalUser.id }]);
 
-    const result = await service.findHistory(normalUser.id);
+    const result = await service.findHistory(normalUser);
 
     expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith({
       where: { userId: normalUser.id },
-      orderBy: { checkInTime: 'desc' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        booking: true,
+        vehicle: true,
+        slot: true,
+        parkingLot: true,
+      },
     });
     expect(result).toHaveLength(1);
   });

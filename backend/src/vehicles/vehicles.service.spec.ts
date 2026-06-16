@@ -1,5 +1,6 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { VehicleType } from '@prisma/client';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Prisma, VehicleType } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { VehiclesService } from './vehicles.service';
 import { adminUser, normalUser } from '../test/test-users';
 
@@ -34,7 +35,39 @@ describe('VehiclesService', () => {
         update: jest.fn(),
       },
     };
-    service = new VehiclesService(prisma as never);
+    service = new VehiclesService(prisma as never, new AccessPolicyService());
+  });
+
+  it('maps duplicate vehicle number prisma errors to conflict', async () => {
+    prisma.vehicle.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['vehicleNumber'] },
+      }),
+    );
+
+    await expect(
+      service.create(normalUser.id, {
+        vehicleNumber: vehicle.vehicleNumber,
+        vehicleType: vehicle.vehicleType,
+      }),
+    ).rejects.toThrow('Vehicle number already exists');
+  });
+
+  it('maps duplicate vehicle number prisma errors during update', async () => {
+    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+    prisma.vehicle.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        clientVersion: 'test',
+        code: 'P2002',
+        meta: { target: ['vehicleNumber'] },
+      }),
+    );
+
+    await expect(
+      service.update(vehicle.id, normalUser, { vehicleNumber: 'TS09EA9999' }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('creates a vehicle for the current user', async () => {

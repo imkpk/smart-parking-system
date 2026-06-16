@@ -2,16 +2,33 @@ import { Paper } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
+  GridOverlay,
   GridRowId,
   GridRowSelectionModel,
   GridRowsProp,
   GridValidRowModel
 } from '@mui/x-data-grid';
 import { CustomToolbar } from '../../utils/CutsomToolbar';
+import { EmptyState } from './EmptyState';
+
+function NoRowsOverlay({
+  description,
+  title
+}: {
+  description?: string;
+  title: string;
+}) {
+  return (
+    <GridOverlay>
+      <EmptyState description={description} title={title} />
+    </GridOverlay>
+  );
+}
 
 export function AppDataGrid<Row extends GridValidRowModel>({
   checkboxSelection = true,
   columns,
+  emptyState,
   getRowId,
   height = 500,
   loading = false,
@@ -22,6 +39,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
 }: {
   checkboxSelection?: boolean;
   columns: GridColDef<Row>[];
+  emptyState?: { description?: string; title: string };
   getRowId?: (row: Row) => GridRowId;
   height?: number | string | Record<string, number | string>;
   loading?: boolean;
@@ -57,7 +75,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
           }
         }}
         loading={loading}
-        localeText={{ noRowsLabel }}
+        localeText={{ noRowsLabel: emptyState ? '' : noRowsLabel }}
         onRowSelectionModelChange={
           onRowSelectionModelChange
             ? (model) => onRowSelectionModelChange(Array.from(model.ids))
@@ -68,7 +86,19 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         rows={rows}
         density="comfortable"
         showToolbar
-        slots={{ toolbar: CustomToolbar }}
+        slots={{
+          toolbar: CustomToolbar,
+          ...(emptyState
+            ? {
+                noRowsOverlay: () => (
+                  <NoRowsOverlay
+                    description={emptyState.description}
+                    title={emptyState.title}
+                  />
+                )
+              }
+            : {})
+        }}
         sx={{
           border: 0,
           '& .MuiDataGrid-columnHeaders': {
