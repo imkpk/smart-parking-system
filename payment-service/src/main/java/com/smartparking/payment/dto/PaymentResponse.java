@@ -24,6 +24,12 @@ public record PaymentResponse(
         PaymentStatus status,
         @Schema(example = "MOCK")
         PaymentMethod paymentMethod,
+        @Schema(example = "MOCK")
+        String provider,
+        @Schema(example = "order_N3LsR7fE9pQ3Yl")
+        String gatewayOrderId,
+        @Schema(example = "created")
+        String gatewayStatus,
         @Schema(example = "MOCK-550e8400-e29b-41d4-a716-446655440000")
         String providerReference,
         @Schema(example = "Mock provider declined payment")
@@ -41,6 +47,9 @@ public record PaymentResponse(
                 payment.getCurrency(),
                 payment.getStatus(),
                 payment.getPaymentMethod(),
+                payment.getProvider(),
+                payment.getGatewayOrderId(),
+                payment.getGatewayStatus(),
                 payment.getProviderReference(),
                 payment.getFailureReason(),
                 payment.getCreatedAt(),

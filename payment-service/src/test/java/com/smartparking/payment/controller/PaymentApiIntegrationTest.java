@@ -71,7 +71,8 @@ class PaymentApiIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("INITIATED"))
                 .andExpect(jsonPath("$.data.userId").value(1))
-                .andExpect(jsonPath("$.data.currency").value("INR"));
+                .andExpect(jsonPath("$.data.currency").value("INR"))
+                .andExpect(jsonPath("$.data.provider").value("MOCK"));
     }
 
     @Test

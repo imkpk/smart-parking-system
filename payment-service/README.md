@@ -2,7 +2,7 @@
 
 Standalone Spring Boot payment microservice for the Smart Parking project.
 
-This service is intentionally separate from the existing NestJS backend. It owns payment records and mock payment state transitions only. Real payment gateway integration is not included yet.
+This service is intentionally separate from the existing NestJS backend. It owns payment records, mock payment state transitions, and optional Razorpay order creation for checkout.
 
 ## Tech Stack
 
@@ -130,6 +130,9 @@ Response fields (`ApiResponse.data`):
   "currency": "INR",
   "status": "INITIATED",
   "paymentMethod": "MOCK",
+  "provider": "MOCK",
+  "gatewayOrderId": null,
+  "gatewayStatus": null,
   "providerReference": null,
   "failureReason": null,
   "createdAt": "2026-06-17T10:00:00",
@@ -196,6 +199,23 @@ MockFailureRequest
 PaymentResponse
 PaymentSummaryResponse
 ```
+
+## Payment Providers
+
+```text
+payment.provider=MOCK      # default local/demo behavior
+payment.provider=RAZORPAY  # creates Razorpay order on initiate
+```
+
+Razorpay env placeholders (never commit real keys):
+
+```text
+payment.razorpay.key-id=rzp_test_your_key_id
+payment.razorpay.key-secret=your_razorpay_key_secret
+payment.razorpay.currency=INR
+```
+
+MOCK provider keeps existing mock success/failure demo flow. RAZORPAY provider stores `gatewayOrderId` and `gatewayStatus` on the payment record while status remains `INITIATED` until verification is added.
 
 ## Payment Rules
 
