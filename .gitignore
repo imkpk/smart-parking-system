@@ -46,6 +46,9 @@ coverage/
 backend/coverage/
 frontend/coverage/
 
+# agent/shell session artifacts
+terminals/
+
 # OS/editor
 .DS_Store
 .idea/
