@@ -16,13 +16,11 @@ import {
   ErrorOutline,
   Payments,
   ReceiptLong,
-  Search,
 } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  getPayment,
   getPayments,
   getPaymentSummary,
   getUserPayments,
@@ -34,6 +32,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatCard } from '../../components/common/StatCard';
@@ -46,6 +45,7 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { filterPayments } from '../../lib/searchFilters';
 import {
   formatBookingNo,
   formatCurrency,
@@ -109,9 +109,7 @@ export function PaymentsPage() {
   const { user, isAdmin, isSecurity, isUser, canViewOperationalPayments } = useUserRole();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
-  const [searchInput, setSearchInput] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [lookupPaymentId, setLookupPaymentId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
   const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
@@ -130,11 +128,6 @@ export function PaymentsPage() {
     queryKey: ['payments', 'user', user?.id],
     queryFn: () => getUserPayments(user!.id),
     enabled: isUser && Boolean(user?.id),
-  });
-  const lookupPaymentQuery = useQuery({
-    queryKey: ['payments', 'lookup', lookupPaymentId],
-    queryFn: () => getPayment(lookupPaymentId!),
-    enabled: canViewOperationalPayments && Boolean(lookupPaymentId),
   });
   const labels = useReferenceLabels({
     context: 'payment-enrichment',
@@ -178,37 +171,10 @@ export function PaymentsPage() {
     return paymentsQuery.data ?? [];
   }, [isUser, paymentsQuery.data, userPaymentsQuery.data]);
 
-  const rows = useMemo(() => {
-    if (lookupPaymentQuery.data) {
-      return [lookupPaymentQuery.data];
-    }
-
-    const trimmedSearch = appliedSearch.trim().toLowerCase();
-
-    if (!trimmedSearch) {
-      return baseRows;
-    }
-
-    return baseRows.filter((payment) => {
-      const searchableValues = [
-        payment.id,
-        payment.parkingEventId,
-        payment.bookingId,
-        labels.getBookingCode(payment.bookingId),
-        labels.getVehicleLabelForBooking(payment.bookingId),
-        payment.userId,
-        payment.status,
-        payment.paymentMethod,
-        payment.providerReference,
-        payment.failureReason,
-        payment.currency,
-      ];
-
-      return searchableValues.some((value) =>
-        String(value ?? '').toLowerCase().includes(trimmedSearch),
-      );
-    });
-  }, [appliedSearch, baseRows, labels, lookupPaymentQuery.data]);
+  const rows = useMemo(
+    () => filterPayments(baseRows, search, labels),
+    [baseRows, labels, search],
+  );
 
   const columns = useMemo<GridColDef<Payment>[]>(
     () => [
@@ -302,41 +268,32 @@ export function PaymentsPage() {
     [isAdmin, isSecurity, labels],
   );
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedValue = searchInput.trim();
-
-    if (!trimmedValue) {
-      showError('Enter a value to search');
-      return;
-    }
-
-    setAppliedSearch(trimmedValue);
-
-    if (/^\d+$/.test(trimmedValue)) {
-      setLookupPaymentId(Number(trimmedValue));
-      return;
-    }
-
-    setLookupPaymentId(null);
-  };
-
-  const clearSearch = () => {
-    setSearchInput('');
-    setAppliedSearch('');
-    setLookupPaymentId(null);
-  };
-
-  const paymentError = isUser
-    ? userPaymentsQuery.error
-    : lookupPaymentQuery.error ?? paymentsQuery.error;
+  const paymentError = isUser ? userPaymentsQuery.error : paymentsQuery.error;
   const isPaymentLoading =
     paymentsQuery.isLoading ||
     paymentsQuery.isFetching ||
     userPaymentsQuery.isLoading ||
-    userPaymentsQuery.isFetching ||
-    lookupPaymentQuery.isLoading ||
-    lookupPaymentQuery.isFetching;
+    userPaymentsQuery.isFetching;
+  const paymentEmptyState = isAdmin
+    ? {
+        description: search
+          ? 'Try a receipt no, booking no, vehicle number, status, or payment reference.'
+          : 'Payments will appear here after parking check-outs.',
+        title: search ? 'No matching payments' : 'No payments found',
+      }
+    : isSecurity
+      ? {
+          description: search
+            ? 'Try a receipt no, booking no, vehicle number, or status.'
+            : 'Operational payments will appear here after check-outs.',
+          title: search ? 'No matching payments' : 'No operational payments found',
+        }
+      : {
+          description: search
+            ? 'Try a receipt no, booking no, or status from your history.'
+            : 'Your payment history will appear here after parking sessions.',
+          title: search ? 'No matching payments' : 'You have no payment history yet',
+        };
   const summary = summaryQuery.data;
   const summaryStatuses = summary?.paymentsByStatus ?? {};
 
@@ -401,45 +358,21 @@ export function PaymentsPage() {
         </Box>
       ) : null}
 
-      <Box component="form" onSubmit={handleSearch}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <TextField
-            fullWidth
-            label="Search payments"
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by payment id, booking id, booking code, event id, or provider ref"
-            size="small"
-            value={searchInput}
-          />
-          <Button
-            disabled={lookupPaymentQuery.isFetching}
-            size="medium"
-            startIcon={<Search />}
-            type="submit"
-            variant="contained"
-            sx={{ minWidth: 120 }}
-          >
-            Search
-          </Button>
-          <Button onClick={clearSearch} size="medium" variant="outlined" sx={{ minWidth: 96 }}>
-            Clear
-          </Button>
-        </Stack>
-      </Box>
+      <SearchField
+        label="Search payments"
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder="Search by receipt no, booking no, vehicle number, status, or payment reference"
+        value={search}
+      />
 
       <QueryErrorAlert error={paymentError} fallbackMessage="Could not load payments." />
 
       <AppDataGrid
         columns={columns}
+        emptyState={paymentEmptyState}
         height={{ xs: 520, md: 'calc(100vh - 430px)', xl: 'calc(100vh - 360px)' }}
         loading={isPaymentLoading}
-        noRowsLabel={
-          isAdmin
-            ? 'No payments found'
-            : isSecurity
-              ? 'No operational payments found'
-              : 'You have no payment history yet'
-        }
         rows={rows}
       />
 

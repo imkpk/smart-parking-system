@@ -31,12 +31,14 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
+import { filterVehicles } from '../../lib/searchFilters';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
 function buildVehicleSummaryRows(
@@ -90,6 +92,7 @@ export function VehiclesPage() {
   const [vehicleForm, setVehicleForm] = useState<VehiclePayload>(emptyVehicleForm);
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
   const [detailsVehicle, setDetailsVehicle] = useState<Vehicle | null>(null);
+  const [search, setSearch] = useState('');
 
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
@@ -128,6 +131,11 @@ export function VehiclesPage() {
     },
     onError: (error) => showError(getApiErrorMessage(error)),
   });
+
+  const vehicleRows = useMemo(
+    () => filterVehicles(vehiclesQuery.data ?? [], search, labels, isAdmin),
+    [isAdmin, labels, search, vehiclesQuery.data],
+  );
 
   const columns = useMemo<GridColDef<Vehicle>[]>(
     () => [
@@ -241,11 +249,25 @@ export function VehiclesPage() {
         </Alert>
       ) : null}
 
+      <SearchField
+        label="Search vehicles"
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder="Search by vehicle number, type, brand, model, color, or owner"
+        value={search}
+      />
+
       <AppDataGrid
         columns={columns}
+        emptyState={{
+          description: search
+            ? 'Try a vehicle number, brand, model, or owner name.'
+            : 'Register a vehicle to start creating bookings.',
+          title: search ? 'No matching vehicles' : 'No vehicles found',
+        }}
         height="calc(100vh - 245px)"
         loading={vehiclesQuery.isLoading || vehiclesQuery.isFetching}
-        rows={vehiclesQuery.data ?? []}
+        rows={vehicleRows}
       />
 
       <Dialog fullWidth maxWidth="sm" onClose={closeForm} open={formOpen}>

@@ -35,12 +35,14 @@ import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatBookingNo, formatDateTime } from '../../lib/formatters';
+import { filterBookings } from '../../lib/searchFilters';
 import { Booking } from '../../types/booking';
 import { VehicleType } from '../../types/vehicle';
 
@@ -123,6 +125,7 @@ export function BookingsPage() {
   });
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [detailsBooking, setDetailsBooking] = useState<Booking | null>(null);
+  const [search, setSearch] = useState('');
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', isUser ? 'my' : 'all'],
@@ -175,6 +178,11 @@ export function BookingsPage() {
     },
     onError: (error) => showError(getApiErrorMessage(error)),
   });
+
+  const bookingRows = useMemo(
+    () => filterBookings(bookingsQuery.data ?? [], search, labels),
+    [bookingsQuery.data, labels, search],
+  );
 
   const columns = useMemo<GridColDef<Booking>[]>(
     () => [
@@ -318,11 +326,27 @@ export function BookingsPage() {
         </Alert>
       ) : null}
 
+      <SearchField
+        label="Search bookings"
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder="Search by booking no, booking code, customer, vehicle number, parking lot, slot, or status"
+        value={search}
+      />
+
       <AppDataGrid
         columns={columns}
+        emptyState={{
+          description: search
+            ? 'Try a booking code, vehicle number, parking lot, or status.'
+            : isUser
+              ? 'Create a booking to reserve a parking slot.'
+              : 'Bookings will appear here when customers reserve slots.',
+          title: search ? 'No matching bookings' : 'No bookings found',
+        }}
         height="calc(100vh - 245px)"
         loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
-        rows={bookingsQuery.data ?? []}
+        rows={bookingRows}
       />
 
       <Dialog fullWidth maxWidth="sm" onClose={() => setFormOpen(false)} open={formOpen}>

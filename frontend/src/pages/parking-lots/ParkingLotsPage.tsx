@@ -11,7 +11,6 @@ import {
   FormControl,
   FormControlLabel,
   IconButton,
-  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -23,10 +22,10 @@ import {
   useTheme,
   Tooltip,
 } from '@mui/material';
-import { Add, Delete, Edit, OpenInNew, Search } from '@mui/icons-material';
+import { Add, Delete, Edit, OpenInNew } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   createParkingLot,
@@ -39,10 +38,12 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatDateTime } from '../../lib/formatters';
+import { filterParkingLots } from '../../lib/searchFilters';
 import {
   ParkingLot,
   ParkingLotPayload,
@@ -138,26 +139,10 @@ export function ParkingLotsPage() {
     () => parkingLotsQuery.data ?? [],
     [parkingLotsQuery.data],
   );
-  const filteredParkingLots = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return sortedParkingLots;
-    }
-
-    return sortedParkingLots.filter((parkingLot) =>
-      [
-        parkingLot.name,
-        parkingLot.type,
-        parkingLot.address,
-        parkingLot.city,
-        parkingLot.state,
-        parkingLot.pincode,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query)),
-    );
-  }, [search, sortedParkingLots]);
+  const filteredParkingLots = useMemo(
+    () => filterParkingLots(sortedParkingLots, search),
+    [search, sortedParkingLots],
+  );
   const columns = useMemo<GridColDef<ParkingLot>[]>(
     () => [
       {
@@ -279,10 +264,6 @@ export function ParkingLotsPage() {
     createMutation.mutate(payload);
   };
 
-  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearch(event.target.value);
-  };
-
   return (
     <Stack spacing={3}>
       <PageHeader
@@ -337,24 +318,22 @@ export function ParkingLotsPage() {
               p: 2,
             }}
           >
-            <TextField
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
+            <SearchField
               label="Search parking lots"
-              onChange={handleSearchChange}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch('')}
               placeholder="Search by name, type, city, state, or pincode"
-              size="small"
               value={search}
             />
           </Box>
           <AppDataGrid
             columns={columns}
+            emptyState={{
+              description: search
+                ? 'Try a parking lot name, city, state, or pincode.'
+                : 'Create a parking lot to start managing floors and slots.',
+              title: search ? 'No matching parking lots' : 'No parking lots found',
+            }}
             height="calc(100vh - 290px)"
             loading={parkingLotsQuery.isFetching}
             rows={filteredParkingLots}

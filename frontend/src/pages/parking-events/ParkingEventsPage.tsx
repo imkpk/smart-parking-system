@@ -34,6 +34,7 @@ import {
 } from '../../components/common/DetailsDialog';
 import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import {
@@ -48,6 +49,7 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { filterParkingEvents } from '../../lib/searchFilters';
 import {
   formatBookingNo,
   formatCurrency,
@@ -243,6 +245,7 @@ export function ParkingEventsPage() {
     null
   );
   const [detailsEvent, setDetailsEvent] = useState<ParkingEvent | null>(null);
+  const [search, setSearch] = useState('');
 
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
@@ -396,8 +399,14 @@ export function ParkingEventsPage() {
     checkInMutation.mutate({ bookingId: parsedBookingId });
   };
 
-  const activeRows = activeEventsQuery.data ?? [];
-  const historyRows = historyQuery.data ?? [];
+  const activeRows = useMemo(
+    () => filterParkingEvents(activeEventsQuery.data ?? [], search, labels),
+    [activeEventsQuery.data, labels, search],
+  );
+  const historyRows = useMemo(
+    () => filterParkingEvents(historyQuery.data ?? [], search, labels),
+    [historyQuery.data, labels, search],
+  );
   const activeError = activeEventsQuery.error;
   const historyError = historyQuery.error;
 
@@ -445,7 +454,7 @@ export function ParkingEventsPage() {
                   size='small'
                   label='Booking ID'
                   onChange={(event) => setBookingId(event.target.value)}
-                  type='number'
+                  type='text'
                   value={bookingId}
                 />
                 <Box>
@@ -481,6 +490,14 @@ export function ParkingEventsPage() {
         </Paper>
       )}
 
+      <SearchField
+        label='Search parking events'
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
+        placeholder='Search by session no, booking no, vehicle number, customer, parking lot, slot, or status'
+        value={search}
+      />
+
       {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
@@ -491,6 +508,12 @@ export function ParkingEventsPage() {
           ) : null}
           <AppDataGrid
             columns={activeColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : 'Active parking sessions will appear here after check-in.',
+              title: search ? 'No matching active events' : 'No active parking events',
+            }}
             height='calc(100vh - 360px)'
             loading={
               activeEventsQuery.isLoading || activeEventsQuery.isFetching
@@ -516,6 +539,14 @@ export function ParkingEventsPage() {
           ) : null}
           <AppDataGrid
             columns={historyColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : isUser
+                  ? 'Your completed parking sessions will appear here.'
+                  : 'Completed parking sessions will appear here.',
+              title: search ? 'No matching parking events' : 'No parking event history',
+            }}
             height='calc(100vh - 300px)'
             loading={historyQuery.isLoading || historyQuery.isFetching}
             rows={historyRows}

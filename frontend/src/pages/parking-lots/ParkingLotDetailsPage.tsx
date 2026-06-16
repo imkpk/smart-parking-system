@@ -41,12 +41,14 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
+import { filterSlots } from '../../lib/searchFilters';
 import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
@@ -160,6 +162,7 @@ export function ParkingLotDetailsPage() {
   const [slotFloorFilter, setSlotFloorFilter] = useState<number | 'ALL'>('ALL');
   const [slotStatusFilter, setSlotStatusFilter] = useState<SlotStatus | 'ALL'>('ALL');
   const [slotTypeFilter, setSlotTypeFilter] = useState<SlotType | 'ALL'>('ALL');
+  const [slotSearch, setSlotSearch] = useState('');
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
   const [deleteSlotTarget, setDeleteSlotTarget] = useState<Slot | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -186,16 +189,30 @@ export function ParkingLotDetailsPage() {
     () => new Map(floors.map((floor) => [floor.id, floor.name])),
     [floors],
   );
-  const filteredSlots = useMemo(
-    () =>
-      slots.filter((slot) => {
-        const floorMatches = slotFloorFilter === 'ALL' || slot.floorId === slotFloorFilter;
-        const statusMatches = slotStatusFilter === 'ALL' || slot.status === slotStatusFilter;
-        const typeMatches = slotTypeFilter === 'ALL' || slot.slotType === slotTypeFilter;
-        return floorMatches && statusMatches && typeMatches;
-      }),
-    [slotFloorFilter, slotStatusFilter, slotTypeFilter, slots],
-  );
+  const parkingLotName = parkingLotQuery.data?.name ?? `Lot #${parkingLotId}`;
+  const filteredSlots = useMemo(() => {
+    const dropdownFiltered = slots.filter((slot) => {
+      const floorMatches = slotFloorFilter === 'ALL' || slot.floorId === slotFloorFilter;
+      const statusMatches = slotStatusFilter === 'ALL' || slot.status === slotStatusFilter;
+      const typeMatches = slotTypeFilter === 'ALL' || slot.slotType === slotTypeFilter;
+      return floorMatches && statusMatches && typeMatches;
+    });
+
+    return filterSlots(dropdownFiltered, slotSearch, floorNameById, parkingLotName);
+  }, [
+    floorNameById,
+    parkingLotName,
+    slotFloorFilter,
+    slotSearch,
+    slotStatusFilter,
+    slotTypeFilter,
+    slots,
+  ]);
+  const hasSlotFilters =
+    slotSearch.trim().length > 0 ||
+    slotFloorFilter !== 'ALL' ||
+    slotStatusFilter !== 'ALL' ||
+    slotTypeFilter !== 'ALL';
   const filteredSlotIds = useMemo(
     () => filteredSlots.map((slot) => slot.id),
     [filteredSlots],
@@ -225,7 +242,6 @@ export function ParkingLotDetailsPage() {
 
     return counts;
   }, [slots]);
-  const parkingLotName = parkingLotQuery.data?.name ?? `Lot #${parkingLotId}`;
 
   const invalidateStructure = async () => {
     await Promise.all([
@@ -561,6 +577,9 @@ export function ParkingLotDetailsPage() {
               selectedSlotIds={selectedSlotIds}
               slotFloorFilter={slotFloorFilter}
               filteredSlotIds={filteredSlotIds}
+              hasSlotFilters={hasSlotFilters}
+              onSlotSearchChange={setSlotSearch}
+              slotSearch={slotSearch}
               slotStatusFilter={slotStatusFilter}
               slotTypeFilter={slotTypeFilter}
             />
@@ -778,7 +797,15 @@ function FloorsSection({
           Create Floor
         </Button>
       </Stack>
-      <AppDataGrid columns={columns} height={420} rows={floors} />
+      <AppDataGrid
+        columns={columns}
+        emptyState={{
+          description: 'Create a floor to start adding slots.',
+          title: 'No floors found',
+        }}
+        height={420}
+        rows={floors}
+      />
       <DetailsDialog
         onClose={() => setDetailsFloor(null)}
         open={Boolean(detailsFloor)}
@@ -803,6 +830,7 @@ function SlotsSection({
   filteredSlotIds,
   floorNameById,
   floors,
+  hasSlotFilters,
   parkingLotId,
   parkingLotName,
   onBulkCreate,
@@ -811,11 +839,13 @@ function SlotsSection({
   onDelete,
   onFloorFilterChange,
   onSelectionChange,
+  onSlotSearchChange,
   onStatusChange,
   onStatusFilterChange,
   onTypeFilterChange,
   selectedSlotIds,
   slotFloorFilter,
+  slotSearch,
   slotStatusFilter,
   slotTypeFilter,
 }: {
@@ -823,6 +853,7 @@ function SlotsSection({
   filteredSlotIds: number[];
   floorNameById: Map<number, string>;
   floors: Floor[];
+  hasSlotFilters: boolean;
   parkingLotId: number;
   parkingLotName: string;
   onBulkCreate: () => void;
@@ -831,11 +862,13 @@ function SlotsSection({
   onDelete: (slot: Slot) => void;
   onFloorFilterChange: (floorId: number | 'ALL') => void;
   onSelectionChange: (ids: GridRowId[]) => void;
+  onSlotSearchChange: (value: string) => void;
   onStatusChange: (slotId: number, status: SlotStatus) => void;
   onStatusFilterChange: (status: SlotStatus | 'ALL') => void;
   onTypeFilterChange: (slotType: SlotType | 'ALL') => void;
   selectedSlotIds: number[];
   slotFloorFilter: number | 'ALL';
+  slotSearch: string;
   slotStatusFilter: SlotStatus | 'ALL';
   slotTypeFilter: SlotType | 'ALL';
 }) {
@@ -893,8 +926,33 @@ function SlotsSection({
     [floorNameById, onDelete, onStatusChange],
   );
 
+  const slotEmptyState = hasSlotFilters
+    ? {
+        description: 'Try a slot number, floor, status, or vehicle type.',
+        title: 'No matching slots',
+      }
+    : {
+        description: 'Create slots on a floor to manage parking capacity.',
+        title: 'No slots found',
+      };
+
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          p: 2,
+        }}
+      >
+        <SearchField
+          label="Search slots"
+          onChange={(event) => onSlotSearchChange(event.target.value)}
+          onClear={() => onSlotSearchChange('')}
+          placeholder="Search by slot number, floor, status, or vehicle type"
+          value={slotSearch}
+        />
+      </Box>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} p={2}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -965,6 +1023,7 @@ function SlotsSection({
       <AppDataGrid
         checkboxSelection
         columns={columns}
+        emptyState={slotEmptyState}
         height={520}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
