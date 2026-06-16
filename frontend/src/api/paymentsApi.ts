@@ -1,33 +1,8 @@
-import axios from 'axios';
-import { tokenStorage } from '../lib/tokenStorage';
+import { createApiClient } from './createApiClient';
 import { Payment, PaymentApiResponse, PaymentSummary } from '../types/payment';
 
-export const paymentApiClient = axios.create({
-  baseURL: import.meta.env.VITE_PAYMENT_API_BASE_URL ?? 'http://localhost:8081/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-paymentApiClient.interceptors.request.use((config) => {
-  const token = tokenStorage.get();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
-paymentApiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      window.dispatchEvent(new Event('smart-parking:unauthorized'));
-    }
-
-    return Promise.reject(error);
-  },
+export const paymentApiClient = createApiClient(
+  import.meta.env.VITE_PAYMENT_API_BASE_URL ?? 'http://localhost:8081/api',
 );
 
 function unwrap<T>(response: { data: PaymentApiResponse<T> }) {
