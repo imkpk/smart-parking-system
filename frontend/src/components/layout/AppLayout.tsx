@@ -19,11 +19,11 @@ import {
   Dashboard,
   DirectionsCar,
   EventNote,
+  Garage,
   LocalParking,
   Logout,
   Menu,
   MenuOpen,
-  Payments,
   ReceiptLong,
   Security,
 } from '@mui/icons-material';
@@ -82,7 +82,7 @@ const navItems: NavItem[] = [
   {
     label: 'Parking Events',
     to: '/parking-events',
-    icon: <LocalParking />,
+    icon: <Garage />,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
   {

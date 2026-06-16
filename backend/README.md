@@ -96,7 +96,7 @@ Create `backend/.env`:
 ```env
 DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_db"
 SHADOW_DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_shadow_db"
-JWT_SECRET="dev_secret_change_later"
+JWT_SECRET="smart_parking_dev_jwt_secret_32_chars_minimum"
 JWT_EXPIRES_IN="1d"
 PORT=3000
 ```

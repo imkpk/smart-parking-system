@@ -5,8 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
@@ -17,7 +18,10 @@ const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly slotLifecycleService: SlotLifecycleService,
+  ) {}
 
   async create(currentUser: SafeUser, createBookingDto: CreateBookingDto) {
     return this.prisma.$transaction(async (tx) => {
@@ -32,28 +36,11 @@ export class BookingsService {
         throw new ForbiddenException('You can only book with your own vehicle');
       }
 
-      const slot = await tx.slot.findUnique({
-        where: { id: createBookingDto.slotId },
-        include: {
-          floor: {
-            include: {
-              parkingLot: true,
-            },
-          },
-        },
-      });
-
-      if (!slot || !slot.floor.parkingLot.isActive) {
-        throw new NotFoundException('Slot not found');
-      }
-
-      if (slot.status !== SlotStatus.AVAILABLE) {
-        throw new ConflictException('Slot is not available');
-      }
-
-      if (slot.slotType !== this.toSlotType(vehicle.vehicleType)) {
-        throw new BadRequestException('Slot type does not match vehicle type');
-      }
+      const slot = await this.slotLifecycleService.validateSlotAvailable(
+        createBookingDto.slotId,
+        vehicle.vehicleType,
+        tx,
+      );
 
       const activeBookingCount = await tx.booking.count({
         where: {
@@ -66,19 +53,7 @@ export class BookingsService {
         throw new ConflictException('Slot is already booked');
       }
 
-      const updatedSlots = await tx.slot.updateMany({
-        where: {
-          id: slot.id,
-          status: SlotStatus.AVAILABLE,
-        },
-        data: {
-          status: SlotStatus.RESERVED,
-        },
-      });
-
-      if (updatedSlots.count !== 1) {
-        throw new ConflictException('Slot is not available');
-      }
+      await this.slotLifecycleService.reserveSlot(slot.id, tx);
 
       return tx.booking.create({
         data: {
@@ -153,17 +128,10 @@ export class BookingsService {
         data: { status: BookingStatus.CANCELLED },
       });
 
-      await tx.slot.update({
-        where: { id: booking.slotId },
-        data: { status: SlotStatus.AVAILABLE },
-      });
+      await this.slotLifecycleService.releaseReservedSlot(booking.slotId, tx);
 
       return cancelledBooking;
     });
-  }
-
-  private toSlotType(vehicleType: VehicleType): SlotType {
-    return vehicleType as unknown as SlotType;
   }
 
   private generateBookingCode() {

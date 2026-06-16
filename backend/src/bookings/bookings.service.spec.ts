@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { BookingsService } from './bookings.service';
 import { adminUser, normalUser } from '../test/test-users';
 
@@ -61,7 +62,8 @@ describe('BookingsService', () => {
       },
       vehicle: { findFirst: jest.fn() },
     };
-    service = new BookingsService(prisma as never);
+    const slotLifecycleService = new SlotLifecycleService(prisma as never);
+    service = new BookingsService(prisma as never, slotLifecycleService);
   });
 
   it('creates a confirmed booking and reserves the slot', async () => {
@@ -235,7 +237,7 @@ describe('BookingsService', () => {
     };
     prisma.booking.findUnique.mockResolvedValue(booking);
     prisma.booking.update.mockResolvedValue({ ...booking, status: BookingStatus.CANCELLED });
-    prisma.slot.update.mockResolvedValue({ id: slot.id, status: SlotStatus.AVAILABLE });
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.cancel(booking.id, normalUser);
 
@@ -243,8 +245,8 @@ describe('BookingsService', () => {
       where: { id: booking.id },
       data: { status: BookingStatus.CANCELLED },
     });
-    expect(prisma.slot.update).toHaveBeenCalledWith({
-      where: { id: slot.id },
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: slot.id, status: SlotStatus.RESERVED },
       data: { status: SlotStatus.AVAILABLE },
     });
     expect(result.status).toBe(BookingStatus.CANCELLED);
@@ -335,7 +337,7 @@ describe('BookingsService', () => {
     };
     prisma.booking.findUnique.mockResolvedValue(booking);
     prisma.booking.update.mockResolvedValue({ ...booking, status: BookingStatus.CANCELLED });
-    prisma.slot.update.mockResolvedValue({ id: slot.id, status: SlotStatus.AVAILABLE });
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.cancel(booking.id, adminUser);
 

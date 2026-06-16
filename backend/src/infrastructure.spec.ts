@@ -82,7 +82,7 @@ describe('Infrastructure', () => {
     expect(optionsProvider?.useFactory?.({
       get: jest.fn().mockReturnValue(undefined),
     })).toEqual({
-      secret: 'change-me',
+      secret: 'smart_parking_dev_jwt_secret_32_chars_minimum',
       signOptions: { expiresIn: '1d' },
     });
   });
