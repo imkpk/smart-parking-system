@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { BookingsService } from './bookings.service';
@@ -70,7 +71,11 @@ describe('BookingsService', () => {
       prisma as never,
       parkingLotValidationService,
     );
-    service = new BookingsService(prisma as never, slotLifecycleService);
+    service = new BookingsService(
+      prisma as never,
+      new AccessPolicyService(),
+      slotLifecycleService,
+    );
   });
 
   it('creates a confirmed booking and reserves the slot', async () => {
