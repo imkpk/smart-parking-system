@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, ParkingEventStatus, Role, SlotStatus } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { ParkingEventsService } from './parking-events.service';
@@ -80,6 +81,7 @@ describe('ParkingEventsService', () => {
     );
     service = new ParkingEventsService(
       prisma as never,
+      new AccessPolicyService(),
       paymentClientService as never,
       slotLifecycleService,
     );

@@ -5,7 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Role } from '@prisma/client';
+import { BookingStatus } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
@@ -20,6 +21,7 @@ const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
 export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly accessPolicy: AccessPolicyService,
     private readonly slotLifecycleService: SlotLifecycleService,
   ) {}
 
@@ -94,15 +96,13 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    if (
-      currentUser.role === Role.ADMIN ||
-      currentUser.role === Role.SECURITY ||
-      booking.userId === currentUser.id
-    ) {
-      return booking;
-    }
+    this.accessPolicy.assertCanViewUserOwnedRecord(
+      currentUser,
+      booking.userId,
+      'You can only view your own bookings',
+    );
 
-    throw new ForbiddenException('You can only view your own bookings');
+    return booking;
   }
 
   async cancel(id: number, currentUser: SafeUser) {
@@ -115,9 +115,11 @@ export class BookingsService {
         throw new NotFoundException('Booking not found');
       }
 
-      if (currentUser.role !== Role.ADMIN && booking.userId !== currentUser.id) {
-        throw new ForbiddenException('You can only cancel your own bookings');
-      }
+      this.accessPolicy.assertOwnerOrAdmin(
+        currentUser,
+        booking.userId,
+        'You can only cancel your own bookings',
+      );
 
       if (!ACTIVE_BOOKING_STATUSES.includes(booking.status)) {
         throw new BadRequestException('Only active bookings can be cancelled');

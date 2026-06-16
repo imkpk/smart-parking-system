@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { VehicleType } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { VehiclesService } from './vehicles.service';
 import { adminUser, normalUser } from '../test/test-users';
 
@@ -34,7 +35,7 @@ describe('VehiclesService', () => {
         update: jest.fn(),
       },
     };
-    service = new VehiclesService(prisma as never);
+    service = new VehiclesService(prisma as never, new AccessPolicyService());
   });
 
   it('creates a vehicle for the current user', async () => {

@@ -8,8 +8,8 @@ import {
 import {
   BookingStatus,
   ParkingEventStatus,
-  Role,
 } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
@@ -21,6 +21,7 @@ import { CheckOutDto } from './dto/check-out.dto';
 export class ParkingEventsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly accessPolicy: AccessPolicyService,
     private readonly paymentClientService: PaymentClientService,
     private readonly slotLifecycleService: SlotLifecycleService,
   ) {}
@@ -155,13 +156,8 @@ export class ParkingEventsService {
   }
 
   findHistory(user: SafeUser) {
-    const where =
-      user.role === Role.USER
-        ? { userId: user.id }
-        : {};
-
     return this.prisma.parkingEvent.findMany({
-      where,
+      where: this.accessPolicy.buildUserScopedWhere(user),
       orderBy: {
         createdAt: 'desc',
       },
@@ -189,15 +185,13 @@ export class ParkingEventsService {
       throw new NotFoundException('Parking event not found');
     }
 
-    if (
-      currentUser.role === Role.ADMIN ||
-      currentUser.role === Role.SECURITY ||
-      parkingEvent.userId === currentUser.id
-    ) {
-      return parkingEvent;
-    }
+    this.accessPolicy.assertCanViewUserOwnedRecord(
+      currentUser,
+      parkingEvent.userId,
+      'You can only view your own parking history',
+    );
 
-    throw new ForbiddenException('You can only view your own parking history');
+    return parkingEvent;
   }
 
   private calculateFee(durationMinutes: number) {

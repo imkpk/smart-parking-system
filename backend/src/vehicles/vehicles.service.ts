@@ -1,10 +1,9 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -12,7 +11,10 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessPolicy: AccessPolicyService,
+  ) {}
 
   create(userId: number, createVehicleDto: CreateVehicleDto) {
     return this.prisma.vehicle.create({
@@ -50,7 +52,11 @@ export class VehiclesService {
 
   async update(id: number, currentUser: SafeUser, updateVehicleDto: UpdateVehicleDto) {
     const vehicle = await this.findOne(id);
-    this.ensureOwnerOrAdmin(vehicle.userId, currentUser);
+    this.accessPolicy.assertOwnerOrAdmin(
+      currentUser,
+      vehicle.userId,
+      'You can only manage your own vehicles',
+    );
 
     return this.prisma.vehicle.update({
       where: { id },
@@ -60,7 +66,11 @@ export class VehiclesService {
 
   async remove(id: number, currentUser: SafeUser) {
     const vehicle = await this.findOne(id);
-    this.ensureOwnerOrAdmin(vehicle.userId, currentUser);
+    this.accessPolicy.assertOwnerOrAdmin(
+      currentUser,
+      vehicle.userId,
+      'You can only manage your own vehicles',
+    );
 
     const bookingCount = await this.prisma.booking.count({
       where: { vehicleId: id },
@@ -85,13 +95,5 @@ export class VehiclesService {
     }
 
     return vehicle;
-  }
-
-  private ensureOwnerOrAdmin(ownerId: number, currentUser: SafeUser) {
-    if (currentUser.role === Role.ADMIN || ownerId === currentUser.id) {
-      return;
-    }
-
-    throw new ForbiddenException('You can only manage your own vehicles');
   }
 }
