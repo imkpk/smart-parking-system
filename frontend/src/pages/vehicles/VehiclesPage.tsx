@@ -29,12 +29,43 @@ import {
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { formatStatusLabel } from '../../lib/formatters';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
+
+function buildVehicleSummaryRows(
+  vehicle: Vehicle,
+  labels: ReturnType<typeof useReferenceLabels>,
+  showOwner: boolean,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Vehicle Number', value: vehicle.vehicleNumber },
+    { label: 'Vehicle Type', value: formatStatusLabel(vehicle.vehicleType) },
+    { label: 'Brand', value: vehicle.brand ?? '-' },
+    { label: 'Model', value: vehicle.model ?? '-' },
+    { label: 'Color', value: vehicle.color ?? '-' },
+  ];
+
+  if (showOwner) {
+    rows.push({ label: 'Owner', value: labels.getCustomerLabel(vehicle.userId) });
+  }
+
+  return rows;
+}
+
+function buildVehicleTechnicalRows(vehicle: Vehicle): DetailsRow[] {
+  return [
+    { label: 'vehicleId', value: vehicle.id },
+    { label: 'userId', value: vehicle.userId },
+    { label: 'vehicleType', value: vehicle.vehicleType },
+  ];
+}
 
 const emptyVehicleForm: VehiclePayload = {
   vehicleNumber: '',
@@ -58,6 +89,7 @@ export function VehiclesPage() {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState<VehiclePayload>(emptyVehicleForm);
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
+  const [detailsVehicle, setDetailsVehicle] = useState<Vehicle | null>(null);
 
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
@@ -115,6 +147,7 @@ export function VehiclesPage() {
             } satisfies GridColDef<Vehicle>,
           ]
         : []),
+      createDetailsColumn<Vehicle>(setDetailsVehicle),
       {
         field: 'actions',
         align: 'right',
@@ -278,6 +311,16 @@ export function VehiclesPage() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <DetailsDialog
+        onClose={() => setDetailsVehicle(null)}
+        open={Boolean(detailsVehicle)}
+        summaryRows={
+          detailsVehicle ? buildVehicleSummaryRows(detailsVehicle, labels, isAdmin) : []
+        }
+        technicalRows={detailsVehicle ? buildVehicleTechnicalRows(detailsVehicle) : []}
+        title="Vehicle Details"
+      />
 
       <ConfirmDialog
         confirmLabel="Delete"

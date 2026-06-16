@@ -23,7 +23,7 @@ import {
   useTheme,
   Tooltip,
 } from '@mui/material';
-import { Add, Delete, Edit, Search, Visibility } from '@mui/icons-material';
+import { Add, Delete, Edit, OpenInNew, Search } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
@@ -37,15 +37,33 @@ import {
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { formatDateTime } from '../../lib/formatters';
 import {
   ParkingLot,
   ParkingLotPayload,
   ParkingLotType,
   parkingLotTypeOptions,
 } from '../../types/parkingLot';
+
+function buildParkingLotSummaryRows(lot: ParkingLot): DetailsRow[] {
+  return [
+    { label: 'Parking Lot Name', value: lot.name },
+    { label: 'Address', value: lot.address ?? '-' },
+    { label: 'City', value: lot.city ?? '-' },
+    { label: 'Status', value: lot.isActive ? 'Active' : 'Inactive' },
+    { label: 'Created On', value: formatDateTime(lot.createdAt) },
+    { label: 'Updated On', value: formatDateTime(lot.updatedAt) },
+  ];
+}
+
+function buildParkingLotTechnicalRows(lot: ParkingLot): DetailsRow[] {
+  return [{ label: 'parkingLotId', value: lot.id }];
+}
 
 const emptyForm: ParkingLotPayload = {
   name: '',
@@ -67,6 +85,7 @@ export function ParkingLotsPage() {
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
   const [search, setSearch] = useState('');
+  const [detailsParkingLot, setDetailsParkingLot] = useState<ParkingLot | null>(null);
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
@@ -169,6 +188,7 @@ export function ParkingLotsPage() {
           />
         ),
       },
+      createDetailsColumn<ParkingLot>(setDetailsParkingLot),
       {
         field: 'actions',
         align: 'right',
@@ -179,9 +199,9 @@ export function ParkingLotsPage() {
         sortable: false,
         renderCell: ({ row }) => (
           <Stack direction="row" justifyContent="flex-end" width="100%">
-            <Tooltip title="View Details">
+            <Tooltip title="Manage Lot">
               <IconButton component={RouterLink} to={`/parking-lots/${row.id}`}>
-                <Visibility />
+                <OpenInNew />
               </IconButton>
             </Tooltip>
             <Tooltip title="Edit">
@@ -409,6 +429,14 @@ export function ParkingLotsPage() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <DetailsDialog
+        onClose={() => setDetailsParkingLot(null)}
+        open={Boolean(detailsParkingLot)}
+        summaryRows={detailsParkingLot ? buildParkingLotSummaryRows(detailsParkingLot) : []}
+        technicalRows={detailsParkingLot ? buildParkingLotTechnicalRows(detailsParkingLot) : []}
+        title="Parking Lot Details"
+      />
 
       <ConfirmDialog
         confirmLabel="Delete"

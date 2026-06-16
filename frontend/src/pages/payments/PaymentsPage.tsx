@@ -47,6 +47,7 @@ import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
 import {
+  formatBookingNo,
   formatCurrency,
   formatDateTime,
   formatReceiptNo,
@@ -56,23 +57,51 @@ import { Payment } from '../../types/payment';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
 
-function buildPaymentSummaryRows(payment: Payment, labels: ReturnType<typeof useReferenceLabels>): DetailsRow[] {
-  return [
-    { label: 'Receipt No', value: `Receipt #${payment.id}` },
-    { label: 'Booking No', value: labels.getBookingLabel(payment.bookingId) },
-    { label: 'Vehicle', value: labels.getVehicleLabelForBooking(payment.bookingId) },
-    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
-    { label: 'Status', value: <PaymentStatusChip status={payment.status} /> },
-    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+function buildPaymentSummaryRows(
+  payment: Payment,
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Receipt No', value: formatReceiptNo(payment.id) },
+    { label: 'Booking No', value: formatBookingNo(payment.bookingId) },
   ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(payment.userId) });
+  }
+
+  const vehicleNumber = labels.getVehicleLabelForBooking(payment.bookingId);
+  if (vehicleNumber !== '-') {
+    rows.push({ label: 'Vehicle Number', value: vehicleNumber });
+  }
+
+  rows.push(
+    { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
+    { label: 'Currency', value: payment.currency },
+    { label: 'Payment Status', value: <PaymentStatusChip status={payment.status} /> },
+    { label: 'Method', value: formatStatusLabel(payment.paymentMethod) },
+    { label: 'Payment Reference', value: payment.providerReference ?? '-' },
+  );
+
+  if (payment.failureReason) {
+    rows.push({ label: 'Failure Reason', value: payment.failureReason });
+  }
+
+  rows.push({ label: 'Created On', value: formatDateTime(payment.createdAt) });
+
+  return rows;
 }
 
 function buildPaymentTechnicalRows(payment: Payment): DetailsRow[] {
   return [
-    { label: 'Payment ID', value: payment.id },
-    { label: 'Event ID', value: payment.parkingEventId },
-    { label: 'Booking ID', value: payment.bookingId },
-    { label: 'User ID', value: payment.userId },
+    { label: 'paymentId', value: payment.id },
+    { label: 'parkingEventId', value: payment.parkingEventId },
+    { label: 'bookingId', value: payment.bookingId },
+    { label: 'userId', value: payment.userId },
+    { label: 'providerReference', value: payment.providerReference ?? '-' },
+    { label: 'status', value: payment.status },
+    { label: 'paymentMethod', value: payment.paymentMethod },
   ];
 }
 
@@ -418,7 +447,11 @@ export function PaymentsPage() {
         onClose={() => setDetailsPayment(null)}
         open={Boolean(detailsPayment)}
         title="Payment Details"
-        summaryRows={detailsPayment ? buildPaymentSummaryRows(detailsPayment, labels) : []}
+        summaryRows={
+          detailsPayment
+            ? buildPaymentSummaryRows(detailsPayment, labels, isAdmin || isSecurity)
+            : []
+        }
         technicalRows={detailsPayment ? buildPaymentTechnicalRows(detailsPayment) : []}
       />
 

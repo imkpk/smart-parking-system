@@ -48,41 +48,55 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
-import { formatCurrency, formatDateTime, formatDuration, formatRupees } from '../../lib/formatters';
+import {
+  formatBookingNo,
+  formatCurrency,
+  formatDateTime,
+  formatDuration,
+  formatRupees,
+  formatSessionNo,
+} from '../../lib/formatters';
 import { CheckOutResult, ParkingEvent } from '../../types/parkingEvent';
 
 type EventTab = 'active' | 'history';
 
 function buildParkingEventSummaryRows(
   event: ParkingEvent,
-  labels: ReturnType<typeof useReferenceLabels>
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
 ): DetailsRow[] {
-  return [
-    { label: 'Session No', value: labels.getSessionLabel(event.id) },
-    { label: 'Booking No', value: labels.getBookingLabel(event.bookingId) },
-    { label: 'Vehicle', value: labels.getVehicleLabel(event.vehicleId) },
-    {
-      label: 'Parking Lot',
-      value: labels.getParkingLotLabel(event.parkingLotId)
-    },
-    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
-    {
-      label: 'Status',
-      value: <ParkingEventStatusChip status={event.status} />
-    },
-    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
-    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) }
+  const rows: DetailsRow[] = [
+    { label: 'Session No', value: formatSessionNo(event.id) },
+    { label: 'Booking No', value: formatBookingNo(event.bookingId) },
   ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(event.userId) });
+  }
+
+  rows.push(
+    { label: 'Vehicle Number', value: labels.getVehicleLabel(event.vehicleId) },
+    { label: 'Parking Lot', value: labels.getParkingLotLabel(event.parkingLotId) },
+    { label: 'Slot', value: labels.getSlotLabel(event.slotId) },
+    { label: 'Status', value: <ParkingEventStatusChip status={event.status} /> },
+    { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
+    { label: 'Checked Out At', value: formatDateTime(event.checkOutTime) },
+    { label: 'Duration', value: formatDuration(event.durationMinutes) },
+    { label: 'Fee', value: formatCurrency(event.feeAmount) },
+  );
+
+  return rows;
 }
 
 function buildParkingEventTechnicalRows(event: ParkingEvent): DetailsRow[] {
   return [
-    { label: 'Event ID', value: event.id },
-    { label: 'Booking ID', value: event.bookingId },
-    { label: 'User ID', value: event.userId },
-    { label: 'Vehicle ID', value: event.vehicleId },
-    { label: 'Slot ID', value: event.slotId },
-    { label: 'Lot ID', value: event.parkingLotId }
+    { label: 'parkingEventId', value: event.id },
+    { label: 'bookingId', value: event.bookingId },
+    { label: 'userId', value: event.userId },
+    { label: 'vehicleId', value: event.vehicleId },
+    { label: 'slotId', value: event.slotId },
+    { label: 'parkingLotId', value: event.parkingLotId },
+    { label: 'status', value: event.status },
   ];
 }
 
@@ -532,7 +546,9 @@ export function ParkingEventsPage() {
         open={Boolean(detailsEvent)}
         title='Parking Session Details'
         summaryRows={
-          detailsEvent ? buildParkingEventSummaryRows(detailsEvent, labels) : []
+          detailsEvent
+            ? buildParkingEventSummaryRows(detailsEvent, labels, canOperateParkingEvents)
+            : []
         }
         technicalRows={
           detailsEvent ? buildParkingEventTechnicalRows(detailsEvent) : []

@@ -39,11 +39,14 @@ import {
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { formatStatusLabel } from '../../lib/formatters';
 import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
@@ -75,6 +78,55 @@ const emptyBulkForm: BulkSlotForm = {
   count: 10,
   slotType: 'CAR',
 };
+
+function buildFloorSummaryRows(
+  floor: Floor,
+  parkingLotName: string,
+  totalSlots?: number,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Floor Name', value: floor.name },
+    { label: 'Floor Number', value: floor.level ?? '-' },
+    { label: 'Parking Lot', value: parkingLotName },
+  ];
+
+  if (totalSlots !== undefined) {
+    rows.push({ label: 'Total Slots', value: totalSlots });
+  }
+
+  return rows;
+}
+
+function buildFloorTechnicalRows(floor: Floor): DetailsRow[] {
+  return [
+    { label: 'floorId', value: floor.id },
+    { label: 'parkingLotId', value: floor.parkingLotId },
+  ];
+}
+
+function buildSlotSummaryRows(
+  slot: Slot,
+  floorName: string,
+  parkingLotName: string,
+): DetailsRow[] {
+  return [
+    { label: 'Slot Number', value: slot.slotNumber },
+    { label: 'Floor', value: floorName },
+    { label: 'Parking Lot', value: parkingLotName },
+    { label: 'Vehicle Type', value: formatStatusLabel(slot.slotType) },
+    { label: 'Status', value: <SlotStatusChip status={slot.status} /> },
+  ];
+}
+
+function buildSlotTechnicalRows(slot: Slot, parkingLotId: number): DetailsRow[] {
+  return [
+    { label: 'slotId', value: slot.id },
+    { label: 'floorId', value: slot.floorId },
+    { label: 'parkingLotId', value: parkingLotId },
+    { label: 'status', value: slot.status },
+    { label: 'vehicleType', value: slot.slotType },
+  ];
+}
 
 function getTabFromPath(pathname: string) {
   if (pathname.endsWith('/floors')) {
@@ -164,6 +216,16 @@ export function ParkingLotDetailsPage() {
       ),
     [slots],
   );
+  const slotCountByFloorId = useMemo(() => {
+    const counts = new Map<number, number>();
+
+    for (const slot of slots) {
+      counts.set(slot.floorId, (counts.get(slot.floorId) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [slots]);
+  const parkingLotName = parkingLotQuery.data?.name ?? `Lot #${parkingLotId}`;
 
   const invalidateStructure = async () => {
     await Promise.all([
@@ -472,6 +534,8 @@ export function ParkingLotDetailsPage() {
           {activeTab === 'floors' ? (
             <FloorsSection
               floors={floors}
+              parkingLotName={parkingLotName}
+              slotCountByFloorId={slotCountByFloorId}
               onCreate={openCreateFloorForm}
               onDelete={setDeleteFloorTarget}
               onEdit={openEditFloorForm}
@@ -483,6 +547,8 @@ export function ParkingLotDetailsPage() {
               floors={floors}
               floorNameById={floorNameById}
               filteredSlots={filteredSlots}
+              parkingLotId={parkingLotId}
+              parkingLotName={parkingLotName}
               onBulkCreate={openBulkForm}
               onCreate={openCreateSlotForm}
               onDelete={setDeleteSlotTarget}
@@ -657,19 +723,26 @@ export function ParkingLotDetailsPage() {
 
 function FloorsSection({
   floors,
+  parkingLotName,
+  slotCountByFloorId,
   onCreate,
   onDelete,
   onEdit,
 }: {
   floors: Floor[];
+  parkingLotName: string;
+  slotCountByFloorId: Map<number, number>;
   onCreate: () => void;
   onDelete: (floor: Floor) => void;
   onEdit: (floor: Floor) => void;
 }) {
+  const [detailsFloor, setDetailsFloor] = useState<Floor | null>(null);
+
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
       { field: 'name', flex: 1, headerName: 'Floor Name', minWidth: 180 },
       { field: 'level', headerName: 'Floor Number', minWidth: 120 },
+      createDetailsColumn<Floor>(setDetailsFloor),
       {
         field: 'actions',
         align: 'right',
@@ -706,6 +779,21 @@ function FloorsSection({
         </Button>
       </Stack>
       <AppDataGrid columns={columns} height={420} rows={floors} />
+      <DetailsDialog
+        onClose={() => setDetailsFloor(null)}
+        open={Boolean(detailsFloor)}
+        summaryRows={
+          detailsFloor
+            ? buildFloorSummaryRows(
+                detailsFloor,
+                parkingLotName,
+                slotCountByFloorId.get(detailsFloor.id),
+              )
+            : []
+        }
+        technicalRows={detailsFloor ? buildFloorTechnicalRows(detailsFloor) : []}
+        title="Floor Details"
+      />
     </Paper>
   );
 }
@@ -715,6 +803,8 @@ function SlotsSection({
   filteredSlotIds,
   floorNameById,
   floors,
+  parkingLotId,
+  parkingLotName,
   onBulkCreate,
   onBulkDelete,
   onCreate,
@@ -733,6 +823,8 @@ function SlotsSection({
   filteredSlotIds: number[];
   floorNameById: Map<number, string>;
   floors: Floor[];
+  parkingLotId: number;
+  parkingLotName: string;
   onBulkCreate: () => void;
   onBulkDelete: () => void;
   onCreate: () => void;
@@ -747,6 +839,8 @@ function SlotsSection({
   slotStatusFilter: SlotStatus | 'ALL';
   slotTypeFilter: SlotType | 'ALL';
 }) {
+  const [detailsSlot, setDetailsSlot] = useState<Slot | null>(null);
+
   const columns = useMemo<GridColDef<Slot>[]>(
     () => [
       { field: 'slotNumber', headerName: 'Slot Number', minWidth: 130 },
@@ -764,6 +858,7 @@ function SlotsSection({
         minWidth: 150,
         renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
       },
+      createDetailsColumn<Slot>(setDetailsSlot),
       {
         field: 'actions',
         align: 'right',
@@ -874,6 +969,23 @@ function SlotsSection({
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}
+      />
+      <DetailsDialog
+        onClose={() => setDetailsSlot(null)}
+        open={Boolean(detailsSlot)}
+        summaryRows={
+          detailsSlot
+            ? buildSlotSummaryRows(
+                detailsSlot,
+                floorNameById.get(detailsSlot.floorId) ?? `Floor #${detailsSlot.floorId}`,
+                parkingLotName,
+              )
+            : []
+        }
+        technicalRows={
+          detailsSlot ? buildSlotTechnicalRows(detailsSlot, parkingLotId) : []
+        }
+        title="Slot Details"
       />
     </Paper>
   );

@@ -33,7 +33,9 @@ import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
+import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -62,6 +64,43 @@ const emptyBookingForm: BookingFormState = {
 
 const activeBookingStatuses = ['PENDING', 'CONFIRMED'];
 
+function buildBookingSummaryRows(
+  booking: Booking,
+  labels: ReturnType<typeof useReferenceLabels>,
+  showCustomer: boolean,
+): DetailsRow[] {
+  const rows: DetailsRow[] = [
+    { label: 'Booking No', value: formatBookingNo(booking.id) },
+    { label: 'Booking Code', value: booking.bookingCode },
+  ];
+
+  if (showCustomer) {
+    rows.push({ label: 'Customer', value: labels.getCustomerLabel(booking.userId) });
+  }
+
+  rows.push(
+    { label: 'Vehicle Number', value: labels.getVehicleLabel(booking.vehicleId) },
+    { label: 'Parking Lot', value: labels.getParkingLotLabel(booking.parkingLotId) },
+    { label: 'Slot', value: labels.getSlotLabel(booking.slotId) },
+    { label: 'Start Time', value: formatDateTime(booking.startTime) },
+    { label: 'End Time', value: formatDateTime(booking.endTime) },
+    { label: 'Status', value: <BookingStatusChip status={booking.status} /> },
+  );
+
+  return rows;
+}
+
+function buildBookingTechnicalRows(booking: Booking): DetailsRow[] {
+  return [
+    { label: 'bookingId', value: booking.id },
+    { label: 'userId', value: booking.userId },
+    { label: 'vehicleId', value: booking.vehicleId },
+    { label: 'slotId', value: booking.slotId },
+    { label: 'parkingLotId', value: booking.parkingLotId },
+    { label: 'status', value: booking.status },
+  ];
+}
+
 function toLocalDateTimeValue(date = new Date()) {
   const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
@@ -83,6 +122,7 @@ export function BookingsPage() {
     startTime: toLocalDateTimeValue(),
   });
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [detailsBooking, setDetailsBooking] = useState<Booking | null>(null);
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', isUser ? 'my' : 'all'],
@@ -192,6 +232,7 @@ export function BookingsPage() {
         minWidth: 190,
         valueGetter: (_value, row) => formatDateTime(row.endTime),
       },
+      createDetailsColumn<Booking>(setDetailsBooking),
       ...(isUser
         ? [
             {
@@ -385,6 +426,18 @@ export function BookingsPage() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <DetailsDialog
+        onClose={() => setDetailsBooking(null)}
+        open={Boolean(detailsBooking)}
+        summaryRows={
+          detailsBooking
+            ? buildBookingSummaryRows(detailsBooking, labels, canOperateParkingEvents)
+            : []
+        }
+        technicalRows={detailsBooking ? buildBookingTechnicalRows(detailsBooking) : []}
+        title="Booking Details"
+      />
 
       <ConfirmDialog
         confirmLabel="Cancel Booking"
