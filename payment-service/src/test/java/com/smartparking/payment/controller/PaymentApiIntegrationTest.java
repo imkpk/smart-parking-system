@@ -138,6 +138,27 @@ class PaymentApiIntegrationTest {
     }
 
     @Test
+    void userCanListOwnPaymentHistory() throws Exception {
+        long ownPaymentId = createPaymentAsUser(1L);
+        createPaymentAsUser(2L);
+
+        mockMvc.perform(get("/api/payments/user/{userId}", 1L)
+                        .with(userJwt(1L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value((int) ownPaymentId));
+    }
+
+    @Test
+    void userCannotListAnotherUsersPaymentHistory() throws Exception {
+        createPaymentAsUser(2L);
+
+        mockMvc.perform(get("/api/payments/user/{userId}", 2L)
+                        .with(userJwt(1L)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void userCanReadOwnPaymentButNotAnotherUsersPayment() throws Exception {
         long ownPaymentId = createPaymentAsUser(1L);
         long otherPaymentId = createPaymentAsUser(2L);
