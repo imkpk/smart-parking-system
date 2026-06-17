@@ -1,7 +1,8 @@
 # Phase 1b — Backend Tenant Scoping Enforcement
 
-**Status:** PR open  
-**Branch:** `feature/phase-1b-tenant-scoping-backend`
+**Status:** ✅ Merged  
+**PR:** [#42](https://github.com/imkpk/smart-parking-system/pull/42)  
+**Branch:** `feature/phase-1b-tenant-scoping-backend` (merged to `develop`)
 
 ## 1. Scope
 
@@ -24,8 +25,12 @@ Enforce organization-scoped reads/writes on the backend using Phase 1a `organiza
 **Updated — validation**
 - `backend/src/parking-lots/parking-lot-validation.service.ts` — require `organizationId` on lot/floor/slot lookups
 
+**New — API presenters (display enrichment)**
+- `backend/src/parking-events/parking-event.presenter.ts`
+- `backend/src/bookings/booking.presenter.ts`
+
 **Updated — services + controllers**
-- `parking-lots`, `floors`, `slots`, `vehicles`, `bookings`, `parking-events`, `dashboard`
+- `parking-lots`, `floors`, `slots`, `vehicles`, `bookings`, `parking-events`, `dashboard`, `users`
 - `slot-lifecycle.service.ts` — `validateSlotAvailable` takes `organizationId`
 - All related `*.spec.ts`, `controllers.spec.ts`, `infrastructure.spec.ts`
 
@@ -92,7 +97,7 @@ Slot → Floor → ParkingLot → organizationId
 
 ## 8. Tests added/updated
 
-213 tests, 100% coverage. New tenant isolation cases:
+219 tests, 100% coverage. New tenant isolation cases:
 
 - Auth JWT includes `organizationId`
 - Vehicles: cross-org access rejected
@@ -110,7 +115,7 @@ Fixtures: `DEFAULT_ORGANIZATION_ID = 1`, `OTHER_ORGANIZATION_ID = 2`.
 npx prisma validate  — pass
 npx prisma generate  — pass
 npm run build        — pass
-npm run test:cov     — 213/213 passed, 100% coverage
+npm run test:cov     — 219/219 passed, 100% coverage
 ```
 
 ## 10. Intentionally deferred
@@ -157,4 +162,10 @@ npm run test:cov     — 213/213 passed, 100% coverage
 
 ## 13. Next phase
 
-Phase 1c/1d: tenant onboarding API and frontend tenant context in `AuthProvider` (per roadmap).
+**Phase 1c — Tenant onboarding API** (`feature/phase-1c-tenant-onboarding-api` from `develop`)
+
+- SUPER_ADMIN endpoints to create organizations and initial TENANT_ADMIN users
+- Deterministic tenant bootstrap without manual DB seeding for new customers
+- Branch strategy: `docs/project-plan/09-branch-strategy.md` §7 (stacked PR #3 after 1b)
+
+**Phase 1d** (after 1c): frontend tenant context in `AuthProvider`.
