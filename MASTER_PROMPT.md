@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.1.0  
+**Version:** 1.1.1  
 **Last updated:** 2026-06-17  
-**Current branch:** `feature/phase-8c-razorpay-webhook-handler`  
+**Current branch:** `docs/saas-project-plan-and-design-foundation` (PR #36 → develop)  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -208,7 +208,7 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 7c | Razorpay integration (payment service) | ✅ Merged |
 | 8a | Razorpay payment verification endpoint | ✅ Merged |
 | 8b | Frontend Razorpay checkout UI | ✅ Merged |
-| 8c | Razorpay webhook handler | 🔄 On branch `feature/phase-8c-razorpay-webhook-handler` |
+| 8c | Razorpay webhook handler | ✅ Merged (PR #35) |
 
 ### Design & planning ✅
 
@@ -225,14 +225,13 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 ## 8. In progress (current sprint)
 
 ```text
-[🔄] Phase 8c — Razorpay webhook handler
-     Branch: feature/phase-8c-razorpay-webhook-handler
-     Scope: POST /api/payments/webhook/razorpay, signature verify,
-            payment.captured / payment.failed handling
-     Report: .grok/reports/phase-8c-razorpay-webhook-handler.md
+[🔄] PR #36 — SaaS project plan + MASTER_PROMPT + design foundation
+     Branch: docs/saas-project-plan-and-design-foundation
+     Scope: docs/project-plan/, MASTER_PROMPT.md, design assets, Illustration component
+     Status: Synced with develop (includes merged PR #35 / phase 8c)
 ```
 
-**Before starting new work:** confirm 8c is merged to develop or explicitly deprioritized by the human.
+**Before starting new work:** merge PR #36, then begin Phase 1 multi-tenancy.
 
 ---
 
@@ -243,7 +242,8 @@ Execute in this order unless the human redirects:
 ### Immediate (finish Phase 0)
 
 ```text
-[ ] Merge phase 8c webhook handler → develop
+[x] Merge phase 8c webhook handler → develop (PR #35 ✅)
+[ ] Merge PR #36 docs/design foundation → develop
 [ ] End-to-end test: book → check-in → check-out → Razorpay pay → webhook → receipt
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
@@ -538,6 +538,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 |------|---------|--------|---------|
 | 2026-06-17 | 1.0.0 | Grok + human | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
 | 2026-06-17 | 1.1.0 | Grok + human | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
+| 2026-06-17 | 1.1.1 | Grok + human | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
 
 ---
 
@@ -550,7 +551,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: finish Phase 8c Razorpay webhook merge, then Phase 1 multi-tenancy.
+Current focus: merge PR #36, E2E Razorpay test, then Phase 1 multi-tenancy.
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
 
