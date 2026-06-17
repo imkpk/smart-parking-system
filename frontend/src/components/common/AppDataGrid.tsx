@@ -9,12 +9,44 @@ import {
   GridRowsProp,
   GridValidRowModel,
 } from '@mui/x-data-grid';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import type { IllustrationName } from '../../assets/illustrations';
 import { CustomToolbar, type DataGridToolbarSearch } from '../../utils/CutsomToolbar';
 import { EmptyState } from './EmptyState';
 
 export type { DataGridToolbarSearch };
+
+const DataGridSearchContext = createContext<DataGridToolbarSearch | undefined>(undefined);
+
+/** Stable toolbar slot — do not use an inline `() => <CustomToolbar />` or the search input remounts each keystroke. */
+function DataGridToolbarSlot() {
+  const search = useContext(DataGridSearchContext);
+  return <CustomToolbar search={search} />;
+}
+
+type EmptyStateConfig = {
+  description?: string;
+  illustration?: IllustrationName;
+  title: string;
+};
+
+const DataGridEmptyStateContext = createContext<EmptyStateConfig | undefined>(undefined);
+
+function DataGridEmptyStateOverlay() {
+  const emptyState = useContext(DataGridEmptyStateContext);
+
+  if (!emptyState) {
+    return null;
+  }
+
+  return (
+    <NoRowsOverlay
+      description={emptyState.description}
+      illustration={emptyState.illustration}
+      title={emptyState.title}
+    />
+  );
+}
 
 const DENSITY_ROW_HEIGHT = {
   compact: 39,
@@ -108,50 +140,48 @@ export function AppDataGrid<Row extends GridValidRowModel>({
     [density, visibleRowCount],
   );
 
+  const hasEmptyState = Boolean(emptyState);
+  const gridSlots = useMemo(
+    () => ({
+      toolbar: DataGridToolbarSlot,
+      ...(hasEmptyState ? { noRowsOverlay: DataGridEmptyStateOverlay } : {}),
+    }),
+    [hasEmptyState],
+  );
+
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        overflow: 'hidden',
-        width: '100%',
-      }}
-    >
-      <DataGrid
-        checkboxSelection={checkboxSelection}
-        columns={columns}
-        density={density}
-        disableRowSelectionOnClick
-        getRowId={getRowId}
-        loading={loading}
-        localeText={{ noRowsLabel: emptyState ? '' : noRowsLabel }}
-        onPaginationModelChange={setPaginationModel}
-        onRowSelectionModelChange={
-          onRowSelectionModelChange
-            ? (model) => onRowSelectionModelChange(Array.from(model.ids))
-            : undefined
-        }
-        pageSizeOptions={[5, 10, 25, 50]}
-        paginationModel={paginationModel}
-        rowSelectionModel={gridRowSelectionModel}
-        rows={rows}
-        showToolbar
-        slots={{
-          toolbar: () => <CustomToolbar search={search} />,
-          ...(emptyState
-            ? {
-                noRowsOverlay: () => (
-                  <NoRowsOverlay
-                    description={emptyState.description}
-                    illustration={emptyState.illustration}
-                    title={emptyState.title}
-                  />
-                ),
-              }
-            : {}),
-        }}
-        sx={{
+    <DataGridSearchContext.Provider value={search}>
+      <DataGridEmptyStateContext.Provider value={emptyState}>
+        <Paper
+          elevation={0}
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            width: '100%',
+          }}
+        >
+          <DataGrid
+            checkboxSelection={checkboxSelection}
+            columns={columns}
+            density={density}
+            disableRowSelectionOnClick
+            getRowId={getRowId}
+            loading={loading}
+            localeText={{ noRowsLabel: emptyState ? '' : noRowsLabel }}
+            onPaginationModelChange={setPaginationModel}
+            onRowSelectionModelChange={
+              onRowSelectionModelChange
+                ? (model) => onRowSelectionModelChange(Array.from(model.ids))
+                : undefined
+            }
+            pageSizeOptions={[5, 10, 25, 50]}
+            paginationModel={paginationModel}
+            rowSelectionModel={gridRowSelectionModel}
+            rows={rows}
+            showToolbar
+            slots={gridSlots}
+            sx={{
           border: 0,
           height: gridHeight,
           width: '100%',
@@ -181,8 +211,10 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             overflowX: 'auto',
             overflowY: 'hidden',
           },
-        }}
-      />
-    </Paper>
+            }}
+          />
+        </Paper>
+      </DataGridEmptyStateContext.Provider>
+    </DataGridSearchContext.Provider>
   );
 }
