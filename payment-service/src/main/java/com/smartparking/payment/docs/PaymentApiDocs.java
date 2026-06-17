@@ -17,6 +17,9 @@ public final class PaymentApiDocs {
     public static final String FIND_ALL_SUMMARY = "Get all payments";
     public static final String FIND_BY_USER_SUMMARY = "Get payments by user id";
     public static final String SUMMARY_REPORT_SUMMARY = "Get payment summary report";
+    public static final String VERIFY_SUMMARY = "Verify Razorpay payment";
+    public static final String VERIFY_DESCRIPTION =
+            "Verifies Razorpay payment signature and marks an INITIATED Razorpay payment as SUCCESS.";
 
     public static final String PAYMENT_ID_EXAMPLE = "1";
     public static final String USER_ID_EXAMPLE = "1";
@@ -29,6 +32,15 @@ public final class PaymentApiDocs {
               "amount": 80,
               "currency": "INR",
               "paymentMethod": "MOCK"
+            }
+            """;
+
+    public static final String VERIFY_EXAMPLE = """
+            {
+              "paymentId": 10,
+              "razorpayOrderId": "order_xxx",
+              "razorpayPaymentId": "pay_xxx",
+              "razorpaySignature": "signature_xxx"
             }
             """;
 

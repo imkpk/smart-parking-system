@@ -5,10 +5,15 @@ import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
+import com.smartparking.payment.dto.VerifyPaymentRequest;
+import com.smartparking.payment.exception.PaymentGatewayException;
+import com.smartparking.payment.exception.PaymentVerificationException;
 import com.smartparking.payment.exception.ResourceNotFoundException;
 import com.smartparking.payment.gateway.GatewayInitiationResult;
 import com.smartparking.payment.gateway.PaymentGatewayFactory;
+import com.smartparking.payment.gateway.RazorpaySignatureVerifier;
 import com.smartparking.payment.model.Payment;
+import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import java.math.BigDecimal;
@@ -26,15 +31,18 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentProviderProperties paymentProviderProperties;
     private final PaymentGatewayFactory paymentGatewayFactory;
+    private final RazorpaySignatureVerifier razorpaySignatureVerifier;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             PaymentProviderProperties paymentProviderProperties,
-            PaymentGatewayFactory paymentGatewayFactory
+            PaymentGatewayFactory paymentGatewayFactory,
+            RazorpaySignatureVerifier razorpaySignatureVerifier
     ) {
         this.paymentRepository = paymentRepository;
         this.paymentProviderProperties = paymentProviderProperties;
         this.paymentGatewayFactory = paymentGatewayFactory;
+        this.razorpaySignatureVerifier = razorpaySignatureVerifier;
     }
 
     @Transactional
@@ -74,6 +82,39 @@ public class PaymentService {
 
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setProviderReference("MOCK-" + UUID.randomUUID());
+        payment.setFailureReason(null);
+
+        return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    @Transactional
+    public PaymentResponse verify(VerifyPaymentRequest request, Long currentUserId, boolean admin) {
+        Payment payment = findPayment(request.paymentId());
+        ensureUserAccess(payment.getUserId(), currentUserId, admin);
+
+        if (PaymentStatusPolicy.isSuccessIdempotent(payment.getStatus())) {
+            return PaymentResponse.from(payment);
+        }
+
+        PaymentStatusPolicy.assertCanMarkSuccess(payment.getStatus());
+        assertRazorpayPayment(payment);
+        assertMatchingOrderId(payment, request.razorpayOrderId());
+        assertRazorpaySecretConfigured();
+
+        if (!razorpaySignatureVerifier.verify(
+                request.razorpayOrderId(),
+                request.razorpayPaymentId(),
+                request.razorpaySignature(),
+                paymentProviderProperties.getRazorpay().getKeySecret()
+        )) {
+            throw new PaymentVerificationException("Invalid payment signature");
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setGatewayPaymentId(request.razorpayPaymentId());
+        payment.setGatewaySignature(request.razorpaySignature());
+        payment.setGatewayStatus("captured");
+        payment.setProviderReference(request.razorpayPaymentId());
         payment.setFailureReason(null);
 
         return PaymentResponse.from(paymentRepository.save(payment));
@@ -149,5 +190,23 @@ public class PaymentService {
         }
 
         return currency.trim().toUpperCase();
+    }
+
+    private void assertRazorpayPayment(Payment payment) {
+        if (!PaymentProviderType.RAZORPAY.name().equals(payment.getProvider())) {
+            throw new PaymentVerificationException("Only Razorpay payments can be verified");
+        }
+    }
+
+    private void assertMatchingOrderId(Payment payment, String razorpayOrderId) {
+        if (payment.getGatewayOrderId() == null || !payment.getGatewayOrderId().equals(razorpayOrderId)) {
+            throw new PaymentVerificationException("Order id does not match this payment");
+        }
+    }
+
+    private void assertRazorpaySecretConfigured() {
+        if (!paymentProviderProperties.hasRazorpaySecret()) {
+            throw new PaymentGatewayException("Razorpay configuration is missing");
+        }
     }
 }

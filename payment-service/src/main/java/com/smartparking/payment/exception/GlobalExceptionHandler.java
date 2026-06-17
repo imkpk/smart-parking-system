@@ -34,6 +34,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(exception.getMessage(), null));
     }
 
+    @ExceptionHandler(PaymentVerificationException.class)
+    ResponseEntity<ApiResponse<Void>> handlePaymentVerification(PaymentVerificationException exception) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.failure(exception.getMessage(), null));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new HashMap<>();

@@ -31,6 +31,10 @@ public class PaymentProviderProperties {
                 && !razorpay.keySecret.isBlank();
     }
 
+    public boolean hasRazorpaySecret() {
+        return razorpay.keySecret != null && !razorpay.keySecret.isBlank();
+    }
+
     public static class Razorpay {
         private String keyId = "";
         private String keySecret = "";

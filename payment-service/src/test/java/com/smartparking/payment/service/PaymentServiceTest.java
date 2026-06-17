@@ -10,11 +10,15 @@ import static org.mockito.Mockito.when;
 import com.smartparking.payment.config.PaymentProviderProperties;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
+import com.smartparking.payment.dto.VerifyPaymentRequest;
+import com.smartparking.payment.exception.PaymentGatewayException;
 import com.smartparking.payment.exception.PaymentStateException;
+import com.smartparking.payment.exception.PaymentVerificationException;
 import com.smartparking.payment.exception.ResourceNotFoundException;
 import com.smartparking.payment.gateway.GatewayInitiationResult;
 import com.smartparking.payment.gateway.PaymentGatewayFactory;
 import com.smartparking.payment.gateway.PaymentGatewayProvider;
+import com.smartparking.payment.gateway.RazorpaySignatureVerifier;
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentMethod;
 import com.smartparking.payment.model.PaymentProviderType;
@@ -46,6 +50,9 @@ class PaymentServiceTest {
 
     @Mock
     private PaymentGatewayProvider paymentGatewayProvider;
+
+    @Mock
+    private RazorpaySignatureVerifier razorpaySignatureVerifier;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -269,6 +276,154 @@ class PaymentServiceTest {
                 .singleElement()
                 .extracting(response -> response.userId())
                 .isEqualTo(3L);
+    }
+
+    @Test
+    void verifyMarksRazorpayPaymentSuccessWithValidSignature() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        PaymentProviderProperties.Razorpay razorpay = new PaymentProviderProperties.Razorpay();
+        razorpay.setKeySecret("test_secret");
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+        when(paymentProviderProperties.hasRazorpaySecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(razorpay);
+        when(razorpaySignatureVerifier.verify(
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature",
+                "test_secret"
+        )).thenReturn(true);
+        when(paymentRepository.save(payment)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = paymentService.verify(request, 1L, false);
+
+        assertThat(response.status()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(response.providerReference()).isEqualTo("pay_test_456");
+        assertThat(response.gatewayStatus()).isEqualTo("captured");
+    }
+
+    @Test
+    void verifyRejectsInvalidSignature() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "invalid_signature"
+        );
+
+        PaymentProviderProperties.Razorpay razorpay = new PaymentProviderProperties.Razorpay();
+        razorpay.setKeySecret("test_secret");
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+        when(paymentProviderProperties.hasRazorpaySecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(razorpay);
+        when(razorpaySignatureVerifier.verify(
+                "order_test_123",
+                "pay_test_456",
+                "invalid_signature",
+                "test_secret"
+        )).thenReturn(false);
+
+        assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("Invalid payment signature");
+    }
+
+    @Test
+    void verifyRejectsWrongOrderId() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_wrong",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("Order id does not match this payment");
+    }
+
+    @Test
+    void verifyRejectsNonRazorpayPayment() {
+        Payment payment = PaymentTestFixtures.payment(10L, 1L, PaymentStatus.INITIATED, new BigDecimal("80.00"));
+        payment.setProvider(PaymentProviderType.MOCK.name());
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("Only Razorpay payments can be verified");
+    }
+
+    @Test
+    void verifyIsIdempotentWhenAlreadySuccessful() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.SUCCESS, "order_test_123");
+        payment.setProviderReference("pay_test_456");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        var response = paymentService.verify(request, 1L, false);
+
+        assertThat(response.status()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(response.providerReference()).isEqualTo("pay_test_456");
+    }
+
+    @Test
+    void verifyBlocksFailedPayment() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.FAILED, "order_test_123");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
+                .isInstanceOf(PaymentStateException.class)
+                .hasMessage("FAILED payment cannot be marked SUCCESS. Create a new payment.");
+    }
+
+    @Test
+    void verifyRequiresRazorpaySecret() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        VerifyPaymentRequest request = new VerifyPaymentRequest(
+                10L,
+                "order_test_123",
+                "pay_test_456",
+                "valid_signature"
+        );
+
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+        when(paymentProviderProperties.hasRazorpaySecret()).thenReturn(false);
+
+        assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
+                .isInstanceOf(PaymentGatewayException.class)
+                .hasMessage("Razorpay configuration is missing");
     }
 
     @Test

@@ -14,7 +14,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
+import com.smartparking.payment.dto.VerifyPaymentRequest;
+import com.smartparking.payment.gateway.RazorpaySignatureVerifier;
+import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentMethod;
+import com.smartparking.payment.model.PaymentProviderType;
+import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -172,6 +177,58 @@ class PaymentApiIntegrationTest {
         mockMvc.perform(get("/api/payments/{id}", otherPaymentId)
                         .with(userJwt(1L)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void verifyRejectsMockPayment() throws Exception {
+        long paymentId = createPaymentAsUser(1L);
+
+        mockMvc.perform(post("/api/payments/verify")
+                        .with(userJwt(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new VerifyPaymentRequest(
+                                paymentId,
+                                "order_test_123",
+                                "pay_test_456",
+                                "signature_test"
+                        ))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Only Razorpay payments can be verified"));
+    }
+
+    @Test
+    void verifyMarksRazorpayPaymentSuccess() throws Exception {
+        String orderId = "order_test_123";
+        String paymentGatewayId = "pay_test_456";
+        String secret = "test_secret_key";
+        String signature = RazorpaySignatureVerifier.computeSignature(orderId, paymentGatewayId, secret);
+
+        Payment payment = new Payment();
+        payment.setParkingEventId(1L);
+        payment.setBookingId(1L);
+        payment.setUserId(1L);
+        payment.setAmount(new BigDecimal("80.00"));
+        payment.setCurrency("INR");
+        payment.setStatus(PaymentStatus.INITIATED);
+        payment.setPaymentMethod(PaymentMethod.MOCK);
+        payment.setProvider(PaymentProviderType.RAZORPAY.name());
+        payment.setGatewayOrderId(orderId);
+        payment.setGatewayStatus("created");
+        Payment saved = paymentRepository.save(payment);
+
+        mockMvc.perform(post("/api/payments/verify")
+                        .with(userJwt(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new VerifyPaymentRequest(
+                                saved.getId(),
+                                orderId,
+                                paymentGatewayId,
+                                signature
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.providerReference").value(paymentGatewayId))
+                .andExpect(jsonPath("$.data.gatewayStatus").value("captured"));
     }
 
     @Test
