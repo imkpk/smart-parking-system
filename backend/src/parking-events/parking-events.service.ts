@@ -143,17 +143,24 @@ export class ParkingEventsService {
       return completedEvent;
     });
 
-    const paymentResult = await this.paymentClientService.initiatePayment(
-      {
-        parkingEventId: parkingEvent.id,
-        bookingId: parkingEvent.bookingId,
-        userId: parkingEvent.userId,
-        amount: Number(parkingEvent.feeAmount ?? 0),
-        currency: 'INR',
-        paymentMethod: 'MOCK',
-      },
-      authorizationHeader,
-    );
+    const feeAmount = Number(parkingEvent.feeAmount ?? 0);
+    const paymentResult =
+      feeAmount < 0.01
+        ? {
+            paymentInitiated: false as const,
+            paymentError: 'Payment not required for zero fee',
+          }
+        : await this.paymentClientService.initiatePayment(
+            {
+              parkingEventId: parkingEvent.id,
+              bookingId: parkingEvent.bookingId,
+              userId: parkingEvent.userId,
+              amount: feeAmount,
+              currency: 'INR',
+              paymentMethod: 'MOCK',
+            },
+            authorizationHeader,
+          );
 
     return {
       parkingEvent,

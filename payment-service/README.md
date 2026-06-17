@@ -2,7 +2,7 @@
 
 Standalone Spring Boot payment microservice for the Smart Parking project.
 
-This service is intentionally separate from the existing NestJS backend. It owns payment records and mock payment state transitions only. Real payment gateway integration is not included yet.
+This service is intentionally separate from the existing NestJS backend. It owns payment records, mock payment state transitions, and optional Razorpay order creation for checkout.
 
 ## Tech Stack
 
@@ -103,6 +103,45 @@ GET  /api/payments/user/{userId}
 GET  /api/payments/reports/summary
 ```
 
+## NestJS Contract (`POST /api/payments/initiate`)
+
+Request fields (NestJS backend → payment-service):
+
+```json
+{
+  "parkingEventId": 1,
+  "bookingId": 1,
+  "userId": 1,
+  "amount": 80,
+  "currency": "INR",
+  "paymentMethod": "MOCK"
+}
+```
+
+Response fields (`ApiResponse.data`):
+
+```json
+{
+  "id": 1,
+  "parkingEventId": 1,
+  "bookingId": 1,
+  "userId": 1,
+  "amount": 80,
+  "currency": "INR",
+  "status": "INITIATED",
+  "paymentMethod": "MOCK",
+  "provider": "MOCK",
+  "gatewayOrderId": null,
+  "gatewayStatus": null,
+  "providerReference": null,
+  "failureReason": null,
+  "createdAt": "2026-06-17T10:00:00",
+  "updatedAt": "2026-06-17T10:00:00"
+}
+```
+
+NestJS checkout forwards the caller `Authorization` header and uses `PAYMENT_SERVICE_URL` (default `http://localhost:8081`). Amount must be at least `0.01`.
+
 ## Authorization
 
 All payment APIs except health and Swagger require a JWT from the NestJS backend.
@@ -161,6 +200,44 @@ PaymentResponse
 PaymentSummaryResponse
 ```
 
+## Payment Providers
+
+```text
+payment.provider=MOCK      # default local/demo behavior
+payment.provider=RAZORPAY  # creates Razorpay order on initiate
+```
+
+Razorpay env placeholders (never commit real keys):
+
+```text
+payment.razorpay.key-id=rzp_test_your_key_id
+payment.razorpay.key-secret=your_razorpay_key_secret
+payment.razorpay.webhook-secret=your_razorpay_webhook_secret
+payment.razorpay.currency=INR
+```
+
+Equivalent environment variables: `PAYMENT_PROVIDER`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_CURRENCY`.
+
+MOCK provider keeps existing mock success/failure demo flow. RAZORPAY provider stores `gatewayOrderId` and `gatewayStatus` on the payment record while status remains `INITIATED` until verification or webhook confirmation.
+
+## Razorpay Webhook
+
+Endpoint (no JWT required; verified via `X-Razorpay-Signature`):
+
+```http
+POST /api/payments/webhook/razorpay
+X-Razorpay-Signature: <hmac_sha256_hex_of_raw_body>
+```
+
+Supported events:
+
+```text
+payment.captured  -> INITIATED payment becomes SUCCESS
+payment.failed    -> INITIATED payment becomes FAILED
+```
+
+Other events are ignored safely. Webhook signature uses the raw request body and `payment.razorpay.webhook-secret` (separate from `key-secret`).
+
 ## Payment Rules
 
 - Amount must be greater than `0`.
@@ -172,6 +249,9 @@ PaymentSummaryResponse
 - Mock failure stores `failureReason`.
 - `SUCCESS` payment cannot be marked `FAILED`.
 - `FAILED` payment cannot be marked `SUCCESS`; create a new payment instead.
+- `REFUNDED` payments cannot be changed by mock success/failure.
+- `INITIATED` can become `SUCCESS` or `FAILED`.
+- USER can list/read only own payments; ADMIN can access all; SECURITY can list/read operational payments.
 
 ## Enums
 

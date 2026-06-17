@@ -4,6 +4,7 @@ import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
+import com.smartparking.payment.dto.VerifyPaymentRequest;
 import com.smartparking.payment.docs.GetPaymentDocs;
 import com.smartparking.payment.docs.GetPaymentsDocs;
 import com.smartparking.payment.docs.GetUserPaymentsDocs;
@@ -13,6 +14,7 @@ import com.smartparking.payment.docs.MockSuccessPaymentDocs;
 import com.smartparking.payment.docs.PaymentApi;
 import com.smartparking.payment.docs.PaymentHealthDocs;
 import com.smartparking.payment.docs.PaymentSummaryDocs;
+import com.smartparking.payment.docs.VerifyPaymentDocs;
 import com.smartparking.payment.security.AuthUtils;
 import com.smartparking.payment.service.PaymentService;
 import jakarta.validation.Valid;
@@ -65,6 +67,19 @@ public class PaymentController {
         return com.smartparking.payment.dto.ApiResponse.success(
                 "Payment initiated",
                 paymentService.initiate(request, AuthUtils.userId(jwt), AuthUtils.isAdminOrSecurity(jwt))
+        );
+    }
+
+    @PostMapping("/verify")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SECURITY')")
+    @VerifyPaymentDocs
+    public com.smartparking.payment.dto.ApiResponse<PaymentResponse> verify(
+            @Valid @RequestBody VerifyPaymentRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return com.smartparking.payment.dto.ApiResponse.success(
+                "Payment verified",
+                paymentService.verify(request, AuthUtils.userId(jwt), AuthUtils.isAdminOrSecurity(jwt))
         );
     }
 

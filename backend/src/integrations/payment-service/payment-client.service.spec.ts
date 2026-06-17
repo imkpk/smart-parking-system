@@ -1,9 +1,28 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { PAYMENT_CLIENT_TIMEOUT_MS } from './constants/payment-client.constants';
 import { PaymentClientService } from './payment-client.service';
 
 jest.mock('axios');
 
 const mockedAxios = jest.mocked(axios, { shallow: false });
+
+const fullPaymentResponse = {
+  id: 1,
+  parkingEventId: 1,
+  bookingId: 1,
+  userId: 1,
+  amount: 80,
+  currency: 'INR',
+  status: 'INITIATED',
+  paymentMethod: 'MOCK',
+  provider: 'MOCK',
+  gatewayOrderId: null,
+  gatewayStatus: null,
+  providerReference: null,
+  failureReason: null,
+  createdAt: '2026-06-17T10:00:00.000Z',
+  updatedAt: '2026-06-17T10:00:00.000Z',
+};
 
 describe('PaymentClientService', () => {
   beforeEach(() => {
@@ -14,7 +33,7 @@ describe('PaymentClientService', () => {
     mockedAxios.post.mockResolvedValue({
       data: {
         success: true,
-        data: { id: 1, status: 'INITIATED' },
+        data: fullPaymentResponse,
       },
     });
 
@@ -41,17 +60,17 @@ describe('PaymentClientService', () => {
         currency: 'INR',
         paymentMethod: 'MOCK',
       },
-      { headers: undefined, timeout: 5000 },
+      { headers: undefined, timeout: PAYMENT_CLIENT_TIMEOUT_MS },
     );
     expect(result).toEqual({
       paymentInitiated: true,
-      payment: { id: 1, status: 'INITIATED' },
+      payment: fullPaymentResponse,
     });
   });
 
   it('returns raw response body when Spring response is not wrapped', async () => {
     mockedAxios.post.mockResolvedValue({
-      data: { id: 1, status: 'INITIATED' },
+      data: fullPaymentResponse,
     });
 
     const service = new PaymentClientService({
@@ -69,7 +88,7 @@ describe('PaymentClientService', () => {
       }),
     ).resolves.toEqual({
       paymentInitiated: true,
-      payment: { id: 1, status: 'INITIATED' },
+      payment: fullPaymentResponse,
     });
     expect(mockedAxios.post.mock.calls[0][0]).toBe(
       'http://localhost:8081/api/payments/initiate',
@@ -78,7 +97,7 @@ describe('PaymentClientService', () => {
 
   it('forwards authorization header when provided', async () => {
     mockedAxios.post.mockResolvedValue({
-      data: { data: { id: 1, status: 'INITIATED' } },
+      data: { data: fullPaymentResponse },
     });
 
     const service = new PaymentClientService({
@@ -100,8 +119,29 @@ describe('PaymentClientService', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'http://payment-service/api/payments/initiate',
       expect.any(Object),
-      { headers: { Authorization: 'Bearer token' }, timeout: 5000 },
+      { headers: { Authorization: 'Bearer token' }, timeout: PAYMENT_CLIENT_TIMEOUT_MS },
     );
+  });
+
+  it('skips payment initiation when amount is below minimum', async () => {
+    const service = new PaymentClientService({
+      get: jest.fn().mockReturnValue('http://payment-service'),
+    } as never);
+
+    await expect(
+      service.initiatePayment({
+        parkingEventId: 1,
+        bookingId: 1,
+        userId: 1,
+        amount: 0,
+        currency: 'INR',
+        paymentMethod: 'MOCK',
+      }),
+    ).resolves.toEqual({
+      paymentInitiated: false,
+      paymentError: 'Payment amount must be greater than zero',
+    });
+    expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 
   it('returns unavailable when payment service cannot be reached', async () => {
@@ -124,6 +164,32 @@ describe('PaymentClientService', () => {
     ).resolves.toEqual({
       paymentInitiated: false,
       paymentError: 'Payment service unavailable',
+    });
+  });
+
+  it('returns timed out when payment service request times out', async () => {
+    mockedAxios.isAxiosError.mockReturnValue(true);
+    mockedAxios.post.mockRejectedValue({
+      code: 'ECONNABORTED',
+      response: undefined,
+    } as AxiosError);
+
+    const service = new PaymentClientService({
+      get: jest.fn().mockReturnValue('http://payment-service'),
+    } as never);
+
+    await expect(
+      service.initiatePayment({
+        parkingEventId: 1,
+        bookingId: 1,
+        userId: 1,
+        amount: 80,
+        currency: 'INR',
+        paymentMethod: 'MOCK',
+      }),
+    ).resolves.toEqual({
+      paymentInitiated: false,
+      paymentError: 'Payment service timed out',
     });
   });
 

@@ -1,10 +1,76 @@
 # AGENTS.md — Smart Parking System Agent Instructions
 
-Use this file as the main instruction document for Codex, Claude, Copilot, or any coding agent working on this repository.
+> **Canonical entry point:** [`MASTER_PROMPT.md`](../MASTER_PROMPT.md) at repo root — read it first.  
+> This file holds detailed coding standards. `MASTER_PROMPT.md` holds live status, roadmap, and update protocol.
+
+Use both files for Codex, Claude, Copilot, Antigravity, Cursor, Grok, or any coding agent working on this repository.
 
 ## Project Context
 
-This is a Smart Parking System portfolio project.
+This is a **multi-tenant Smart Parking SaaS platform** — a sellable product for apartments, hospitals, malls, offices, public parking lots, and commercial parking operators. Treat all work as production SaaS quality, not a demo or portfolio exercise.
+
+### Product Vision
+
+```text
+Platform (you)     → Super-admin: onboard tenants, billing, platform analytics
+Tenant (customer)  → Apartment / hospital / mall / office / public lot operator
+End users          → Residents, staff, visitors, security guards
+```
+
+### SaaS Priorities (high)
+
+```text
+1. Multi-tenancy — every record scoped to a tenant/organization
+2. White-label UI — per-tenant logo, name, and theme colors
+3. Role hierarchy — SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER
+4. Operator dashboards — occupancy, revenue, active sessions, heatmaps
+5. Visual slot maps — floor-plan grid view (key differentiator for sales)
+6. Mobile-first security gate — fast check-in / check-out for guards
+7. Subscription-ready — lot limits, user limits, feature flags per plan
+```
+
+### Target Customers
+
+```text
+APARTMENT  — resident parking, assigned slots, visitor passes
+HOSPITAL   — staff/visitor zones, EV & handicapped slots, 24/7 ops
+MALL       — high turnover, payment at exit, occupancy analytics
+OFFICE     — employee reservations, visitor management
+PUBLIC     — pay-per-use, dynamic pricing, gate integrations
+COMMERCIAL — multi-site operators managing many lots from one console
+```
+
+### Free Design Resources (in repo)
+
+```text
+frontend/src/assets/illustrations/   — unDraw SVGs (MIT), brand-tintable
+@fontsource/inter                    — production Inter font (OFL)
+MUI + MUI X DataGrid                 — enterprise SaaS component library
+@mui/icons-material                  — consistent icon set
+```
+
+Use `Illustration` and `EmptyState` with `illustration` prop for polished empty states.
+
+### Project plan (read before major features)
+
+```text
+docs/project-plan/README.md           — index
+docs/project-plan/01-product-vision.md
+docs/project-plan/02-architecture.md
+docs/project-plan/03-roadmap.md
+docs/project-plan/04-design-resources.md
+docs/project-plan/05-gap-analysis.md
+docs/project-plan/07-hld-saas-v2.md      — current HLD (multi-tenant)
+docs/project-plan/diagrams/hld-saas-v2.svg — architecture diagram
+docs/project-plan/08-design-system.md      — design governance (no random themes)
+docs/project-plan/09-branch-strategy.md    — trunk-based delivery, PR stacks, SemVer
+.github/pull_request_template.md           — required PR checklist
+```
+
+### Design system rule
+
+Never download random UI themes or paste admin templates. Process: **research → verify license → compare → apply** via `theme.ts` and shared components only. See `docs/project-plan/08-design-system.md`.
+```
 
 ```text
 smart-parking-system/

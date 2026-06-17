@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Test
+        run: npm run test:cov
+
   frontend:
     name: React Frontend
     runs-on: ubuntu-latest
@@ -57,6 +60,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm run test
 
   payment-service:
     name: Spring Boot Payment Service

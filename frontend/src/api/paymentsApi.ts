@@ -1,5 +1,12 @@
 import { createApiClient } from './createApiClient';
-import { Payment, PaymentApiResponse, PaymentSummary } from '../types/payment';
+import {
+  Payment,
+  PaymentApiResponse,
+  PaymentSummary,
+  VerifyRazorpayPaymentRequest,
+} from '../types/payment';
+
+export type { VerifyRazorpayPaymentRequest };
 
 export const paymentApiClient = createApiClient(
   import.meta.env.VITE_PAYMENT_API_BASE_URL ?? 'http://localhost:8081/api',
@@ -36,6 +43,14 @@ export async function getPaymentSummary() {
 export async function mockPaymentSuccess(id: number) {
   const response = await paymentApiClient.post<PaymentApiResponse<Payment>>(
     `/payments/${id}/mock-success`,
+  );
+  return unwrap(response);
+}
+
+export async function verifyRazorpayPayment(request: VerifyRazorpayPaymentRequest) {
+  const response = await paymentApiClient.post<PaymentApiResponse<Payment>>(
+    '/payments/verify',
+    request,
   );
   return unwrap(response);
 }

@@ -1,12 +1,25 @@
 package com.smartparking.payment.service;
 
+import com.smartparking.payment.config.PaymentProviderProperties;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
+import com.smartparking.payment.dto.VerifyPaymentRequest;
+import com.smartparking.payment.dto.WebhookResponse;
+import com.smartparking.payment.exception.PaymentGatewayException;
 import com.smartparking.payment.exception.PaymentStateException;
+import com.smartparking.payment.exception.PaymentVerificationException;
+import com.smartparking.payment.exception.PaymentWebhookException;
 import com.smartparking.payment.exception.ResourceNotFoundException;
+import com.smartparking.payment.gateway.GatewayInitiationResult;
+import com.smartparking.payment.gateway.PaymentGatewayFactory;
+import com.smartparking.payment.gateway.RazorpaySignatureVerifier;
+import com.smartparking.payment.gateway.RazorpayWebhookEvent;
+import com.smartparking.payment.gateway.RazorpayWebhookParser;
+import com.smartparking.payment.gateway.RazorpayWebhookVerifier;
 import com.smartparking.payment.model.Payment;
+import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import java.math.BigDecimal;
@@ -22,9 +35,26 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final PaymentProviderProperties paymentProviderProperties;
+    private final PaymentGatewayFactory paymentGatewayFactory;
+    private final RazorpaySignatureVerifier razorpaySignatureVerifier;
+    private final RazorpayWebhookVerifier razorpayWebhookVerifier;
+    private final RazorpayWebhookParser razorpayWebhookParser;
 
-    public PaymentService(PaymentRepository paymentRepository) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            PaymentProviderProperties paymentProviderProperties,
+            PaymentGatewayFactory paymentGatewayFactory,
+            RazorpaySignatureVerifier razorpaySignatureVerifier,
+            RazorpayWebhookVerifier razorpayWebhookVerifier,
+            RazorpayWebhookParser razorpayWebhookParser
+    ) {
         this.paymentRepository = paymentRepository;
+        this.paymentProviderProperties = paymentProviderProperties;
+        this.paymentGatewayFactory = paymentGatewayFactory;
+        this.razorpaySignatureVerifier = razorpaySignatureVerifier;
+        this.razorpayWebhookVerifier = razorpayWebhookVerifier;
+        this.razorpayWebhookParser = razorpayWebhookParser;
     }
 
     @Transactional
@@ -39,21 +69,28 @@ public class PaymentService {
         payment.setCurrency(normalizeCurrency(request.currency()));
         payment.setStatus(PaymentStatus.INITIATED);
         payment.setPaymentMethod(request.paymentMethod());
+        payment.setProvider(paymentProviderProperties.getProvider().name());
 
-        return PaymentResponse.from(paymentRepository.save(payment));
+        Payment savedPayment = paymentRepository.save(payment);
+        GatewayInitiationResult gatewayResult = paymentGatewayFactory
+                .activeProvider()
+                .initiate(savedPayment);
+
+        savedPayment.setGatewayOrderId(gatewayResult.gatewayOrderId());
+        savedPayment.setGatewayStatus(gatewayResult.gatewayStatus());
+
+        return PaymentResponse.from(paymentRepository.save(savedPayment));
     }
 
     @Transactional
     public PaymentResponse markSuccess(Long id) {
         Payment payment = findPayment(id);
 
-        if (payment.getStatus() == PaymentStatus.FAILED) {
-            throw new PaymentStateException("FAILED payment cannot be marked SUCCESS. Create a new payment.");
-        }
-
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+        if (PaymentStatusPolicy.isSuccessIdempotent(payment.getStatus())) {
             return PaymentResponse.from(payment);
         }
+
+        PaymentStatusPolicy.assertCanMarkSuccess(payment.getStatus());
 
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setProviderReference("MOCK-" + UUID.randomUUID());
@@ -63,16 +100,72 @@ public class PaymentService {
     }
 
     @Transactional
+    public PaymentResponse verify(VerifyPaymentRequest request, Long currentUserId, boolean admin) {
+        Payment payment = findPayment(request.paymentId());
+        ensureUserAccess(payment.getUserId(), currentUserId, admin);
+
+        if (PaymentStatusPolicy.isSuccessIdempotent(payment.getStatus())) {
+            return PaymentResponse.from(payment);
+        }
+
+        PaymentStatusPolicy.assertCanMarkSuccess(payment.getStatus());
+        assertRazorpayPayment(payment);
+        assertMatchingOrderId(payment, request.razorpayOrderId());
+        assertRazorpaySecretConfigured();
+
+        if (!razorpaySignatureVerifier.verify(
+                request.razorpayOrderId(),
+                request.razorpayPaymentId(),
+                request.razorpaySignature(),
+                paymentProviderProperties.getRazorpay().getKeySecret()
+        )) {
+            throw new PaymentVerificationException("Invalid payment signature");
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setGatewayPaymentId(request.razorpayPaymentId());
+        payment.setGatewaySignature(request.razorpaySignature());
+        payment.setGatewayStatus("captured");
+        payment.setProviderReference(request.razorpayPaymentId());
+        payment.setFailureReason(null);
+
+        return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    @Transactional
+    public WebhookResponse handleRazorpayWebhook(String rawBody, String signature) {
+        assertWebhookSecretConfigured();
+
+        if (!razorpayWebhookVerifier.verify(
+                rawBody,
+                signature,
+                paymentProviderProperties.getRazorpay().getWebhookSecret()
+        )) {
+            throw new PaymentWebhookException("Invalid webhook signature");
+        }
+
+        RazorpayWebhookEvent event = razorpayWebhookParser.parse(rawBody);
+
+        if (event.isPaymentCaptured()) {
+            return applyWebhookCaptured(event);
+        }
+
+        if (event.isPaymentFailed()) {
+            return applyWebhookFailed(event);
+        }
+
+        return WebhookResponse.ignored();
+    }
+
+    @Transactional
     public PaymentResponse markFailure(Long id, MockFailureRequest request) {
         Payment payment = findPayment(id);
 
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            throw new PaymentStateException("SUCCESS payment cannot be marked FAILED.");
-        }
-
-        if (payment.getStatus() == PaymentStatus.FAILED) {
+        if (PaymentStatusPolicy.isFailureIdempotent(payment.getStatus())) {
             return PaymentResponse.from(payment);
         }
+
+        PaymentStatusPolicy.assertCanMarkFailure(payment.getStatus());
 
         payment.setStatus(PaymentStatus.FAILED);
         payment.setFailureReason(request.failureReason());
@@ -134,5 +227,105 @@ public class PaymentService {
         }
 
         return currency.trim().toUpperCase();
+    }
+
+    private void assertRazorpayPayment(Payment payment) {
+        if (!PaymentProviderType.RAZORPAY.name().equals(payment.getProvider())) {
+            throw new PaymentVerificationException("Only Razorpay payments can be verified");
+        }
+    }
+
+    private void assertMatchingOrderId(Payment payment, String razorpayOrderId) {
+        if (payment.getGatewayOrderId() == null || !payment.getGatewayOrderId().equals(razorpayOrderId)) {
+            throw new PaymentVerificationException("Order id does not match this payment");
+        }
+    }
+
+    private void assertRazorpaySecretConfigured() {
+        if (!paymentProviderProperties.hasRazorpaySecret()) {
+            throw new PaymentGatewayException("Razorpay configuration is missing");
+        }
+    }
+
+    private void assertWebhookSecretConfigured() {
+        if (!paymentProviderProperties.hasRazorpayWebhookSecret()) {
+            throw new PaymentGatewayException("Razorpay webhook configuration is missing");
+        }
+    }
+
+    private WebhookResponse applyWebhookCaptured(RazorpayWebhookEvent event) {
+        Payment payment = findWebhookPayment(event);
+        if (payment == null) {
+            return WebhookResponse.ignored();
+        }
+
+        if (PaymentStatusPolicy.isSuccessIdempotent(payment.getStatus())) {
+            return WebhookResponse.processed();
+        }
+
+        try {
+            PaymentStatusPolicy.assertCanMarkSuccess(payment.getStatus());
+        } catch (PaymentStateException exception) {
+            return WebhookResponse.ignored();
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setGatewayPaymentId(event.paymentId());
+        payment.setGatewayStatus("captured");
+        payment.setProviderReference(event.paymentId());
+        payment.setFailureReason(null);
+        paymentRepository.save(payment);
+
+        return WebhookResponse.processed();
+    }
+
+    private WebhookResponse applyWebhookFailed(RazorpayWebhookEvent event) {
+        Payment payment = findWebhookPayment(event);
+        if (payment == null) {
+            return WebhookResponse.ignored();
+        }
+
+        if (PaymentStatusPolicy.isFailureIdempotent(payment.getStatus())) {
+            return WebhookResponse.processed();
+        }
+
+        try {
+            PaymentStatusPolicy.assertCanMarkFailure(payment.getStatus());
+        } catch (PaymentStateException exception) {
+            return WebhookResponse.ignored();
+        }
+
+        payment.setStatus(PaymentStatus.FAILED);
+        payment.setGatewayPaymentId(event.paymentId());
+        payment.setGatewayStatus("failed");
+        if (event.paymentId() != null) {
+            payment.setProviderReference(event.paymentId());
+        }
+        payment.setFailureReason(resolveFailureReason(event.failureReason()));
+        paymentRepository.save(payment);
+
+        return WebhookResponse.processed();
+    }
+
+    private Payment findWebhookPayment(RazorpayWebhookEvent event) {
+        if (event.orderId() == null || event.orderId().isBlank()) {
+            return null;
+        }
+
+        return paymentRepository.findByGatewayOrderId(event.orderId())
+                .filter(this::isRazorpayPayment)
+                .orElse(null);
+    }
+
+    private boolean isRazorpayPayment(Payment payment) {
+        return PaymentProviderType.RAZORPAY.name().equals(payment.getProvider());
+    }
+
+    private String resolveFailureReason(String failureReason) {
+        if (failureReason == null || failureReason.isBlank()) {
+            return "Razorpay payment failed";
+        }
+
+        return failureReason;
     }
 }
