@@ -96,7 +96,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         pageSizeOptions={[10, 25, 50]}
         rowSelectionModel={gridRowSelectionModel}
         rows={rows}
-        density="comfortable"
+        density="standard"
         showToolbar
         slots={{
           toolbar: () => <CustomToolbar search={search} />,

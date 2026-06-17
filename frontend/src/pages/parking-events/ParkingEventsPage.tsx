@@ -437,23 +437,11 @@ export function ParkingEventsPage() {
   const activeError = activeEventsQuery.error;
   const historyError = historyQuery.error;
 
-  const gridShellSx = {
-    alignSelf: 'stretch',
-    display: 'flex',
-    flex: 1,
-    flexDirection: 'column',
-    minHeight: { xs: 480, lg: 360 },
-    width: '100%',
-  } as const;
+  const operatorGridHeight = 'calc(100vh - 340px)';
+  const userGridHeight = 'calc(100vh - 240px)';
 
   return (
-    <Stack
-      spacing={1.5}
-      sx={{
-        height: { xs: 'auto', lg: 'calc(100vh - 120px)' },
-        minHeight: 0,
-      }}
-    >
+    <Stack spacing={3}>
       <PageHeader title="Parking Events" />
 
       {canOperateParkingEvents ? (
@@ -524,47 +512,44 @@ export function ParkingEventsPage() {
       )}
 
       {canOperateParkingEvents && activeTab === 'active' ? (
-        <Box sx={gridShellSx}>
+        <Stack spacing={2}>
           {activeError ? (
             <QueryErrorAlert
               error={activeError}
               fallbackMessage='Could not load active parking events.'
             />
           ) : null}
-          <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-            <AppDataGrid
-              checkboxSelection={false}
-              columns={activeColumns}
-              emptyState={{
-                description: search
-                  ? 'Try a session no, booking no, vehicle number, or status.'
-                  : 'Active parking sessions will appear here after check-in.',
-                illustration: search ? 'empty' : 'cityDriver',
-                title: search ? 'No matching active events' : 'No active parking events',
-              }}
-              height="100%"
-              loading={
-                activeEventsQuery.isLoading || activeEventsQuery.isFetching
-              }
-              rows={activeRows}
-              search={{
-                onChange: (event) => setSearch(event.target.value),
-                onClear: () => setSearch(''),
-                placeholder:
-                  'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
-                value: search,
-              }}
-            />
-          </Box>
-        </Box>
+          <AppDataGrid
+            columns={activeColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : 'Active parking sessions will appear here after check-in.',
+              illustration: search ? 'empty' : 'cityDriver',
+              title: search ? 'No matching active events' : 'No active parking events',
+            }}
+            height={operatorGridHeight}
+            loading={
+              activeEventsQuery.isLoading || activeEventsQuery.isFetching
+            }
+            rows={activeRows}
+            search={{
+              onChange: (event) => setSearch(event.target.value),
+              onClear: () => setSearch(''),
+              placeholder:
+                'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
+              value: search,
+            }}
+          />
+        </Stack>
       ) : null}
 
       {isUser || (isAdmin && activeTab === 'history') ? (
-        <Box sx={gridShellSx}>
+        <Stack spacing={2}>
           {isUser ? (
             <>
               <Typography variant="subtitle1">My Parking History</Typography>
-              <Divider sx={{ mb: 1.5 }} />
+              <Divider />
             </>
           ) : null}
           {historyError ? (
@@ -573,32 +558,29 @@ export function ParkingEventsPage() {
               fallbackMessage='Could not load parking event history.'
             />
           ) : null}
-          <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-            <AppDataGrid
-              checkboxSelection={false}
-              columns={historyColumns}
-              emptyState={{
-                description: search
-                  ? 'Try a session no, booking no, vehicle number, or status.'
-                  : isUser
-                    ? 'Your completed parking sessions will appear here.'
-                    : 'Completed parking sessions will appear here.',
-                illustration: search ? 'empty' : 'park',
-                title: search ? 'No matching parking events' : 'No parking event history',
-              }}
-              height="100%"
-              loading={historyQuery.isLoading || historyQuery.isFetching}
-              rows={historyRows}
-              search={{
-                onChange: (event) => setSearch(event.target.value),
-                onClear: () => setSearch(''),
-                placeholder:
-                  'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
-                value: search,
-              }}
-            />
-          </Box>
-        </Box>
+          <AppDataGrid
+            columns={historyColumns}
+            emptyState={{
+              description: search
+                ? 'Try a session no, booking no, vehicle number, or status.'
+                : isUser
+                  ? 'Your completed parking sessions will appear here.'
+                  : 'Completed parking sessions will appear here.',
+              illustration: search ? 'empty' : 'park',
+              title: search ? 'No matching parking events' : 'No parking event history',
+            }}
+            height={isUser ? userGridHeight : operatorGridHeight}
+            loading={historyQuery.isLoading || historyQuery.isFetching}
+            rows={historyRows}
+            search={{
+              onChange: (event) => setSearch(event.target.value),
+              onClear: () => setSearch(''),
+              placeholder:
+                'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
+              value: search,
+            }}
+          />
+        </Stack>
       ) : null}
 
       <ConfirmDialog
