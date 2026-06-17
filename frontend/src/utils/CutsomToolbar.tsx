@@ -2,6 +2,8 @@
 // stricter than the Material wrappers used in their own examples.
 // @ts-nocheck
 import * as React from 'react';
+import { ChangeEvent } from 'react';
+import { Box, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
   Toolbar,
@@ -27,7 +29,14 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SearchIcon from '@mui/icons-material/Search';
-import Typography from '@mui/material/Typography';
+import { SearchField } from '../components/common/SearchField';
+
+export type DataGridToolbarSearch = {
+  value: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onClear?: () => void;
+  placeholder?: string;
+};
 
 type OwnerState = {
   expanded: boolean;
@@ -60,15 +69,49 @@ const StyledTextField = styled(TextField)<{
   transition: theme.transitions.create(['width', 'opacity'])
 }));
 
-export function CustomToolbar() {
+export function CustomToolbar({ search }: { search?: DataGridToolbarSearch }) {
   const [exportMenuOpen, setExportMenuOpen] = React.useState(false);
   const exportMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <Toolbar>
-      <Typography sx={{ fontWeight: 'medium', flex: 1, mx: 0.5 }}>
-        {/* Toolbar */}
-      </Typography>
+    <Toolbar
+      sx={{
+        alignItems: 'center',
+        flexWrap: { xs: 'wrap', md: 'nowrap' },
+        gap: 1,
+        minHeight: { xs: 52, sm: 56 },
+        px: 1.5,
+        py: 1,
+        width: '100%',
+      }}
+    >
+      {search ? (
+        <Box
+          sx={{
+            flex: { xs: '1 1 100%', md: '1 1 auto' },
+            maxWidth: { md: 'min(50%, 480px)' },
+            minWidth: { xs: '100%', sm: 220 },
+          }}
+        >
+          <SearchField
+            fullWidth
+            onChange={search.onChange}
+            onClear={search.onClear}
+            placeholder={search.placeholder ?? 'Search…'}
+            value={search.value}
+          />
+        </Box>
+      ) : null}
+
+      <Stack
+        alignItems="center"
+        direction="row"
+        divider={
+          <Divider flexItem orientation="vertical" sx={{ mx: 0.25 }} variant="middle" />
+        }
+        spacing={0.25}
+        sx={{ flexShrink: 0, ml: { xs: 0, md: 'auto' } }}
+      >
       <Tooltip title='Columns'>
         <ColumnsPanelTrigger render={<ToolbarButton />}>
           <ViewColumnIcon fontSize='small' />
@@ -88,12 +131,6 @@ export function CustomToolbar() {
           )}
         />
       </Tooltip>
-      <Divider
-        orientation='vertical'
-        variant='middle'
-        flexItem
-        sx={{ mx: 0.5 }}
-      />
       <Tooltip title='Export'>
         <ToolbarButton
           ref={exportMenuTriggerRef}
@@ -132,55 +169,58 @@ export function CustomToolbar() {
           Download as Excel
         </ExportExcel> */}
       </Menu>
-      <StyledQuickFilter>
-        <QuickFilterTrigger
-          render={(triggerProps, state) => (
-            <Tooltip title='Search' enterDelay={0}>
-              <StyledToolbarButton
-                {...triggerProps}
+      {!search ? (
+        <StyledQuickFilter>
+          <QuickFilterTrigger
+            render={(triggerProps, state) => (
+              <Tooltip title='Search' enterDelay={0}>
+                <StyledToolbarButton
+                  {...triggerProps}
+                  ownerState={{ expanded: state.expanded }}
+                  color='default'
+                  aria-disabled={state.expanded}>
+                  <SearchIcon fontSize='small' />
+                </StyledToolbarButton>
+              </Tooltip>
+            )}
+          />
+          <QuickFilterControl
+            render={({ ref, ...controlProps }, state) => (
+              <StyledTextField
+                {...controlProps}
                 ownerState={{ expanded: state.expanded }}
-                color='default'
-                aria-disabled={state.expanded}>
-                <SearchIcon fontSize='small' />
-              </StyledToolbarButton>
-            </Tooltip>
-          )}
-        />
-        <QuickFilterControl
-          render={({ ref, ...controlProps }, state) => (
-            <StyledTextField
-              {...controlProps}
-              ownerState={{ expanded: state.expanded }}
-              inputRef={ref}
-              aria-label='Search'
-              placeholder='Search…'
-              size='small'
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position='start'>
-                      <SearchIcon fontSize='small' />
-                    </InputAdornment>
-                  ),
-                  endAdornment: state.value ? (
-                    <InputAdornment position='end'>
-                      <QuickFilterClear
-                        edge='end'
-                        size='small'
-                        aria-label='Clear search'
-                        material={{ sx: { marginRight: -0.75 } }}>
-                        <CancelIcon fontSize='small' />
-                      </QuickFilterClear>
-                    </InputAdornment>
-                  ) : null,
-                  ...controlProps.slotProps?.input
-                },
-                ...controlProps.slotProps
-              }}
-            />
-          )}
-        />
-      </StyledQuickFilter>
+                inputRef={ref}
+                aria-label='Search'
+                placeholder='Search…'
+                size='small'
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <SearchIcon fontSize='small' />
+                      </InputAdornment>
+                    ),
+                    endAdornment: state.value ? (
+                      <InputAdornment position='end'>
+                        <QuickFilterClear
+                          edge='end'
+                          size='small'
+                          aria-label='Clear search'
+                          material={{ sx: { marginRight: -0.75 } }}>
+                          <CancelIcon fontSize='small' />
+                        </QuickFilterClear>
+                      </InputAdornment>
+                    ) : null,
+                    ...controlProps.slotProps?.input
+                  },
+                  ...controlProps.slotProps
+                }}
+              />
+            )}
+          />
+        </StyledQuickFilter>
+      ) : null}
+      </Stack>
     </Toolbar>
   );
 }

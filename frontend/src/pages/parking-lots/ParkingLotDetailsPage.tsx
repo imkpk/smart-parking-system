@@ -47,7 +47,7 @@ import {
   PageHeader,
   ToolbarButton,
 } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
@@ -950,21 +950,6 @@ function SlotsSection({
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-      <Box
-        sx={{
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          p: 2,
-        }}
-      >
-        <SearchField
-          label="Search slots"
-          onChange={(event) => onSlotSearchChange(event.target.value)}
-          onClear={() => onSlotSearchChange('')}
-          placeholder="Search by slot number, floor, status, or vehicle type"
-          value={slotSearch}
-        />
-      </Box>
       <Stack spacing={2} p={2}>
         <Box
           sx={{
@@ -1066,6 +1051,12 @@ function SlotsSection({
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}
+        search={{
+          onChange: (event) => onSlotSearchChange(event.target.value),
+          onClear: () => onSlotSearchChange(''),
+          placeholder: 'Search by slot number, floor, status, or vehicle type',
+          value: slotSearch,
+        }}
       />
       <DetailsDialog
         onClose={() => setDetailsSlot(null)}

@@ -9,8 +9,10 @@ import {
   GridValidRowModel
 } from '@mui/x-data-grid';
 import type { IllustrationName } from '../../assets/illustrations';
-import { CustomToolbar } from '../../utils/CutsomToolbar';
+import { CustomToolbar, type DataGridToolbarSearch } from '../../utils/CutsomToolbar';
 import { EmptyState } from './EmptyState';
+
+export type { DataGridToolbarSearch };
 
 function NoRowsOverlay({
   description,
@@ -38,7 +40,8 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   noRowsLabel = 'No rows',
   onRowSelectionModelChange,
   rowSelectionModel,
-  rows
+  rows,
+  search,
 }: {
   checkboxSelection?: boolean;
   columns: GridColDef<Row>[];
@@ -50,6 +53,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
+  search?: DataGridToolbarSearch;
 }) {
   const gridRowSelectionModel: GridRowSelectionModel | undefined = rowSelectionModel
     ? {
@@ -90,7 +94,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         density="comfortable"
         showToolbar
         slots={{
-          toolbar: CustomToolbar,
+          toolbar: () => <CustomToolbar search={search} />,
           ...(emptyState
             ? {
                 noRowsOverlay: () => (
@@ -123,9 +127,10 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             borderColor: 'divider'
           },
           '& .MuiDataGrid-toolbarContainer': {
-            justifyContent: 'flex-end',
-            p: 0
-          }
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            p: 0,
+          },
         }}
       />
     </Paper>
