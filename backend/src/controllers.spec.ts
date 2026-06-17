@@ -9,7 +9,7 @@ import { FloorsController } from './floors/floors.controller';
 import { ParkingEventsController } from './parking-events/parking-events.controller';
 import { ParkingLotsController } from './parking-lots/parking-lots.controller';
 import { SlotsController } from './slots/slots.controller';
-import { normalUser } from './test/test-users';
+import { adminUser, normalUser, securityUser } from './test/test-users';
 import { UsersController } from './users/users.controller';
 import { VehiclesController } from './vehicles/vehicles.controller';
 
@@ -66,11 +66,14 @@ describe('Controllers', () => {
     const controller = new ParkingLotsController(parkingLotsService as never);
     const dto = { name: 'Lot', type: 'APARTMENT' as never };
 
-    await expect(controller.create(dto)).resolves.toEqual({ id: 1 });
-    await expect(controller.findAll()).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findOne(1)).resolves.toEqual({ id: 1 });
-    await expect(controller.update(1, { name: 'Updated' })).resolves.toEqual({ id: 1, name: 'Updated' });
-    await expect(controller.remove(1)).resolves.toEqual({ id: 1, isActive: false });
+    await expect(controller.create(adminUser, dto)).resolves.toEqual({ id: 1 });
+    await expect(controller.findAll(normalUser)).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.findOne(1, normalUser)).resolves.toEqual({ id: 1 });
+    await expect(controller.update(1, adminUser, { name: 'Updated' })).resolves.toEqual({
+      id: 1,
+      name: 'Updated',
+    });
+    await expect(controller.remove(1, adminUser)).resolves.toEqual({ id: 1, isActive: false });
   });
 
   it('FloorsController delegates floor operations', async () => {
@@ -82,10 +85,15 @@ describe('Controllers', () => {
     };
     const controller = new FloorsController(floorsService as never);
 
-    await expect(controller.findByParkingLot(10)).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.create(10, { name: 'Ground', level: 0 })).resolves.toEqual({ id: 1 });
-    await expect(controller.update(1, { name: 'Ground' })).resolves.toEqual({ id: 1, name: 'Ground' });
-    await expect(controller.remove(1)).resolves.toEqual({ id: 1 });
+    await expect(controller.findByParkingLot(10, adminUser)).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.create(10, adminUser, { name: 'Ground', level: 0 })).resolves.toEqual({
+      id: 1,
+    });
+    await expect(controller.update(1, adminUser, { name: 'Ground' })).resolves.toEqual({
+      id: 1,
+      name: 'Ground',
+    });
+    await expect(controller.remove(1, adminUser)).resolves.toEqual({ id: 1 });
   });
 
   it('SlotsController delegates slot operations', async () => {
@@ -100,22 +108,22 @@ describe('Controllers', () => {
     };
     const controller = new SlotsController(slotsService as never);
 
-    await expect(controller.findByParkingLot(10)).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findAvailableByParkingLot(10, { vehicleType: VehicleType.CAR })).resolves.toEqual([
-      { id: 1 },
-    ]);
+    await expect(controller.findByParkingLot(10, adminUser)).resolves.toEqual([{ id: 1 }]);
     await expect(
-      controller.create(1, { slotNumber: 'A-01', slotType: SlotType.CAR }),
+      controller.findAvailableByParkingLot(10, normalUser, { vehicleType: VehicleType.CAR }),
+    ).resolves.toEqual([{ id: 1 }]);
+    await expect(
+      controller.create(1, adminUser, { slotNumber: 'A-01', slotType: SlotType.CAR }),
     ).resolves.toEqual({ id: 1 });
     await expect(
-      controller.createBulk(1, { slots: [{ slotNumber: 'A-01', slotType: SlotType.CAR }] }),
+      controller.createBulk(1, adminUser, { slots: [{ slotNumber: 'A-01', slotType: SlotType.CAR }] }),
     ).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.updateStatus(1, { status: SlotStatus.MAINTENANCE })).resolves.toEqual({
+    await expect(controller.updateStatus(1, adminUser, { status: SlotStatus.MAINTENANCE })).resolves.toEqual({
       id: 1,
       status: SlotStatus.MAINTENANCE,
     });
-    await expect(controller.remove(1)).resolves.toEqual({ id: 1 });
-    await expect(controller.removeBulk({ ids: [1, 2] })).resolves.toEqual({ count: 2 });
+    await expect(controller.remove(1, adminUser)).resolves.toEqual({ id: 1 });
+    await expect(controller.removeBulk(adminUser, { ids: [1, 2] })).resolves.toEqual({ count: 2 });
   });
 
   it('VehiclesController delegates vehicle operations', async () => {
@@ -133,9 +141,12 @@ describe('Controllers', () => {
       controller.register(normalUser, { vehicleNumber: 'TS09EA1234', vehicleType: VehicleType.CAR }),
     ).resolves.toEqual({ id: 1 });
     await expect(controller.findMine(normalUser)).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findAll()).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findOne(1)).resolves.toEqual({ id: 1 });
-    await expect(controller.update(1, normalUser, { color: 'White' })).resolves.toEqual({ id: 1, color: 'White' });
+    await expect(controller.findAll(adminUser)).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.findOne(1, adminUser)).resolves.toEqual({ id: 1 });
+    await expect(controller.update(1, normalUser, { color: 'White' })).resolves.toEqual({
+      id: 1,
+      color: 'White',
+    });
     await expect(controller.remove(1, normalUser)).resolves.toEqual({ id: 1 });
   });
 
@@ -152,7 +163,7 @@ describe('Controllers', () => {
 
     await expect(controller.create(normalUser, dto)).resolves.toEqual({ id: 1 });
     await expect(controller.findMine(normalUser)).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findAll()).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.findAll(adminUser)).resolves.toEqual([{ id: 1 }]);
     await expect(controller.findOne(1, normalUser)).resolves.toEqual({ id: 1 });
     await expect(controller.cancel(1, normalUser)).resolves.toEqual({ id: 1, status: 'CANCELLED' });
   });
@@ -168,11 +179,11 @@ describe('Controllers', () => {
     };
     const controller = new ParkingEventsController(parkingEventsService as never);
 
-    await expect(controller.checkIn({ bookingCode: 'BK-1' })).resolves.toEqual({ id: 1 });
-    await expect(controller.checkOut({ parkingEventId: 1 })).resolves.toEqual({ id: 1 });
-    await expect(controller.findActive()).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.checkIn({ bookingCode: 'BK-1' }, securityUser)).resolves.toEqual({ id: 1 });
+    await expect(controller.checkOut({ parkingEventId: 1 }, securityUser)).resolves.toEqual({ id: 1 });
+    await expect(controller.findActive(securityUser)).resolves.toEqual([{ id: 1 }]);
     await expect(controller.findHistory(normalUser)).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.findAll()).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.findAll(adminUser)).resolves.toEqual([{ id: 1 }]);
     await expect(controller.findOne(1, normalUser)).resolves.toEqual({ id: 1 });
   });
 
@@ -186,11 +197,11 @@ describe('Controllers', () => {
     };
     const controller = new DashboardController(dashboardService as never);
 
-    await expect(controller.getAdminSummary()).resolves.toEqual({ totalUsers: 1 });
-    await expect(controller.getParkingLotSummary(1)).resolves.toEqual({ parkingLotId: 1 });
-    await expect(controller.getRecentEvents()).resolves.toEqual([{ parkingEventId: 1 }]);
-    await expect(controller.getTodayBookings()).resolves.toEqual([{ id: 1 }]);
-    await expect(controller.getSlotStatusSummary()).resolves.toEqual({ availableSlots: 1 });
+    await expect(controller.getAdminSummary(adminUser)).resolves.toEqual({ totalUsers: 1 });
+    await expect(controller.getParkingLotSummary(1, adminUser)).resolves.toEqual({ parkingLotId: 1 });
+    await expect(controller.getRecentEvents(securityUser)).resolves.toEqual([{ parkingEventId: 1 }]);
+    await expect(controller.getTodayBookings(adminUser)).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.getSlotStatusSummary(securityUser)).resolves.toEqual({ availableSlots: 1 });
   });
 
   it('placeholder controllers can be constructed', () => {

@@ -9,13 +9,13 @@ import { BookingStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
+import { SafeUser } from '../users/types/safe-user.type';
+import { CreateBookingDto } from './dto/create-booking.dto';
 
 const BOOKING_UNIQUE_MESSAGES = {
   bookingCode: 'Booking code already exists',
 };
-import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
-import { SafeUser } from '../users/types/safe-user.type';
-import { CreateBookingDto } from './dto/create-booking.dto';
 
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   BookingStatus.PENDING,
@@ -31,12 +31,15 @@ export class BookingsService {
   ) {}
 
   async create(currentUser: SafeUser, createBookingDto: CreateBookingDto) {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const vehicle = await tx.vehicle.findFirst({
           where: {
             id: createBookingDto.vehicleId,
             userId: currentUser.id,
+            organizationId,
           },
         });
 
@@ -47,6 +50,7 @@ export class BookingsService {
         const slot = await this.slotLifecycleService.validateSlotAvailable(
           createBookingDto.slotId,
           vehicle.vehicleType,
+          organizationId,
           tx,
         );
 
@@ -63,13 +67,9 @@ export class BookingsService {
 
         await this.slotLifecycleService.reserveSlot(slot.id, tx);
 
-        if (!currentUser.organizationId) {
-          throw new ForbiddenException('Organization context is required to create a booking');
-        }
-
         return tx.booking.create({
           data: {
-            organizationId: currentUser.organizationId,
+            organizationId,
             userId: currentUser.id,
             vehicleId: vehicle.id,
             slotId: slot.id,
@@ -92,22 +92,29 @@ export class BookingsService {
     }
   }
 
-  findMine(userId: number) {
+  findMine(currentUser: SafeUser) {
     return this.prisma.booking.findMany({
-      where: { userId },
+      where: {
+        userId: currentUser.id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
       orderBy: { id: 'desc' },
     });
   }
 
-  findAll() {
+  findAll(currentUser: SafeUser) {
     return this.prisma.booking.findMany({
+      where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { id: 'desc' },
     });
   }
 
   async findOne(id: number, currentUser: SafeUser) {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id },
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
     });
 
     if (!booking) {
@@ -125,8 +132,11 @@ export class BookingsService {
 
   async cancel(id: number, currentUser: SafeUser) {
     return this.prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.findUnique({
-        where: { id },
+      const booking = await tx.booking.findFirst({
+        where: {
+          id,
+          ...this.accessPolicy.buildOrganizationWhere(currentUser),
+        },
       });
 
       if (!booking) {

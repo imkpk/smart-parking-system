@@ -21,27 +21,35 @@ import { ParkingEventsService } from './parking-events.service';
 @Controller('parking-events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ParkingEventsController {
-  constructor(private readonly parkingEventsService: ParkingEventsService) { }
+  constructor(private readonly parkingEventsService: ParkingEventsService) {}
 
   @Post('check-in')
   @Roles(Role.ADMIN, Role.SECURITY)
-  checkIn(@Body() checkInDto: CheckInDto) {
-    return this.parkingEventsService.checkIn(checkInDto);
+  checkIn(
+    @Body() checkInDto: CheckInDto,
+    @CurrentUser() currentUser: SafeUser,
+  ) {
+    return this.parkingEventsService.checkIn(checkInDto, currentUser);
   }
 
   @Post('check-out')
   @Roles(Role.ADMIN, Role.SECURITY)
   checkOut(
     @Body() checkOutDto: CheckOutDto,
+    @CurrentUser() currentUser: SafeUser,
     @Headers('authorization') authorizationHeader?: string,
   ) {
-    return this.parkingEventsService.checkOut(checkOutDto, authorizationHeader);
+    return this.parkingEventsService.checkOut(
+      checkOutDto,
+      currentUser,
+      authorizationHeader,
+    );
   }
 
   @Get('active')
   @Roles(Role.ADMIN, Role.SECURITY)
-  findActive() {
-    return this.parkingEventsService.findActive();
+  findActive(@CurrentUser() currentUser: SafeUser) {
+    return this.parkingEventsService.findActive(currentUser);
   }
 
   @Get('history')
@@ -52,8 +60,8 @@ export class ParkingEventsController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
-    return this.parkingEventsService.findAll();
+  findAll(@CurrentUser() currentUser: SafeUser) {
+    return this.parkingEventsService.findAll(currentUser);
   }
 
   @Get(':id')

@@ -24,10 +24,12 @@ export class SlotLifecycleService {
   async validateSlotAvailable(
     slotId: number,
     vehicleType: VehicleType,
+    organizationId: number,
     tx?: Prisma.TransactionClient,
   ) {
     const slot = await this.parkingLotValidationService.getActiveSlotOrThrow(
       slotId,
+      organizationId,
       tx,
     );
 

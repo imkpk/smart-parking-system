@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,14 +12,14 @@ import { AccessPolicyService } from '../common/access-policy.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
-
-const PARKING_EVENT_UNIQUE_MESSAGES = {
-  bookingId: 'Parking event already exists for this booking',
-};
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
+
+const PARKING_EVENT_UNIQUE_MESSAGES = {
+  bookingId: 'Parking event already exists for this booking',
+};
 
 @Injectable()
 export class ParkingEventsService {
@@ -31,17 +30,22 @@ export class ParkingEventsService {
     private readonly slotLifecycleService: SlotLifecycleService,
   ) {}
 
-  async checkIn(checkInDto: CheckInDto) {
+  async checkIn(checkInDto: CheckInDto, currentUser: SafeUser) {
     if (!checkInDto.bookingId && !checkInDto.bookingCode) {
       throw new BadRequestException('bookingId or bookingCode is required');
     }
 
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const booking = await tx.booking.findFirst({
-          where: checkInDto.bookingId
-            ? { id: checkInDto.bookingId }
-            : { bookingCode: checkInDto.bookingCode },
+          where: {
+            ...(checkInDto.bookingId
+              ? { id: checkInDto.bookingId }
+              : { bookingCode: checkInDto.bookingCode }),
+            organizationId,
+          },
           include: {
             slot: true,
           },
@@ -99,10 +103,19 @@ export class ParkingEventsService {
     }
   }
 
-  async checkOut(checkOutDto: CheckOutDto, authorizationHeader?: string) {
+  async checkOut(
+    checkOutDto: CheckOutDto,
+    currentUser: SafeUser,
+    authorizationHeader?: string,
+  ) {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+
     const parkingEvent = await this.prisma.$transaction(async (tx) => {
-      const parkingEvent = await tx.parkingEvent.findUnique({
-        where: { id: checkOutDto.parkingEventId },
+      const parkingEvent = await tx.parkingEvent.findFirst({
+        where: {
+          id: checkOutDto.parkingEventId,
+          organizationId,
+        },
       });
 
       if (!parkingEvent) {
@@ -169,9 +182,12 @@ export class ParkingEventsService {
     };
   }
 
-  findActive() {
+  findActive(currentUser: SafeUser) {
     return this.prisma.parkingEvent.findMany({
-      where: { status: ParkingEventStatus.ACTIVE },
+      where: {
+        status: ParkingEventStatus.ACTIVE,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
       orderBy: { checkInTime: 'desc' },
     });
   }
@@ -191,15 +207,19 @@ export class ParkingEventsService {
     });
   }
 
-  findAll() {
+  findAll(currentUser: SafeUser) {
     return this.prisma.parkingEvent.findMany({
+      where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { checkInTime: 'desc' },
     });
   }
 
   async findOne(id: number, currentUser: SafeUser) {
-    const parkingEvent = await this.prisma.parkingEvent.findUnique({
-      where: { id },
+    const parkingEvent = await this.prisma.parkingEvent.findFirst({
+      where: {
+        id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
     });
 
     if (!parkingEvent) {

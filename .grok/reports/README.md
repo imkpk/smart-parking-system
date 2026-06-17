@@ -20,6 +20,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-8a-razorpay-payment-verification.md](./phase-8a-razorpay-payment-verification.md) | Payment verify endpoint | PR #33 |
 | [phase-8b-frontend-razorpay-checkout-ui.md](./phase-8b-frontend-razorpay-checkout-ui.md) | Frontend checkout UI | PR #34 |
 | [phase-8c-razorpay-webhook-handler.md](./phase-8c-razorpay-webhook-handler.md) | Razorpay webhook | PR #35 |
-| [phase-1a-organization-schema.md](./phase-1a-organization-schema.md) | Multi-tenant schema (backend) | `6a8590b` / PR #40 (open) |
+| [phase-1a-organization-schema.md](./phase-1a-organization-schema.md) | Multi-tenant schema (backend) | PR #40 ✅ |
+| [phase-1b-tenant-scoping-backend.md](./phase-1b-tenant-scoping-backend.md) | Backend tenant scoping | PR open |
 
 Prompts live in [`.grok/prompts/`](../prompts/).

@@ -1,19 +1,25 @@
-import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, VehicleType } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
-import { VehiclesService } from './vehicles.service';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { adminUser, normalUser } from '../test/test-users';
+import { org1, org2 } from '../test/test-tenant-fixtures';
+import { VehiclesService } from './vehicles.service';
 
 describe('VehiclesService', () => {
   let service: VehiclesService;
   let prisma: {
     booking: { count: jest.Mock };
-    user: { findUnique: jest.Mock };
     vehicle: {
       create: jest.Mock;
       delete: jest.Mock;
+      findFirst: jest.Mock;
       findMany: jest.Mock;
-      findUnique: jest.Mock;
       update: jest.Mock;
     };
   };
@@ -21,6 +27,7 @@ describe('VehiclesService', () => {
   const vehicle = {
     id: 1,
     userId: normalUser.id,
+    organizationId: normalUser.organizationId,
     vehicleNumber: 'TS09EA1234',
     vehicleType: VehicleType.CAR,
   };
@@ -28,16 +35,11 @@ describe('VehiclesService', () => {
   beforeEach(() => {
     prisma = {
       booking: { count: jest.fn() },
-      user: {
-        findUnique: jest.fn().mockResolvedValue({
-          organizationId: normalUser.organizationId,
-        }),
-      },
       vehicle: {
         create: jest.fn(),
         delete: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn(),
         update: jest.fn(),
       },
     };
@@ -54,7 +56,7 @@ describe('VehiclesService', () => {
     );
 
     await expect(
-      service.create(normalUser.id, {
+      service.create(normalUser, {
         vehicleNumber: vehicle.vehicleNumber,
         vehicleType: vehicle.vehicleType,
       }),
@@ -62,7 +64,7 @@ describe('VehiclesService', () => {
   });
 
   it('maps duplicate vehicle number prisma errors during update', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
     prisma.vehicle.update.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
         clientVersion: 'test',
@@ -76,21 +78,19 @@ describe('VehiclesService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('rejects vehicle creation when user organization is missing', async () => {
-    prisma.user.findUnique.mockResolvedValue({ organizationId: null });
-
+  it('rejects vehicle creation when organization context is missing', async () => {
     await expect(
-      service.create(normalUser.id, {
+      service.create({ ...normalUser, organizationId: null }, {
         vehicleNumber: vehicle.vehicleNumber,
         vehicleType: vehicle.vehicleType,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('creates a vehicle for the current user', async () => {
     prisma.vehicle.create.mockResolvedValue(vehicle);
 
-    const result = await service.create(normalUser.id, {
+    const result = await service.create(normalUser, {
       vehicleNumber: vehicle.vehicleNumber,
       vehicleType: vehicle.vehicleType,
       brand: 'Hyundai',
@@ -108,8 +108,22 @@ describe('VehiclesService', () => {
     expect(result).toBe(vehicle);
   });
 
+  it('cannot access a vehicle from another organization', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOneForAdmin(org2.vehicle.id, normalUser)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.vehicle.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: org2.vehicle.id,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
+    });
+  });
+
   it('allows owner to update their vehicle', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
     prisma.vehicle.update.mockResolvedValue({ ...vehicle, color: 'White' });
 
     const result = await service.update(vehicle.id, normalUser, { color: 'White' });
@@ -117,25 +131,26 @@ describe('VehiclesService', () => {
     expect(result.color).toBe('White');
   });
 
-  it('lists all vehicles', async () => {
-    prisma.vehicle.findMany.mockResolvedValue([vehicle]);
+  it('lists all vehicles scoped to organization', async () => {
+    prisma.vehicle.findMany.mockResolvedValue([org1.vehicle]);
 
-    const result = await service.findAll();
+    const result = await service.findAll(adminUser);
 
     expect(prisma.vehicle.findMany).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'asc' },
     });
-    expect(result).toEqual([vehicle]);
+    expect(result).toEqual([org1.vehicle]);
   });
 
-  it('finds one vehicle for admin', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+  it('finds one vehicle for admin within organization', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
 
-    await expect(service.findOneForAdmin(vehicle.id)).resolves.toBe(vehicle);
+    await expect(service.findOneForAdmin(vehicle.id, adminUser)).resolves.toBe(vehicle);
   });
 
-  it('allows admin to update any vehicle', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue({ ...vehicle, userId: 999 });
+  it('allows admin to update any vehicle in their organization', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue({ ...vehicle, userId: 999 });
     prisma.vehicle.update.mockResolvedValue({ ...vehicle, color: 'Black' });
 
     await expect(service.update(vehicle.id, adminUser, { color: 'Black' })).resolves.toEqual(
@@ -144,7 +159,7 @@ describe('VehiclesService', () => {
   });
 
   it('blocks users from updating another user vehicle', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue({ ...vehicle, userId: 999 });
+    prisma.vehicle.findFirst.mockResolvedValue({ ...vehicle, userId: 999 });
 
     await expect(service.update(vehicle.id, normalUser, { color: 'Black' })).rejects.toBeInstanceOf(
       ForbiddenException,
@@ -152,14 +167,14 @@ describe('VehiclesService', () => {
   });
 
   it('blocks deleting vehicles that already have bookings', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
     prisma.booking.count.mockResolvedValue(1);
 
     await expect(service.remove(vehicle.id, normalUser)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('deletes a vehicle without bookings', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(vehicle);
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
     prisma.booking.count.mockResolvedValue(0);
     prisma.vehicle.delete.mockResolvedValue(vehicle);
 
@@ -170,25 +185,25 @@ describe('VehiclesService', () => {
   });
 
   it('throws when removing a missing vehicle', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(null);
+    prisma.vehicle.findFirst.mockResolvedValue(null);
 
     await expect(service.remove(404, normalUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('throws when vehicle is missing', async () => {
-    prisma.vehicle.findUnique.mockResolvedValue(null);
+    prisma.vehicle.findFirst.mockResolvedValue(null);
 
-    await expect(service.findOneForAdmin(404)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOneForAdmin(404, adminUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('lists vehicles for the current user', async () => {
+  it('lists vehicles for the current user scoped to organization', async () => {
     prisma.vehicle.findMany.mockResolvedValue([vehicle]);
 
-    const result = await service.findMine(normalUser.id);
+    const result = await service.findMine(normalUser);
 
     expect(result).toEqual([vehicle]);
     expect(prisma.vehicle.findMany).toHaveBeenCalledWith({
-      where: { userId: normalUser.id },
+      where: { userId: normalUser.id, organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'asc' },
     });
   });

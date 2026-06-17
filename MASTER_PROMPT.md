@@ -4,8 +4,8 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.2.2  
-**Last updated:** 2026-06-17  
+**Version:** 1.3.0  
+**Last updated:** 2026-06-18  
 **Current branch:** `develop`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
@@ -224,18 +224,19 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 
 | Phase | What | Status | Report |
 |-------|------|--------|--------|
-| 1a | Organization schema + migration + seed | 🔄 PR #40 open | .grok/reports/phase-1a-organization-schema.md |
+| 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
+| 1b | Backend tenant scoping enforcement | 🔄 PR open | .grok/reports/phase-1b-tenant-scoping-backend.md |
 
 ---
 
 ## 8. In progress (current sprint)
 
 ```text
-[🔄] Phase 1a — Organization schema (PR #40 open, CI green)
-     Branch: feature/phase-1a-organization-schema
-     Report: .grok/reports/phase-1a-organization-schema.md
-     Scope: Organization model, organizationId columns, migration, seed, default org
-     Next: Phase 1b tenant guard + JWT claims
+[🔄] Phase 1b — Backend tenant scoping (PR open)
+     Branch: feature/phase-1b-tenant-scoping-backend
+     Report: .grok/reports/phase-1b-tenant-scoping-backend.md
+     Scope: JWT organizationId, AccessPolicy org helpers, service query scoping, cross-tenant write protection
+     Next: Phase 1c tenant onboarding API or Phase 1d frontend tenant context
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -252,22 +253,24 @@ Execute in this order unless the human redirects:
 [x] Merge phase 8c webhook handler → develop (PR #35 ✅)
 [x] Merge PR #36 docs/design foundation → develop (PR #36 ✅)
 [ ] End-to-end test: book → check-in → check-out → Razorpay pay → webhook → receipt
-[🔄] Phase 1a: feature/phase-1a-organization-schema (open PR)
-[ ] Phase 1b: tenant-scoping-backend (TenantGuard, JWT)
+[x] Phase 1a: organization schema (PR #40 ✅)
+[🔄] Phase 1b: feature/phase-1b-tenant-scoping-backend (open PR)
+[ ] Phase 1c: tenant onboarding API
+[ ] Phase 1d: frontend tenant context in AuthProvider
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
 
 ### Phase 1 — Multi-tenancy core (NEXT MAJOR MILESTONE)
 
 ```text
-[ ] Add Organization model to Prisma
-[ ] Add organizationId to all tenant-scoped tables
-[ ] Expand Role enum: SUPER_ADMIN, TENANT_ADMIN
-[ ] JWT claims: organizationId
-[ ] NestJS TenantGuard + query scoping
-[ ] Tenant onboarding API
-[ ] Frontend: tenant context in AuthProvider
-[ ] Migration: assign existing seed data to default org
+[x] Add Organization model to Prisma
+[x] Add organizationId to direct tenant-scoped tables (User, ParkingLot, Vehicle, Booking, ParkingEvent, SlotAssignment)
+[x] Expand Role enum: SUPER_ADMIN, TENANT_ADMIN
+[x] JWT claims: organizationId
+[x] Service-level query scoping + cross-tenant write protection (Phase 1b)
+[ ] Tenant onboarding API (Phase 1c)
+[ ] Frontend: tenant context in AuthProvider (Phase 1d)
+[x] Migration: assign existing seed data to default org
 ```
 
 **Exit criteria:** Two organizations in DB see completely separate data.
@@ -553,6 +556,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.2.0 | Grok + human | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
 | 2026-06-17 | 1.2.1 | Grok | Phase 1a implementation: Organization model, Role expansion, organizationId on tenant tables, migration backfill, prisma seed, service wiring. PR pending. |
 | 2026-06-17 | 1.2.2 | Grok | Added Phase 1a completion report (.grok/reports/phase-1a-organization-schema.md); updated reports README with payment phases 7a–8c and Phase 1a. |
+| 2026-06-17 | 1.2.3 | Grok | PR #41 merged: post-merge docs cleanup (current branch develop, Phase 1a report Floor/Slot note). |
+| 2026-06-18 | 1.3.0 | Grok | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
 
 ---
 
@@ -565,7 +570,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: Phase 1a (organization schema). Branch: feature/phase-1a-organization-schema from develop.
+Current focus: Phase 1b (backend tenant scoping). Branch: feature/phase-1b-tenant-scoping-backend from develop.
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```

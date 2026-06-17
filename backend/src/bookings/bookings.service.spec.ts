@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { BookingStatus, Prisma, Role, SlotStatus, SlotType, VehicleType } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
-import { BookingsService } from './bookings.service';
 import { adminUser, normalUser } from '../test/test-users';
+import { org1, org2 } from '../test/test-tenant-fixtures';
+import { BookingsService } from './bookings.service';
 
 describe('BookingsService', () => {
   let service: BookingsService;
@@ -18,8 +20,8 @@ describe('BookingsService', () => {
     booking: {
       count: jest.Mock;
       create: jest.Mock;
+      findFirst: jest.Mock;
       findMany: jest.Mock;
-      findUnique: jest.Mock;
       update: jest.Mock;
     };
     slot: {
@@ -34,6 +36,7 @@ describe('BookingsService', () => {
   const vehicle = {
     id: 10,
     userId: normalUser.id,
+    organizationId: normalUser.organizationId,
     vehicleNumber: 'TS09EA1234',
     vehicleType: VehicleType.CAR,
   };
@@ -44,7 +47,7 @@ describe('BookingsService', () => {
     status: SlotStatus.AVAILABLE,
     floor: {
       parkingLotId: 30,
-      parkingLot: { id: 30, isActive: true },
+      parkingLot: { id: 30, isActive: true, organizationId: DEFAULT_ORGANIZATION_ID },
     },
   };
 
@@ -54,8 +57,8 @@ describe('BookingsService', () => {
       booking: {
         count: jest.fn(),
         create: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn(),
         update: jest.fn(),
       },
       slot: {
@@ -135,11 +138,6 @@ describe('BookingsService', () => {
   });
 
   it('prevents booking when organization context is missing', async () => {
-    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
-    prisma.slot.findFirst.mockResolvedValue(slot);
-    prisma.booking.count.mockResolvedValue(0);
-    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
-
     await expect(
       service.create({ ...normalUser, organizationId: null }, {
         vehicleId: vehicle.id,
@@ -159,6 +157,38 @@ describe('BookingsService', () => {
         startTime: '2026-06-14T10:00:00.000Z',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('cannot book with a vehicle from another organization', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.create(normalUser, {
+        vehicleId: org2.vehicle.id,
+        slotId: slot.id,
+        startTime: '2026-06-14T10:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.vehicle.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: org2.vehicle.id,
+        userId: normalUser.id,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
+    });
+  });
+
+  it('cannot book a slot from another organization', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
+    prisma.slot.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.create(normalUser, {
+        vehicleId: vehicle.id,
+        slotId: org2.slot.id,
+        startTime: '2026-06-14T10:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('prevents booking unavailable slots', async () => {
@@ -249,24 +279,25 @@ describe('BookingsService', () => {
     });
   });
 
-  it('lists current user bookings', async () => {
+  it('lists current user bookings scoped to organization', async () => {
     prisma.booking.findMany.mockResolvedValue([{ id: 1, userId: normalUser.id }]);
 
-    const result = await service.findMine(normalUser.id);
+    const result = await service.findMine(normalUser);
 
     expect(prisma.booking.findMany).toHaveBeenCalledWith({
-      where: { userId: normalUser.id },
+      where: { userId: normalUser.id, organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'desc' },
     });
     expect(result).toHaveLength(1);
   });
 
-  it('lists all bookings', async () => {
-    prisma.booking.findMany.mockResolvedValue([{ id: 1 }]);
+  it('lists all bookings scoped to organization', async () => {
+    prisma.booking.findMany.mockResolvedValue([org1.booking]);
 
-    const result = await service.findAll();
+    const result = await service.findAll(adminUser);
 
     expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'desc' },
     });
     expect(result).toHaveLength(1);
@@ -279,7 +310,7 @@ describe('BookingsService', () => {
       slotId: slot.id,
       status: BookingStatus.CONFIRMED,
     };
-    prisma.booking.findUnique.mockResolvedValue(booking);
+    prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.booking.update.mockResolvedValue({ ...booking, status: BookingStatus.CANCELLED });
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
@@ -296,16 +327,16 @@ describe('BookingsService', () => {
     expect(result.status).toBe(BookingStatus.CANCELLED);
   });
 
-  it('allows admin to view any booking', async () => {
+  it('allows admin to view any booking in their organization', async () => {
     const booking = { id: 1, userId: normalUser.id };
-    prisma.booking.findUnique.mockResolvedValue(booking);
+    prisma.booking.findFirst.mockResolvedValue(booking);
 
     await expect(service.findOne(1, adminUser)).resolves.toBe(booking);
   });
 
-  it('allows security to view any booking', async () => {
+  it('allows security to view any booking in their organization', async () => {
     const booking = { id: 1, userId: normalUser.id };
-    prisma.booking.findUnique.mockResolvedValue(booking);
+    prisma.booking.findFirst.mockResolvedValue(booking);
 
     await expect(
       service.findOne(1, { ...adminUser, role: Role.SECURITY }),
@@ -314,19 +345,19 @@ describe('BookingsService', () => {
 
   it('allows users to view their own booking', async () => {
     const booking = { id: 1, userId: normalUser.id };
-    prisma.booking.findUnique.mockResolvedValue(booking);
+    prisma.booking.findFirst.mockResolvedValue(booking);
 
     await expect(service.findOne(1, normalUser)).resolves.toBe(booking);
   });
 
   it('blocks users from viewing another user booking', async () => {
-    prisma.booking.findUnique.mockResolvedValue({ id: 1, userId: 999 });
+    prisma.booking.findFirst.mockResolvedValue({ id: 1, userId: 999 });
 
     await expect(service.findOne(1, normalUser)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('throws when finding a missing booking', async () => {
-    prisma.booking.findUnique.mockResolvedValue(null);
+    prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(service.findOne(404, normalUser)).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -345,13 +376,13 @@ describe('BookingsService', () => {
   });
 
   it('throws when cancelling a missing booking', async () => {
-    prisma.booking.findUnique.mockResolvedValue(null);
+    prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(service.cancel(404, normalUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('blocks users from cancelling another user booking', async () => {
-    prisma.booking.findUnique.mockResolvedValue({
+    prisma.booking.findFirst.mockResolvedValue({
       id: 1,
       userId: 999,
       slotId: slot.id,
@@ -362,7 +393,7 @@ describe('BookingsService', () => {
   });
 
   it('blocks cancelling inactive bookings', async () => {
-    prisma.booking.findUnique.mockResolvedValue({
+    prisma.booking.findFirst.mockResolvedValue({
       id: 1,
       userId: normalUser.id,
       slotId: slot.id,
@@ -379,7 +410,7 @@ describe('BookingsService', () => {
       slotId: slot.id,
       status: BookingStatus.PENDING,
     };
-    prisma.booking.findUnique.mockResolvedValue(booking);
+    prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.booking.update.mockResolvedValue({ ...booking, status: BookingStatus.CANCELLED });
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 

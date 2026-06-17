@@ -77,11 +77,17 @@ export class AuthService {
     };
   }
 
-  private signToken(user: { id: number; email: string; role: JwtPayload['role'] }) {
+  private signToken(user: {
+    id: number;
+    email: string;
+    role: JwtPayload['role'];
+    organizationId?: number | null;
+  }) {
     return this.jwtService.sign({
       sub: user.id,
       email: user.email,
       role: user.role,
+      organizationId: user.organizationId ?? null,
     });
   }
 }
