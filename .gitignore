@@ -17,6 +17,8 @@ frontend/.vite/
 !.grok/prompts/**
 !.grok/reports/
 !.grok/reports/**
+!.grok/review/
+!.grok/review/**
 
 # build output
 dist/
