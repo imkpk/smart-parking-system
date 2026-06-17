@@ -54,7 +54,7 @@ import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
-import { filterSlots } from '../../lib/searchFilters';
+import { filterFloors, filterSlots } from '../../lib/searchFilters';
 import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
@@ -761,6 +761,12 @@ function FloorsSection({
   onEdit: (floor: Floor) => void;
 }) {
   const [detailsFloor, setDetailsFloor] = useState<Floor | null>(null);
+  const [floorSearch, setFloorSearch] = useState('');
+
+  const filteredFloors = useMemo(
+    () => filterFloors(floors, floorSearch, parkingLotName),
+    [floorSearch, floors, parkingLotName],
+  );
 
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
@@ -805,12 +811,20 @@ function FloorsSection({
       <AppDataGrid
         columns={columns}
         emptyState={{
-          description: 'Create a floor to start adding slots.',
-          illustration: 'locationSearch',
-          title: 'No floors found',
+          description: floorSearch
+            ? 'Try a floor name or floor number.'
+            : 'Create a floor to start adding slots.',
+          illustration: floorSearch ? 'empty' : 'locationSearch',
+          title: floorSearch ? 'No matching floors' : 'No floors found',
         }}
         height={420}
-        rows={floors}
+        rows={filteredFloors}
+        search={{
+          onChange: (event) => setFloorSearch(event.target.value),
+          onClear: () => setFloorSearch(''),
+          placeholder: 'Search by floor name or floor number',
+          value: floorSearch,
+        }}
       />
       <DetailsDialog
         onClose={() => setDetailsFloor(null)}

@@ -5,6 +5,7 @@ import {
   formatStatusLabel,
 } from './formatters';
 import { Booking } from '../types/booking';
+import { Floor } from '../types/floor';
 import { ParkingEvent } from '../types/parkingEvent';
 import { ParkingLot } from '../types/parkingLot';
 import { Payment } from '../types/payment';
@@ -163,6 +164,20 @@ export function getParkingLotSearchValues(parkingLot: ParkingLot) {
 export function filterParkingLots(parkingLots: ParkingLot[], query: string) {
   return parkingLots.filter((parkingLot) =>
     matchesSearch(query, getParkingLotSearchValues(parkingLot)),
+  );
+}
+
+export function getFloorSearchValues(floor: Floor, parkingLotName: string) {
+  return [floor.name, floor.level, parkingLotName];
+}
+
+export function filterFloors(
+  floors: Floor[],
+  query: string,
+  parkingLotName: string,
+) {
+  return floors.filter((floor) =>
+    matchesSearch(query, getFloorSearchValues(floor, parkingLotName)),
   );
 }
 
