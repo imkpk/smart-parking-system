@@ -34,6 +34,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
+import { formatRole } from '../../lib/formatRole';
 import { useAuth } from '../../providers/AuthProvider';
 import { Role } from '../../types/auth';
 
@@ -291,19 +292,14 @@ export function AppLayout() {
             ) : null}
             <Box sx={{ minWidth: 0 }}>
               <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 700,
-                  lineHeight: 1.2,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+                noWrap
+                sx={{ fontWeight: 600, lineHeight: 1.25 }}
+                variant="subtitle2"
               >
                 {user?.name}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {user?.role}
+              <Typography color="text.secondary" noWrap variant="caption">
+                {formatRole(user?.role)}
               </Typography>
             </Box>
           </Box>

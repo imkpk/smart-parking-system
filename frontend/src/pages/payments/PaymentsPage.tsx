@@ -414,16 +414,7 @@ export function PaymentsPage() {
 
   return (
     <Stack spacing={1}>
-      <PageHeader
-        title="Payments"
-        description={
-          isAdmin
-            ? 'Review payment totals and update mock payment outcomes.'
-            : isSecurity
-              ? 'Review operational payment status and details.'
-              : 'Review your parking payment history.'
-        }
-      />
+      <PageHeader title="Payments" />
 
       <QueryErrorAlert
         error={summaryQuery.error}

@@ -39,10 +39,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthPageShell
-      title="Sign in"
-      subtitle="Access your Smart Parking workspace."
-    >
+    <AuthPageShell title="Sign in">
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField

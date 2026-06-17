@@ -27,9 +27,7 @@ export function EmptyState({
     >
       <Stack alignItems="center" maxWidth={420} spacing={1.5} textAlign="center">
         {illustration ? <Illustration maxWidth={220} name={illustration} /> : null}
-        <Typography fontWeight={700} variant="h6">
-          {title}
-        </Typography>
+        <Typography variant="subtitle1">{title}</Typography>
         {description ? (
           <Typography color="text.secondary" variant="body2">
             {description}

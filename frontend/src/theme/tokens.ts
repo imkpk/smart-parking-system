@@ -26,18 +26,51 @@ export const motionTokens = {
   slow: '240ms',
 } as const;
 
+/** Inter (bundled via @fontsource/inter) — SaaS admin default; change fontFamily here only. */
 export const typographyTokens = {
   fontFamily:
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  fontSize: 14,
   h4: {
-    fontWeight: 700,
+    fontSize: '1.375rem',
+    fontWeight: 600,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.3,
   },
   h5: {
-    fontWeight: 700,
+    fontSize: '1.125rem',
+    fontWeight: 600,
+    letterSpacing: '-0.015em',
+    lineHeight: 1.35,
+  },
+  h6: {
+    fontSize: '1rem',
+    fontWeight: 600,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.4,
+  },
+  subtitle1: {
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  subtitle2: {
+    fontSize: '0.8125rem',
+    fontWeight: 500,
+    lineHeight: 1.45,
+  },
+  body1: {
+    fontSize: '0.875rem',
+    lineHeight: 1.5,
+  },
+  body2: {
+    fontSize: '0.8125rem',
+    lineHeight: 1.45,
   },
   button: {
     textTransform: 'none' as const,
     fontWeight: 600,
+    fontSize: '0.875rem',
     letterSpacing: '-0.01em',
   },
 } as const;

@@ -231,7 +231,6 @@ export function VehiclesPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Vehicles"
-        description={isAdmin ? 'View and manage registered vehicles.' : 'Register and manage your vehicles.'}
         action={
           canManageVehicles ? (
             <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>

@@ -269,7 +269,6 @@ export function ParkingLotsPage() {
           </HeaderActionButton>
         }
         title="Parking Lots"
-        description="Create, update, and deactivate parking lots."
       />
 
       {parkingLotsQuery.isLoading ? (

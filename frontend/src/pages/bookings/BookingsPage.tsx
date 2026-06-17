@@ -315,7 +315,6 @@ export function BookingsPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Bookings"
-        description={isUser ? 'Create, review, and cancel your parking bookings.' : 'Review parking bookings.'}
         action={
           isUser ? (
             <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>

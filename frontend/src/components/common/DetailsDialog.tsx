@@ -54,13 +54,13 @@ export function DetailsDialog({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          <Typography fontWeight={700}>Business Details</Typography>
+          <Typography variant="subtitle1">Business Details</Typography>
           <DetailsRows rows={summaryRows} />
 
           {technicalRows?.length ? (
             <>
               <Divider />
-              <Typography fontWeight={700}>Technical Details</Typography>
+              <Typography variant="subtitle1">Technical Details</Typography>
               <DetailsRows rows={technicalRows} />
             </>
           ) : null}

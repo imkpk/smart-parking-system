@@ -48,11 +48,13 @@ export function StatCard({
             <Typography
               sx={{
                 fontSize: compact
-                  ? { xs: '1.6rem', sm: '1.85rem' }
-                  : { xs: '2rem', sm: '2.25rem' },
-                lineHeight: 1,
+                  ? { xs: '1.25rem', sm: '1.375rem' }
+                  : { xs: '1.375rem', sm: '1.5rem' },
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
               }}
-              variant="h4"
+              variant="h5"
             >
               {value}
             </Typography>
