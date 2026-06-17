@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Box,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, CircularProgress, Stack } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
   CalendarMonth,
@@ -21,7 +14,6 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getAdminSummary, getSlotStatusSummary } from '../../api/dashboardApi';
-import { Illustration } from '../../components/common/Illustration';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
@@ -44,10 +36,7 @@ export function AdminDashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <PageHeader
-        title="Admin Dashboard"
-        description="Operational summary for parking lots, slots, bookings, and parking events."
-      />
+      <PageHeader title="Dashboard" />
 
       {isLoading ? (
         <Stack alignItems="center" py={8}>
@@ -65,28 +54,6 @@ export function AdminDashboardPage() {
 
       {summary ? (
         <>
-        <Paper
-          elevation={0}
-          sx={{
-            alignItems: 'center',
-            border: '1px solid',
-            borderColor: 'divider',
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: { xs: '1fr', md: '1.2fr 0.8fr' },
-            p: { xs: 2, sm: 3 },
-          }}
-        >
-          <Box>
-            <Typography fontWeight={700} variant="h6">
-              Operational overview
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-              Monitor occupancy, bookings, and parking sessions across your organization.
-            </Typography>
-          </Box>
-          <Illustration maxWidth={260} name="analytics" />
-        </Paper>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} lg={3}>
             <StatCard icon={<Group />} label="Total Users" value={summary.totalUsers} />

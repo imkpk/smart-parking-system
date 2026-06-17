@@ -462,8 +462,7 @@ export function ParkingLotDetailsPage() {
   return (
     <Stack spacing={3}>
       <PageHeader
-        title={parkingLotQuery.data?.name ?? 'Parking Lot Details'}
-        description="Manage floors, slots, and parking capacity for this parking lot."
+        title={parkingLotQuery.data?.name ?? 'Parking Lot'}
         action={
           <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
             Back
@@ -527,7 +526,7 @@ export function ParkingLotDetailsPage() {
               </Grid>
               <Grid item xs={12}>
                 <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}>
-                  <Typography fontWeight={700} mb={2}>
+                  <Typography mb={2} variant="subtitle1">
                     Parking Lot Info
                   </Typography>
                   <Grid container spacing={2}>
@@ -798,7 +797,7 @@ function FloorsSection({
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
       <Stack alignItems="center" direction="row" justifyContent="space-between" p={2} spacing={2}>
-        <Typography fontWeight={700}>Floors</Typography>
+        <Typography variant="subtitle1">Floors</Typography>
         <HeaderActionButton onClick={onCreate} startIcon={<Add />} sx={{ width: 'auto' }}>
           Create Floor
         </HeaderActionButton>

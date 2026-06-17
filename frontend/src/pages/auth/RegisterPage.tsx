@@ -53,11 +53,7 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthPageShell
-      illustration="orderCar"
-      title="Create account"
-      subtitle="Register a Smart Parking user."
-    >
+    <AuthPageShell illustration="orderCar" title="Create account">
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField

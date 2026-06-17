@@ -439,16 +439,7 @@ export function ParkingEventsPage() {
 
   return (
     <Stack spacing={1}>
-      <PageHeader
-        title='Parking Events'
-        description={
-          isSecurity
-            ? 'Check in vehicles, monitor active events, and complete check-outs.'
-            : isAdmin
-              ? 'Check in vehicles, monitor active events, complete check-outs, and review history.'
-              : 'Review parking event activity and history.'
-        }
-      />
+      <PageHeader title="Parking Events" />
 
       {canOperateParkingEvents ? (
         <Paper
@@ -457,7 +448,7 @@ export function ParkingEventsPage() {
           <Box component='form' onSubmit={handleCheckIn}>
             <Stack spacing={1}>
               <Stack spacing={0.5}>
-                <Typography fontWeight={700}>Vehicle Check-in</Typography>
+                <Typography variant="subtitle1">Vehicle Check-in</Typography>
                 <Typography color='text.secondary' variant='body2'>
                   Search with either booking code or booking ID.
                 </Typography>
@@ -556,7 +547,7 @@ export function ParkingEventsPage() {
         <Stack spacing={2}>
           {isUser ? (
             <>
-              <Typography fontWeight={700}>My Parking History</Typography>
+              <Typography variant="subtitle1">My Parking History</Typography>
               <Divider />
             </>
           ) : null}

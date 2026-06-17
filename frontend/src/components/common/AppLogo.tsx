@@ -26,11 +26,8 @@ export function AppLogo({ showText = true }: { showText?: boolean }) {
       />
       {showText ? (
         <Box minWidth={0}>
-          <Typography fontWeight={700} noWrap variant="subtitle1">
+          <Typography noWrap sx={{ fontWeight: 600, lineHeight: 1.2 }} variant="subtitle2">
             {brand.name}
-          </Typography>
-          <Typography color="text.secondary" noWrap variant="caption">
-            {brand.tagline}
           </Typography>
         </Box>
       ) : null}

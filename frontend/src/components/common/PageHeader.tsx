@@ -18,24 +18,11 @@ export function PageHeader({
       spacing={2}
     >
       <Box sx={{ minWidth: 0 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' },
-            lineHeight: 1.15,
-          }}
-        >
+        <Typography component="h1" variant="h5">
           {title}
         </Typography>
         {description ? (
-          <Typography
-            color="text.secondary"
-            sx={{
-              fontSize: { xs: '0.95rem', sm: '1rem' },
-              lineHeight: 1.45,
-              mt: 1,
-            }}
-          >
+          <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
             {description}
           </Typography>
         ) : null}

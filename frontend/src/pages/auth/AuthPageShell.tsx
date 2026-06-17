@@ -11,7 +11,7 @@ export function AuthPageShell({
   children,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   illustration?: IllustrationName;
   children: ReactNode;
 }) {
@@ -48,10 +48,7 @@ export function AuthPageShell({
           spacing={2}
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2 }}
         >
-          <Illustration maxWidth={360} name={illustration} />
-          <Typography color="text.secondary" textAlign="center" variant="body1">
-            Manage parking lots, bookings, check-ins, and payments from one workspace.
-          </Typography>
+          <Illustration maxWidth={300} name={illustration} />
         </Stack>
 
         <Paper
@@ -65,10 +62,14 @@ export function AuthPageShell({
         >
           <Stack spacing={3}>
             <Box>
-              <Typography variant="h4">{title}</Typography>
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                {subtitle}
+              <Typography component="h1" variant="h5">
+                {title}
               </Typography>
+              {subtitle ? (
+                <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
+                  {subtitle}
+                </Typography>
+              ) : null}
             </Box>
             {children}
           </Stack>
