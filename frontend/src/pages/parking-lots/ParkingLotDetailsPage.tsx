@@ -36,11 +36,17 @@ import {
   getSlots,
   updateSlotStatus,
 } from '../../api/slotsApi';
+import type { IllustrationName } from '../../assets/illustrations';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
-import { PageHeader } from '../../components/common/PageHeader';
+import {
+  ActionButtonGroup,
+  HeaderActionButton,
+  PageHeader,
+  ToolbarButton,
+} from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
@@ -459,9 +465,9 @@ export function ParkingLotDetailsPage() {
         title={parkingLotQuery.data?.name ?? 'Parking Lot Details'}
         description="Manage floors, slots, and parking capacity for this parking lot."
         action={
-          <Button component={RouterLink} to="/parking-lots" variant="outlined">
+          <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
             Back
-          </Button>
+          </HeaderActionButton>
         }
       />
 
@@ -791,16 +797,17 @@ function FloorsSection({
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" p={2}>
+      <Stack alignItems="center" direction="row" justifyContent="space-between" p={2} spacing={2}>
         <Typography fontWeight={700}>Floors</Typography>
-        <Button onClick={onCreate} startIcon={<Add />} variant="contained">
+        <HeaderActionButton onClick={onCreate} startIcon={<Add />} sx={{ width: 'auto' }}>
           Create Floor
-        </Button>
+        </HeaderActionButton>
       </Stack>
       <AppDataGrid
         columns={columns}
         emptyState={{
           description: 'Create a floor to start adding slots.',
+          illustration: 'locationSearch',
           title: 'No floors found',
         }}
         height={420}
@@ -926,13 +933,19 @@ function SlotsSection({
     [floorNameById, onDelete, onStatusChange],
   );
 
-  const slotEmptyState = hasSlotFilters
+  const slotEmptyState: {
+    description: string;
+    illustration: IllustrationName;
+    title: string;
+  } = hasSlotFilters
     ? {
         description: 'Try a slot number, floor, status, or vehicle type.',
+        illustration: 'empty',
         title: 'No matching slots',
       }
     : {
         description: 'Create slots on a floor to manage parking capacity.',
+        illustration: 'heatmap',
         title: 'No slots found',
       };
 
@@ -953,12 +966,24 @@ function SlotsSection({
           value={slotSearch}
         />
       </Box>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} p={2}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Floor</InputLabel>
+      <Stack spacing={2} p={2}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(3, minmax(0, 1fr))',
+            },
+            width: '100%',
+          }}
+        >
+          <FormControl fullWidth size="small">
+            <InputLabel id="slot-floor-filter-label">Floor</InputLabel>
             <Select
               label="Floor"
+              labelId="slot-floor-filter-label"
               onChange={(event) =>
                 onFloorFilterChange(event.target.value === 'ALL' ? 'ALL' : Number(event.target.value))
               }
@@ -972,11 +997,15 @@ function SlotsSection({
               ))}
             </Select>
           </FormControl>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Status</InputLabel>
+          <FormControl fullWidth size="small">
+            <InputLabel id="slot-status-filter-label">Status</InputLabel>
             <Select
               label="Status"
+              labelId="slot-status-filter-label"
               onChange={(event) => onStatusFilterChange(event.target.value as SlotStatus | 'ALL')}
+              renderValue={(value) =>
+                value === 'ALL' ? 'All Statuses' : formatStatusLabel(value as SlotStatus)
+              }
               value={slotStatusFilter}
             >
               <MenuItem value="ALL">All Statuses</MenuItem>
@@ -987,10 +1016,11 @@ function SlotsSection({
               ))}
             </Select>
           </FormControl>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Type</InputLabel>
+          <FormControl fullWidth size="small">
+            <InputLabel id="slot-type-filter-label">Type</InputLabel>
             <Select
               label="Type"
+              labelId="slot-type-filter-label"
               onChange={(event) => onTypeFilterChange(event.target.value as SlotType | 'ALL')}
               value={slotTypeFilter}
             >
@@ -1002,23 +1032,32 @@ function SlotsSection({
               ))}
             </Select>
           </FormControl>
-        </Stack>
-        <Stack direction="row" spacing={1}>
-          <Button
+        </Box>
+        <ActionButtonGroup>
+          <ToolbarButton
             color="error"
             disabled={selectedSlotIds.length === 0}
             onClick={onBulkDelete}
             variant="outlined"
           >
             Delete Selected
-          </Button>
-          <Button disabled={floors.length === 0} onClick={onCreate} startIcon={<Add />} variant="contained">
+          </ToolbarButton>
+          <ToolbarButton
+            disabled={floors.length === 0}
+            onClick={onCreate}
+            startIcon={<Add />}
+            variant="contained"
+          >
             Create Slot
-          </Button>
-          <Button disabled={floors.length === 0} onClick={onBulkCreate} variant="outlined">
+          </ToolbarButton>
+          <ToolbarButton
+            disabled={floors.length === 0}
+            onClick={onBulkCreate}
+            variant="outlined"
+          >
             Bulk Create
-          </Button>
-        </Stack>
+          </ToolbarButton>
+        </ActionButtonGroup>
       </Stack>
       <AppDataGrid
         checkboxSelection

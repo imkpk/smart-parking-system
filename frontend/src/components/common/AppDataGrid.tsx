@@ -8,19 +8,22 @@ import {
   GridRowsProp,
   GridValidRowModel
 } from '@mui/x-data-grid';
+import type { IllustrationName } from '../../assets/illustrations';
 import { CustomToolbar } from '../../utils/CutsomToolbar';
 import { EmptyState } from './EmptyState';
 
 function NoRowsOverlay({
   description,
-  title
+  illustration,
+  title,
 }: {
   description?: string;
+  illustration?: IllustrationName;
   title: string;
 }) {
   return (
     <GridOverlay>
-      <EmptyState description={description} title={title} />
+      <EmptyState description={description} illustration={illustration} title={title} />
     </GridOverlay>
   );
 }
@@ -39,7 +42,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
 }: {
   checkboxSelection?: boolean;
   columns: GridColDef<Row>[];
-  emptyState?: { description?: string; title: string };
+  emptyState?: { description?: string; illustration?: IllustrationName; title: string };
   getRowId?: (row: Row) => GridRowId;
   height?: number | string | Record<string, number | string>;
   loading?: boolean;
@@ -93,6 +96,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
                 noRowsOverlay: () => (
                   <NoRowsOverlay
                     description={emptyState.description}
+                    illustration={emptyState.illustration}
                     title={emptyState.title}
                   />
                 )

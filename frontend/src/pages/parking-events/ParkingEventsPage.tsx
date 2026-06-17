@@ -540,6 +540,7 @@ export function ParkingEventsPage() {
               description: search
                 ? 'Try a session no, booking no, vehicle number, or status.'
                 : 'Active parking sessions will appear here after check-in.',
+              illustration: search ? 'empty' : 'cityDriver',
               title: search ? 'No matching active events' : 'No active parking events',
             }}
             height='calc(100vh - 360px)'
@@ -573,6 +574,7 @@ export function ParkingEventsPage() {
                 : isUser
                   ? 'Your completed parking sessions will appear here.'
                   : 'Completed parking sessions will appear here.',
+              illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking events' : 'No parking event history',
             }}
             height='calc(100vh - 300px)'

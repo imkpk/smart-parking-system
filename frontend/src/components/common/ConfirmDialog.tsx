@@ -31,7 +31,7 @@ export function ConfirmDialog({
         <DialogContentText>{description}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button disabled={isLoading} onClick={onClose}>
+        <Button disabled={isLoading} onClick={onClose} variant="outlined">
           Cancel
         </Button>
         <Button color="error" disabled={isLoading} onClick={onConfirm} variant="contained">

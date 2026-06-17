@@ -28,6 +28,7 @@ import {
   mockPaymentSuccess,
   verifyRazorpayPayment,
 } from '../../api/paymentsApi';
+import type { IllustrationName } from '../../assets/illustrations';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
@@ -381,11 +382,16 @@ export function PaymentsPage() {
     paymentsQuery.isFetching ||
     userPaymentsQuery.isLoading ||
     userPaymentsQuery.isFetching;
-  const paymentEmptyState = isAdmin
+  const paymentEmptyState: {
+    description: string;
+    illustration: IllustrationName;
+    title: string;
+  } = isAdmin
     ? {
         description: search
           ? 'Try a receipt no, booking no, vehicle number, status, or payment reference.'
           : 'Payments will appear here after parking check-outs.',
+        illustration: search ? 'empty' : 'payments',
         title: search ? 'No matching payments' : 'No payments found',
       }
     : isSecurity
@@ -393,12 +399,14 @@ export function PaymentsPage() {
           description: search
             ? 'Try a receipt no, booking no, vehicle number, or status.'
             : 'Operational payments will appear here after check-outs.',
+          illustration: search ? 'empty' : 'receipt',
           title: search ? 'No matching payments' : 'No operational payments found',
         }
       : {
           description: search
             ? 'Try a receipt no, booking no, or status from your history.'
             : 'Your payment history will appear here after parking sessions.',
+          illustration: search ? 'empty' : 'receipt',
           title: search ? 'No matching payments' : 'You have no payment history yet',
         };
   const summary = summaryQuery.data;

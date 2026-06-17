@@ -9,6 +9,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Stack,
   Toolbar,
   Tooltip,
   Typography,
@@ -16,29 +17,34 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  AccountBalanceWallet,
+  Analytics,
+  CalendarMonth,
   Dashboard,
   DirectionsCar,
-  EventNote,
-  Garage,
   LocalParking,
   Logout,
   Menu,
   MenuOpen,
-  ReceiptLong,
   Security,
+  SensorOccupied,
+  SvgIconComponent,
 } from '@mui/icons-material';
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { AppLogo } from '../common/AppLogo';
+import { ThemeModeToggle } from '../common/ThemeModeToggle';
 import { useAuth } from '../../providers/AuthProvider';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 260;
-const collapsedDrawerWidth = 76;
+const collapsedDrawerWidth = 80;
 
 interface NavItem {
   label: string;
   to: string;
-  icon: ReactNode;
+  icon: SvgIconComponent;
+  matchPrefix?: boolean;
   roles: Role[];
 }
 
@@ -46,52 +52,61 @@ const navItems: NavItem[] = [
   {
     label: 'Admin Dashboard',
     to: '/admin/dashboard',
-    icon: <Dashboard />,
+    icon: Analytics,
     roles: ['ADMIN'],
   },
   {
     label: 'Security Dashboard',
     to: '/security/dashboard',
-    icon: <Security />,
+    icon: Security,
     roles: ['SECURITY'],
   },
   {
     label: 'User Dashboard',
     to: '/user/dashboard',
-    icon: <Dashboard />,
+    icon: Dashboard,
     roles: ['USER'],
   },
   {
     label: 'Parking Lots',
     to: '/parking-lots',
-    icon: <LocalParking />,
+    icon: LocalParking,
+    matchPrefix: true,
     roles: ['ADMIN'],
   },
   {
     label: 'Vehicles',
     to: '/vehicles',
-    icon: <DirectionsCar />,
+    icon: DirectionsCar,
     roles: ['ADMIN', 'USER'],
   },
   {
     label: 'Bookings',
     to: '/bookings',
-    icon: <EventNote />,
+    icon: CalendarMonth,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
   {
     label: 'Parking Events',
     to: '/parking-events',
-    icon: <Garage />,
+    icon: SensorOccupied,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
   {
     label: 'Payments',
     to: '/payments',
-    icon: <ReceiptLong />,
+    icon: AccountBalanceWallet,
     roles: ['ADMIN', 'SECURITY', 'USER'],
   },
 ];
+
+function isNavItemActive(pathname: string, item: NavItem) {
+  if (item.matchPrefix) {
+    return pathname === item.to || pathname.startsWith(`${item.to}/`);
+  }
+
+  return pathname === item.to;
+}
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -135,86 +150,109 @@ export function AppLayout() {
   const drawerContent = (
     <>
       <Toolbar
+        disableGutters
         sx={{
-          alignItems: 'center',
-          display: 'flex',
-          justifyContent: shouldShowExpandedDrawer ? 'space-between' : 'center',
-          py: 2,
-          textAlign: 'left',
+          minHeight: { xs: 64, sm: 72 },
+          px: shouldShowExpandedDrawer ? 1.5 : 1,
+          py: 1.5,
           width: '100%',
         }}
       >
         {shouldShowExpandedDrawer ? (
-          <Box>
-            <Typography variant="h6" component="span">
-              Smart Parking
-            </Typography>
-            <Typography variant="body2" color="text.secondary" component="span" display="block">
-              Management System
-            </Typography>
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              alignItems: 'center',
-              bgcolor: 'primary.main',
-              borderRadius: 1,
-              color: 'primary.contrastText',
-              display: 'flex',
-              height: 40,
-              justifyContent: 'center',
-              width: 40,
-            }}
+          <Stack
+            alignItems="center"
+            direction="row"
+            spacing={0.5}
+            sx={{ minWidth: 0, width: '100%' }}
           >
-            <LocalParking />
-          </Box>
+            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
+              <AppLogo showText />
+            </Box>
+            {!isMobile ? (
+              <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+                <IconButton
+                  aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                  onClick={toggleSidebar}
+                  size="small"
+                  sx={{ flexShrink: 0 }}
+                >
+                  {isSidebarOpen ? <MenuOpen /> : <Menu />}
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </Stack>
+        ) : (
+          <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
+            <AppLogo showText={false} />
+            {!isMobile ? (
+              <Tooltip title="Expand sidebar">
+                <IconButton
+                  aria-label="Expand sidebar"
+                  onClick={toggleSidebar}
+                  size="small"
+                >
+                  <Menu />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </Stack>
         )}
-        {!isMobile ? (
-          <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
-            <IconButton
-              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-              onClick={toggleSidebar}
-              size="small"
-            >
-              {isSidebarOpen ? <MenuOpen /> : <Menu />}
-            </IconButton>
-          </Tooltip>
-        ) : null}
       </Toolbar>
       <Divider />
       <List sx={{ px: 1 }}>
-        {visibleNavItems.map((item) => (
-          <Tooltip
-            disableHoverListener={shouldShowExpandedDrawer}
-            key={item.to}
-            placement="right"
-            title={item.label}
-          >
-            <ListItemButton
-              component={NavLink}
-              onClick={closeMobileDrawer}
-              selected={location.pathname === item.to}
-              to={item.to}
-              sx={{
-                borderRadius: 1,
-                justifyContent: shouldShowExpandedDrawer ? 'flex-start' : 'center',
-                mb: 0.5,
-                minHeight: 48,
-                px: shouldShowExpandedDrawer ? 2 : 1.5,
-              }}
+        {visibleNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = isNavItemActive(location.pathname, item);
+
+          return (
+            <Tooltip
+              disableHoverListener={shouldShowExpandedDrawer}
+              key={item.to}
+              placement="right"
+              title={item.label}
             >
-              <ListItemIcon
+              <ListItemButton
+                component={NavLink}
+                onClick={closeMobileDrawer}
+                selected={isActive}
+                to={item.to}
                 sx={{
-                  justifyContent: 'center',
-                  minWidth: shouldShowExpandedDrawer ? 56 : 0,
+                  borderRadius: 1,
+                  justifyContent: shouldShowExpandedDrawer ? 'flex-start' : 'center',
+                  mb: 0.5,
+                  minHeight: 48,
+                  overflow: 'hidden',
+                  px: shouldShowExpandedDrawer ? 1.5 : 0.75,
+                  '& .MuiListItemIcon-root': {
+                    color: isActive ? 'primary.main' : 'text.secondary',
+                    justifyContent: 'center',
+                    minWidth: shouldShowExpandedDrawer ? 36 : 0,
+                    mr: shouldShowExpandedDrawer ? 1 : 0,
+                  },
+                  '& .MuiListItemText-root': {
+                    m: 0,
+                    overflow: 'hidden',
+                  },
+                  '&.Mui-selected': {
+                    bgcolor: 'action.selected',
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.main',
+                    },
+                    '& .MuiListItemText-primary': {
+                      color: 'primary.main',
+                      fontWeight: 600,
+                    },
+                  },
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
-              {shouldShowExpandedDrawer ? <ListItemText primary={item.label} /> : null}
-            </ListItemButton>
-          </Tooltip>
-        ))}
+                <ListItemIcon>
+                  <Icon fontSize="small" />
+                </ListItemIcon>
+                {shouldShowExpandedDrawer ? <ListItemText primary={item.label} /> : null}
+              </ListItemButton>
+            </Tooltip>
+          );
+        })}
       </List>
     </>
   );
@@ -269,15 +307,18 @@ export function AppLayout() {
               </Typography>
             </Box>
           </Box>
-          <Button
-            color="inherit"
-            onClick={handleLogout}
-            startIcon={isMobile ? undefined : <Logout />}
-            variant="outlined"
-            sx={{ minWidth: isMobile ? 44 : undefined, px: isMobile ? 1.25 : undefined }}
-          >
-            {isMobile ? <Logout /> : 'Logout'}
-          </Button>
+          <Stack alignItems="center" direction="row" spacing={1}>
+            <ThemeModeToggle />
+            <Button
+              color="inherit"
+              onClick={handleLogout}
+              size={isMobile ? 'small' : 'medium'}
+              startIcon={isMobile ? undefined : <Logout />}
+              variant="outlined"
+            >
+              {isMobile ? <Logout /> : 'Logout'}
+            </Button>
+          </Stack>
         </Toolbar>
       </AppBar>
 
