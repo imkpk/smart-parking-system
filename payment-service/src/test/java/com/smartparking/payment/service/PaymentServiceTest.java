@@ -18,7 +18,11 @@ import com.smartparking.payment.exception.ResourceNotFoundException;
 import com.smartparking.payment.gateway.GatewayInitiationResult;
 import com.smartparking.payment.gateway.PaymentGatewayFactory;
 import com.smartparking.payment.gateway.PaymentGatewayProvider;
+import com.smartparking.payment.exception.PaymentWebhookException;
 import com.smartparking.payment.gateway.RazorpaySignatureVerifier;
+import com.smartparking.payment.gateway.RazorpayWebhookEvent;
+import com.smartparking.payment.gateway.RazorpayWebhookParser;
+import com.smartparking.payment.gateway.RazorpayWebhookVerifier;
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentMethod;
 import com.smartparking.payment.model.PaymentProviderType;
@@ -53,6 +57,12 @@ class PaymentServiceTest {
 
     @Mock
     private RazorpaySignatureVerifier razorpaySignatureVerifier;
+
+    @Mock
+    private RazorpayWebhookVerifier razorpayWebhookVerifier;
+
+    @Mock
+    private RazorpayWebhookParser razorpayWebhookParser;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -424,6 +434,174 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.verify(request, 1L, false))
                 .isInstanceOf(PaymentGatewayException.class)
                 .hasMessage("Razorpay configuration is missing");
+    }
+
+    @Test
+    void webhookCapturedMarksInitiatedPaymentSuccess() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        String rawBody = "{\"event\":\"payment.captured\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.captured", "order_test_123", "pay_test_456", null)
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+        when(paymentRepository.save(payment)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = paymentService.handleRazorpayWebhook(rawBody, "valid_signature");
+
+        assertThat(response.status()).isEqualTo("processed");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(payment.getProviderReference()).isEqualTo("pay_test_456");
+    }
+
+    @Test
+    void webhookFailedMarksInitiatedPaymentFailed() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.INITIATED, "order_test_123");
+        String rawBody = "{\"event\":\"payment.failed\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.failed", "order_test_123", "pay_test_456", "Card declined")
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+        when(paymentRepository.save(payment)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = paymentService.handleRazorpayWebhook(rawBody, "valid_signature");
+
+        assertThat(response.status()).isEqualTo("processed");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        assertThat(payment.getFailureReason()).isEqualTo("Card declined");
+    }
+
+    @Test
+    void webhookRejectsInvalidSignature() {
+        String rawBody = "{\"event\":\"payment.captured\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "invalid_signature", "webhook_secret_test")).thenReturn(false);
+
+        assertThatThrownBy(() -> paymentService.handleRazorpayWebhook(rawBody, "invalid_signature"))
+                .isInstanceOf(PaymentWebhookException.class)
+                .hasMessage("Invalid webhook signature");
+    }
+
+    @Test
+    void webhookRequiresWebhookSecret() {
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(false);
+
+        assertThatThrownBy(() -> paymentService.handleRazorpayWebhook("{}", "signature"))
+                .isInstanceOf(PaymentGatewayException.class)
+                .hasMessage("Razorpay webhook configuration is missing");
+    }
+
+    @Test
+    void webhookIgnoresUnknownEvent() {
+        String rawBody = "{\"event\":\"payment.authorized\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.authorized", "order_test_123", "pay_test_456", null)
+        );
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("ignored");
+    }
+
+    @Test
+    void webhookCapturedIsIdempotentForSuccessfulPayment() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.SUCCESS, "order_test_123");
+        payment.setProviderReference("pay_test_456");
+        String rawBody = "{\"event\":\"payment.captured\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.captured", "order_test_123", "pay_test_456", null)
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("processed");
+    }
+
+    @Test
+    void webhookFailedIsIdempotentForFailedPayment() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.FAILED, "order_test_123");
+        payment.setFailureReason("Already failed");
+        String rawBody = "{\"event\":\"payment.failed\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.failed", "order_test_123", "pay_test_456", "Ignored")
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("processed");
+    }
+
+    @Test
+    void webhookCapturedIgnoresFailedPayment() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.FAILED, "order_test_123");
+        String rawBody = "{\"event\":\"payment.captured\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.captured", "order_test_123", "pay_test_456", null)
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("ignored");
+    }
+
+    @Test
+    void webhookFailedIgnoresSuccessfulPayment() {
+        Payment payment = PaymentTestFixtures.razorpayPayment(10L, 1L, PaymentStatus.SUCCESS, "order_test_123");
+        String rawBody = "{\"event\":\"payment.failed\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.failed", "order_test_123", "pay_test_456", "Too late")
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("ignored");
+    }
+
+    @Test
+    void webhookIgnoresMockProviderPayment() {
+        Payment payment = PaymentTestFixtures.payment(10L, 1L, PaymentStatus.INITIATED, new BigDecimal("80.00"));
+        payment.setProvider(PaymentProviderType.MOCK.name());
+        payment.setGatewayOrderId("order_test_123");
+        String rawBody = "{\"event\":\"payment.captured\"}";
+
+        when(paymentProviderProperties.hasRazorpayWebhookSecret()).thenReturn(true);
+        when(paymentProviderProperties.getRazorpay()).thenReturn(webhookProperties());
+        when(razorpayWebhookVerifier.verify(rawBody, "valid_signature", "webhook_secret_test")).thenReturn(true);
+        when(razorpayWebhookParser.parse(rawBody)).thenReturn(
+                new RazorpayWebhookEvent("payment.captured", "order_test_123", "pay_test_456", null)
+        );
+        when(paymentRepository.findByGatewayOrderId("order_test_123")).thenReturn(Optional.of(payment));
+
+        assertThat(paymentService.handleRazorpayWebhook(rawBody, "valid_signature").status()).isEqualTo("ignored");
+    }
+
+    private PaymentProviderProperties.Razorpay webhookProperties() {
+        PaymentProviderProperties.Razorpay razorpay = new PaymentProviderProperties.Razorpay();
+        razorpay.setWebhookSecret("webhook_secret_test");
+        return razorpay;
     }
 
     @Test

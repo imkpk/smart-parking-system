@@ -41,6 +41,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(exception.getMessage(), null));
     }
 
+    @ExceptionHandler(PaymentWebhookException.class)
+    ResponseEntity<ApiResponse<Void>> handlePaymentWebhook(PaymentWebhookException exception) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.failure(exception.getMessage(), null));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new HashMap<>();

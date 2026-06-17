@@ -1,5 +1,6 @@
 package com.smartparking.payment.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
@@ -21,6 +22,7 @@ import com.smartparking.payment.model.PaymentMethod;
 import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
+import com.smartparking.payment.support.RazorpayWebhookTestSupport;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -229,6 +231,81 @@ class PaymentApiIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.providerReference").value(paymentGatewayId))
                 .andExpect(jsonPath("$.data.gatewayStatus").value("captured"));
+    }
+
+    @Test
+    void razorpayWebhookDoesNotRequireJwt() throws Exception {
+        String orderId = "order_webhook_123";
+        String paymentId = "pay_webhook_456";
+        String rawBody = RazorpayWebhookTestSupport.capturedPayload(orderId, paymentId);
+        String signature = RazorpayWebhookTestSupport.sign(rawBody);
+
+        Payment payment = new Payment();
+        payment.setParkingEventId(1L);
+        payment.setBookingId(1L);
+        payment.setUserId(1L);
+        payment.setAmount(new BigDecimal("80.00"));
+        payment.setCurrency("INR");
+        payment.setStatus(PaymentStatus.INITIATED);
+        payment.setPaymentMethod(PaymentMethod.MOCK);
+        payment.setProvider(PaymentProviderType.RAZORPAY.name());
+        payment.setGatewayOrderId(orderId);
+        payment.setGatewayStatus("created");
+        paymentRepository.save(payment);
+
+        mockMvc.perform(post("/api/payments/webhook/razorpay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Razorpay-Signature", signature)
+                        .content(rawBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("processed"));
+
+        Payment updated = paymentRepository.findByGatewayOrderId(orderId).orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(updated.getProviderReference()).isEqualTo(paymentId);
+    }
+
+    @Test
+    void razorpayWebhookRejectsInvalidSignature() throws Exception {
+        String rawBody = RazorpayWebhookTestSupport.capturedPayload("order_bad", "pay_bad");
+
+        mockMvc.perform(post("/api/payments/webhook/razorpay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Razorpay-Signature", "invalid_signature")
+                        .content(rawBody))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Invalid webhook signature"));
+    }
+
+    @Test
+    void razorpayWebhookIgnoresMockProviderPayment() throws Exception {
+        String orderId = "order_mock_123";
+        String rawBody = RazorpayWebhookTestSupport.capturedPayload(orderId, "pay_mock_456");
+        String signature = RazorpayWebhookTestSupport.sign(rawBody);
+
+        Payment payment = new Payment();
+        payment.setParkingEventId(1L);
+        payment.setBookingId(1L);
+        payment.setUserId(1L);
+        payment.setAmount(new BigDecimal("80.00"));
+        payment.setCurrency("INR");
+        payment.setStatus(PaymentStatus.INITIATED);
+        payment.setPaymentMethod(PaymentMethod.MOCK);
+        payment.setProvider(PaymentProviderType.MOCK.name());
+        payment.setGatewayOrderId(orderId);
+        paymentRepository.save(payment);
+
+        mockMvc.perform(post("/api/payments/webhook/razorpay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Razorpay-Signature", signature)
+                        .content(rawBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ignored"));
+
+        Payment unchanged = paymentRepository.findByGatewayOrderId(orderId).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(PaymentStatus.INITIATED);
     }
 
     @Test

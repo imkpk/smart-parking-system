@@ -212,10 +212,31 @@ Razorpay env placeholders (never commit real keys):
 ```text
 payment.razorpay.key-id=rzp_test_your_key_id
 payment.razorpay.key-secret=your_razorpay_key_secret
+payment.razorpay.webhook-secret=your_razorpay_webhook_secret
 payment.razorpay.currency=INR
 ```
 
-MOCK provider keeps existing mock success/failure demo flow. RAZORPAY provider stores `gatewayOrderId` and `gatewayStatus` on the payment record while status remains `INITIATED` until verification is added.
+Equivalent environment variables: `PAYMENT_PROVIDER`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_CURRENCY`.
+
+MOCK provider keeps existing mock success/failure demo flow. RAZORPAY provider stores `gatewayOrderId` and `gatewayStatus` on the payment record while status remains `INITIATED` until verification or webhook confirmation.
+
+## Razorpay Webhook
+
+Endpoint (no JWT required; verified via `X-Razorpay-Signature`):
+
+```http
+POST /api/payments/webhook/razorpay
+X-Razorpay-Signature: <hmac_sha256_hex_of_raw_body>
+```
+
+Supported events:
+
+```text
+payment.captured  -> INITIATED payment becomes SUCCESS
+payment.failed    -> INITIATED payment becomes FAILED
+```
+
+Other events are ignored safely. Webhook signature uses the raw request body and `payment.razorpay.webhook-secret` (separate from `key-secret`).
 
 ## Payment Rules
 
