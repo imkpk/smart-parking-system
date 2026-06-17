@@ -5,7 +5,7 @@
 Delivered a parking-branded, light/dark UI with unDraw illustrations, modern buttons, responsive layouts, and a **modular theme system** so colors and motion can be changed in one file without touching pages.
 
 **Merged:** PR #44 (`feature/ui-theme-illustrations-responsive`) → `develop`  
-**Follow-up:** Parking palette, dark-mode CTA fix, theme folder refactor (this commit)
+**Follow-up:** Parking palette, dark-mode CTA fix, theme folder refactor — PR #45 ✅
 
 ---
 
@@ -171,4 +171,4 @@ createAppTheme(mode, { primary: tenantPrimaryHex });
 | Item | Reference |
 |------|-----------|
 | Initial UI + theme mode + illustrations | PR #44 → `00e2708` |
-| Parking palette + modular theme + report | PR TBD (this branch) |
+| Parking palette + modular theme + report | PR #45 ✅ (`aa3c7a8`) |
