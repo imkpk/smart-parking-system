@@ -1,8 +1,10 @@
 import { Role } from '@prisma/client';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { SafeUser } from '../users/types/safe-user.type';
 
 export const userRecord = {
   id: 1,
+  organizationId: DEFAULT_ORGANIZATION_ID,
   name: 'Test User',
   email: 'user@example.com',
   phone: '+910000000000',
@@ -15,6 +17,7 @@ export const userRecord = {
 
 export const adminUser: SafeUser = {
   id: 2,
+  organizationId: DEFAULT_ORGANIZATION_ID,
   name: 'Admin User',
   email: 'admin@example.com',
   phone: '+910000000001',
@@ -26,6 +29,7 @@ export const adminUser: SafeUser = {
 
 export const normalUser: SafeUser = {
   id: userRecord.id,
+  organizationId: userRecord.organizationId,
   name: userRecord.name,
   email: userRecord.email,
   phone: userRecord.phone,

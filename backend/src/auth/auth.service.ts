@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -41,6 +42,7 @@ export class AuthService {
       phone: registerDto.phone,
       passwordHash,
       role: registerDto.role,
+      organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
     });
 
     return {

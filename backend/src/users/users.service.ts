@@ -7,6 +7,8 @@ import { SafeUser } from './types/safe-user.type';
 const USER_UNIQUE_MESSAGES = {
   email: 'Email already exists',
   phone: 'Phone number already exists',
+  'organizationId,email': 'Email already exists',
+  'organizationId,phone': 'Phone number already exists',
 };
 
 @Injectable()
@@ -23,13 +25,13 @@ export class UsersService {
   }
 
   findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return this.prisma.user.findFirst({
       where: { email },
     });
   }
 
   findByPhone(phone: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return this.prisma.user.findFirst({
       where: { phone },
     });
   }
@@ -68,6 +70,7 @@ export class UsersService {
   toSafeUser(user: User): SafeUser {
     return {
       id: user.id,
+      organizationId: user.organizationId,
       name: user.name,
       email: user.email,
       phone: user.phone,

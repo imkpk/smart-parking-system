@@ -37,6 +37,7 @@ describe('UsersService', () => {
 
     expect(result).toEqual({
       id: userRecord.id,
+      organizationId: userRecord.organizationId,
       name: userRecord.name,
       email: userRecord.email,
       phone: userRecord.phone,
@@ -55,22 +56,22 @@ describe('UsersService', () => {
   });
 
   it('finds a user by email', async () => {
-    prisma.user.findUnique.mockResolvedValue(userRecord);
+    prisma.user.findFirst.mockResolvedValue(userRecord);
 
     const result = await service.findByEmail(userRecord.email);
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: { email: userRecord.email },
     });
     expect(result).toBe(userRecord);
   });
 
   it('finds a user by phone', async () => {
-    prisma.user.findUnique.mockResolvedValue(userRecord);
+    prisma.user.findFirst.mockResolvedValue(userRecord);
 
     const result = await service.findByPhone(userRecord.phone!);
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: { phone: userRecord.phone },
     });
     expect(result).toBe(userRecord);

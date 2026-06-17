@@ -8,6 +8,7 @@ describe('VehiclesService', () => {
   let service: VehiclesService;
   let prisma: {
     booking: { count: jest.Mock };
+    user: { findUnique: jest.Mock };
     vehicle: {
       create: jest.Mock;
       delete: jest.Mock;
@@ -27,6 +28,11 @@ describe('VehiclesService', () => {
   beforeEach(() => {
     prisma = {
       booking: { count: jest.fn() },
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          organizationId: normalUser.organizationId,
+        }),
+      },
       vehicle: {
         create: jest.fn(),
         delete: jest.fn(),
@@ -70,6 +76,17 @@ describe('VehiclesService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('rejects vehicle creation when user organization is missing', async () => {
+    prisma.user.findUnique.mockResolvedValue({ organizationId: null });
+
+    await expect(
+      service.create(normalUser.id, {
+        vehicleNumber: vehicle.vehicleNumber,
+        vehicleType: vehicle.vehicleType,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('creates a vehicle for the current user', async () => {
     prisma.vehicle.create.mockResolvedValue(vehicle);
 
@@ -85,6 +102,7 @@ describe('VehiclesService', () => {
         vehicleType: vehicle.vehicleType,
         brand: 'Hyundai',
         userId: normalUser.id,
+        organizationId: normalUser.organizationId,
       },
     });
     expect(result).toBe(vehicle);

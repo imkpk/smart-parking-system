@@ -39,6 +39,7 @@ describe('ParkingEventsService', () => {
   const booking = {
     id: 1,
     bookingCode: 'BK-TEST',
+    organizationId: normalUser.organizationId,
     userId: normalUser.id,
     vehicleId: 10,
     slotId: 20,
@@ -117,6 +118,7 @@ describe('ParkingEventsService', () => {
     });
     expect(prisma.parkingEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        organizationId: booking.organizationId,
         bookingId: booking.id,
         userId: booking.userId,
         vehicleId: booking.vehicleId,

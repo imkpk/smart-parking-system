@@ -2,6 +2,7 @@
 
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { AuthService } from './auth.service';
 import { normalUser, userRecord } from '../test/test-users';
 
@@ -54,6 +55,7 @@ describe('AuthService', () => {
       phone: normalUser.phone,
       passwordHash: 'hashed-password',
       role: normalUser.role,
+      organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
     });
     expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
     expect(jwtService.sign).toHaveBeenCalledWith({
