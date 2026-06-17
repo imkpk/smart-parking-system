@@ -27,6 +27,11 @@ export const adminUser: SafeUser = {
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
 
+export const adminUserRecord = {
+  ...adminUser,
+  passwordHash: 'hashed-admin-password',
+};
+
 export const normalUser: SafeUser = {
   id: userRecord.id,
   organizationId: userRecord.organizationId,

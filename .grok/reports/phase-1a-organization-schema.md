@@ -101,7 +101,7 @@ Constants: `DEFAULT_ORGANIZATION_ID = 1`, `DEFAULT_ORGANIZATION_SLUG = 'default'
 ```text
 cd backend && npm run test:cov
 Test Suites: 17 passed, 17 total
-Tests:       196 passed, 196 total
+Tests:       198 passed, 198 total
 Coverage:    100% statements/branches/functions/lines
 ```
 
@@ -127,3 +127,34 @@ PR #40 — GitHub Actions **green** (build + backend `test:cov` + frontend tests
 - Tenant onboarding API (create org + first admin)
 - Frontend `AuthProvider` tenant context
 - **Exit criteria:** two orgs in DB see completely separate data on list/read endpoints
+
+## Admin login regression fix
+
+### Problem
+
+Phase 1a replaced global `findUnique({ email })` / `findUnique({ phone })` with unscoped `findFirst({ email })` / `findFirst({ phone })` after composite uniqueness `(organizationId, email)` landed. Login and registration duplicate checks became non-deterministic: a matching email in another organization (or the wrong row when multiple orgs exist) could be returned instead of the default-org ADMIN/USER record, causing "Invalid email or password" for credentials that worked on `develop`.
+
+### Fix
+
+Scoped `UsersService.findByEmail()` and `findByPhone()` to `DEFAULT_ORGANIZATION_ID` (1) so Phase 1a login remains email/password only with no tenant slug or `organizationId` input. Auth response shape unchanged (`user` + `accessToken`; JWT still `sub`, `email`, `role`).
+
+### Validation
+
+```text
+cd backend
+npx prisma validate   — schema valid
+npx prisma generate   — client generated
+npm run build         — success
+npm run test:cov      — 198/198 passed, 100% coverage
+```
+
+Local MySQL was not used for `migrate deploy` / `prisma:seed` in this fix session; migration backfill (`UPDATE users SET organizationId = 1`) remains the source of truth for existing ADMIN rows.
+
+### Manual verification
+
+After `npx prisma migrate deploy` and `npm run prisma:seed`:
+
+1. `POST /api/auth/login` with existing ADMIN credentials (`admin@example.com` / seeded password) → `200`, `accessToken` + `user.organizationId = 1`
+2. Same for existing USER login → `200`
+3. `GET /api/auth/me` with returned token → active user payload
+4. No frontend or payment-service changes required

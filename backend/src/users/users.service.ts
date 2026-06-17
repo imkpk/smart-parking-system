@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from './types/safe-user.type';
@@ -26,13 +27,19 @@ export class UsersService {
 
   findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
-      where: { email },
+      where: {
+        email,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
     });
   }
 
   findByPhone(phone: string): Promise<User | null> {
     return this.prisma.user.findFirst({
-      where: { phone },
+      where: {
+        phone,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
     });
   }
 
