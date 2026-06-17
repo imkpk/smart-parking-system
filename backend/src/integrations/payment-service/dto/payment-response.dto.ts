@@ -10,6 +10,9 @@ export interface PaymentResponseDto {
   currency: string;
   status: PaymentStatus;
   paymentMethod: PaymentMethod;
+  provider: string;
+  gatewayOrderId: string | null;
+  gatewayStatus: string | null;
   providerReference: string | null;
   failureReason: string | null;
   createdAt: string;

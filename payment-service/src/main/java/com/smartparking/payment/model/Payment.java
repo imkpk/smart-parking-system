@@ -43,8 +43,19 @@ public class Payment {
     @Column(nullable = false, length = 20)
     private PaymentMethod paymentMethod;
 
+    @Column(nullable = false, length = 20)
+    private String provider = PaymentProviderType.MOCK.name();
+
     @Column(unique = true)
     private String providerReference;
+
+    private String gatewayOrderId;
+
+    private String gatewayPaymentId;
+
+    private String gatewaySignature;
+
+    private String gatewayStatus;
 
     private String failureReason;
 
@@ -120,6 +131,46 @@ public class Payment {
 
     public void setProviderReference(String providerReference) {
         this.providerReference = providerReference;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getGatewayOrderId() {
+        return gatewayOrderId;
+    }
+
+    public void setGatewayOrderId(String gatewayOrderId) {
+        this.gatewayOrderId = gatewayOrderId;
+    }
+
+    public String getGatewayPaymentId() {
+        return gatewayPaymentId;
+    }
+
+    public void setGatewayPaymentId(String gatewayPaymentId) {
+        this.gatewayPaymentId = gatewayPaymentId;
+    }
+
+    public String getGatewaySignature() {
+        return gatewaySignature;
+    }
+
+    public void setGatewaySignature(String gatewaySignature) {
+        this.gatewaySignature = gatewaySignature;
+    }
+
+    public String getGatewayStatus() {
+        return gatewayStatus;
+    }
+
+    public void setGatewayStatus(String gatewayStatus) {
+        this.gatewayStatus = gatewayStatus;
     }
 
     public String getFailureReason() {

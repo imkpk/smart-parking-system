@@ -3,15 +3,21 @@ package com.smartparking.payment.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.smartparking.payment.config.PaymentProviderProperties;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.exception.PaymentStateException;
 import com.smartparking.payment.exception.ResourceNotFoundException;
+import com.smartparking.payment.gateway.GatewayInitiationResult;
+import com.smartparking.payment.gateway.PaymentGatewayFactory;
+import com.smartparking.payment.gateway.PaymentGatewayProvider;
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentMethod;
+import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import com.smartparking.payment.support.PaymentTestFixtures;
@@ -32,6 +38,15 @@ class PaymentServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
 
+    @Mock
+    private PaymentProviderProperties paymentProviderProperties;
+
+    @Mock
+    private PaymentGatewayFactory paymentGatewayFactory;
+
+    @Mock
+    private PaymentGatewayProvider paymentGatewayProvider;
+
     @InjectMocks
     private PaymentService paymentService;
 
@@ -49,8 +64,15 @@ class PaymentServiceTest {
         );
     }
 
+    private void stubMockGateway() {
+        when(paymentProviderProperties.getProvider()).thenReturn(PaymentProviderType.MOCK);
+        when(paymentGatewayFactory.activeProvider()).thenReturn(paymentGatewayProvider);
+        when(paymentGatewayProvider.initiate(any(Payment.class))).thenReturn(GatewayInitiationResult.empty());
+    }
+
     @Test
     void initiateCreatesPaymentForOwner() {
+        stubMockGateway();
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
             Payment payment = invocation.getArgument(0);
             return PaymentTestFixtures.savedPayment(payment, 10L);
@@ -63,13 +85,15 @@ class PaymentServiceTest {
         assertThat(response.amount()).isEqualByComparingTo("80.00");
 
         ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-        verify(paymentRepository).save(captor.capture());
-        assertThat(captor.getValue().getUserId()).isEqualTo(1L);
-        assertThat(captor.getValue().getPaymentMethod()).isEqualTo(PaymentMethod.MOCK);
+        verify(paymentRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().getFirst().getUserId()).isEqualTo(1L);
+        assertThat(captor.getAllValues().getFirst().getPaymentMethod()).isEqualTo(PaymentMethod.MOCK);
+        assertThat(captor.getAllValues().getFirst().getProvider()).isEqualTo("MOCK");
     }
 
     @Test
     void initiateDefaultsCurrencyWhenBlank() {
+        stubMockGateway();
         InitiatePaymentRequest request = new InitiatePaymentRequest(
                 1L, 1L, 1L, new BigDecimal("50.00"), "  ", PaymentMethod.MOCK
         );
@@ -86,6 +110,7 @@ class PaymentServiceTest {
 
     @Test
     void initiateAllowsAdminToCreatePaymentForAnotherUser() {
+        stubMockGateway();
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
             Payment payment = invocation.getArgument(0);
             return PaymentTestFixtures.savedPayment(payment, 12L);

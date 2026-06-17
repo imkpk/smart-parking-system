@@ -1,10 +1,13 @@
 package com.smartparking.payment.service;
 
+import com.smartparking.payment.config.PaymentProviderProperties;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.PaymentResponse;
 import com.smartparking.payment.dto.PaymentSummaryResponse;
 import com.smartparking.payment.exception.ResourceNotFoundException;
+import com.smartparking.payment.gateway.GatewayInitiationResult;
+import com.smartparking.payment.gateway.PaymentGatewayFactory;
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
@@ -21,9 +24,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final PaymentProviderProperties paymentProviderProperties;
+    private final PaymentGatewayFactory paymentGatewayFactory;
 
-    public PaymentService(PaymentRepository paymentRepository) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            PaymentProviderProperties paymentProviderProperties,
+            PaymentGatewayFactory paymentGatewayFactory
+    ) {
         this.paymentRepository = paymentRepository;
+        this.paymentProviderProperties = paymentProviderProperties;
+        this.paymentGatewayFactory = paymentGatewayFactory;
     }
 
     @Transactional
@@ -38,8 +49,17 @@ public class PaymentService {
         payment.setCurrency(normalizeCurrency(request.currency()));
         payment.setStatus(PaymentStatus.INITIATED);
         payment.setPaymentMethod(request.paymentMethod());
+        payment.setProvider(paymentProviderProperties.getProvider().name());
 
-        return PaymentResponse.from(paymentRepository.save(payment));
+        Payment savedPayment = paymentRepository.save(payment);
+        GatewayInitiationResult gatewayResult = paymentGatewayFactory
+                .activeProvider()
+                .initiate(savedPayment);
+
+        savedPayment.setGatewayOrderId(gatewayResult.gatewayOrderId());
+        savedPayment.setGatewayStatus(gatewayResult.gatewayStatus());
+
+        return PaymentResponse.from(paymentRepository.save(savedPayment));
     }
 
     @Transactional
