@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.0  
+**Version:** 1.4.1  
 **Last updated:** 2026-06-18  
-**Current branch:** `develop`  
+**Current branch:** `feature/frontend-test-coverage-rtl-vitest`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -227,6 +227,12 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
 
+### Frontend testing foundation 🔄
+
+| Item | Status | Report |
+|------|--------|--------|
+| Vitest + RTL coverage foundation | 🔄 PR pending | .grok/reports/frontend-test-coverage-rtl-vitest.md |
+
 ---
 
 ## 8. In progress (current sprint)
@@ -257,6 +263,7 @@ Execute in this order unless the human redirects:
 [x] Phase 1b: backend tenant scoping (PR #42 ✅)
 [ ] Phase 1c: tenant onboarding API (NEXT)
 [ ] Phase 1d: frontend tenant context in AuthProvider
+[ ] Frontend RTL/Vitest foundation — PR pending (feature/frontend-test-coverage-rtl-vitest)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
 
@@ -559,6 +566,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.2.3 | Grok | PR #41 merged: post-merge docs cleanup (current branch develop, Phase 1a report Floor/Slot note). |
 | 2026-06-18 | 1.3.0 | Grok | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
 | 2026-06-18 | 1.4.0 | Grok | Phase 1b merged (PR #42): tenant scoping, Users API leak fix, enriched parking-events/bookings API (no slots fan-out). Next: Phase 1c tenant onboarding API. |
+| 2026-06-18 | 1.4.1 | Grok | Frontend Vitest + RTL test foundation on `feature/frontend-test-coverage-rtl-vitest`: shared test utils, login/route-guard/page regression tests, ~36% baseline coverage. PR pending. |
 
 ---
 

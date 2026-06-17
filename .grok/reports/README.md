@@ -23,5 +23,6 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-1a-organization-schema.md](./phase-1a-organization-schema.md) | Multi-tenant schema (backend) | PR #40 ✅ |
 | [phase-1b-tenant-scoping-backend.md](./phase-1b-tenant-scoping-backend.md) | Backend tenant scoping | PR #42 ✅ |
 | [frontend-ui-theme-design-system.md](./frontend-ui-theme-design-system.md) | Frontend theme, illustrations, design system | PR #44 ✅, PR #45 ✅ |
+| [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | `feature/frontend-test-coverage-rtl-vitest` (PR pending) |
 
 Prompts live in [`.grok/prompts/`](../prompts/).
