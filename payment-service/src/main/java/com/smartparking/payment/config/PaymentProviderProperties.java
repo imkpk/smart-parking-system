@@ -35,9 +35,14 @@ public class PaymentProviderProperties {
         return razorpay.keySecret != null && !razorpay.keySecret.isBlank();
     }
 
+    public boolean hasRazorpayWebhookSecret() {
+        return razorpay.webhookSecret != null && !razorpay.webhookSecret.isBlank();
+    }
+
     public static class Razorpay {
         private String keyId = "";
         private String keySecret = "";
+        private String webhookSecret = "";
         private String currency = "INR";
 
         public String getKeyId() {
@@ -54,6 +59,14 @@ public class PaymentProviderProperties {
 
         public void setKeySecret(String keySecret) {
             this.keySecret = keySecret;
+        }
+
+        public String getWebhookSecret() {
+            return webhookSecret;
+        }
+
+        public void setWebhookSecret(String webhookSecret) {
+            this.webhookSecret = webhookSecret;
         }
 
         public String getCurrency() {
