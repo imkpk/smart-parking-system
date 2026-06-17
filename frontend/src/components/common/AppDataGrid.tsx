@@ -68,8 +68,12 @@ export function AppDataGrid<Row extends GridValidRowModel>({
       sx={{
         border: '1px solid',
         borderColor: 'divider',
+        display: 'flex',
+        flexDirection: 'column',
         height,
-        overflow: 'hidden'
+        minHeight: 0,
+        overflow: 'hidden',
+        width: '100%',
       }}>
       <DataGrid
         checkboxSelection={checkboxSelection}
@@ -109,6 +113,9 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         }}
         sx={{
           border: 0,
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
           '& .MuiDataGrid-columnHeaders': {
             bgcolor: 'background.default',
             borderBottom: '1px solid',
