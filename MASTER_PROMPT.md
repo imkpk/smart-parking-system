@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.2.1  
+**Version:** 1.2.2  
 **Last updated:** 2026-06-17  
 **Current branch:** `feature/phase-1a-organization-schema`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -220,13 +220,20 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | Inter font + unDraw illustrations | frontend/src/assets/illustrations/ |
 | Illustration + EmptyState components | frontend/src/components/common/ |
 
+### Phase 1 — Multi-tenancy 🔄
+
+| Phase | What | Status | Report |
+|-------|------|--------|--------|
+| 1a | Organization schema + migration + seed | 🔄 PR #40 open | .grok/reports/phase-1a-organization-schema.md |
+
 ---
 
 ## 8. In progress (current sprint)
 
 ```text
-[🔄] Phase 1a — Organization schema (PR in progress)
+[🔄] Phase 1a — Organization schema (PR #40 open, CI green)
      Branch: feature/phase-1a-organization-schema
+     Report: .grok/reports/phase-1a-organization-schema.md
      Scope: Organization model, organizationId columns, migration, seed, default org
      Next: Phase 1b tenant guard + JWT claims
 ```
@@ -545,6 +552,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.1.1 | Grok + human | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
 | 2026-06-17 | 1.2.0 | Grok + human | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
 | 2026-06-17 | 1.2.1 | Grok | Phase 1a implementation: Organization model, Role expansion, organizationId on tenant tables, migration backfill, prisma seed, service wiring. PR pending. |
+| 2026-06-17 | 1.2.2 | Grok | Added Phase 1a completion report (.grok/reports/phase-1a-organization-schema.md); updated reports README with payment phases 7a–8c and Phase 1a. |
 
 ---
 
