@@ -18,18 +18,13 @@ interface ReferenceLabelOptions {
   includeParkingStructure?: boolean;
   includeUsers?: boolean;
   role?: Role;
-  /** When set, loads slots only for these lots instead of every lot in the tenant. */
-  parkingLotIds?: number[];
 }
-
-const REFERENCE_LABEL_STALE_MS = 5 * 60 * 1000;
 
 export function useReferenceLabels({
   context,
   includeParkingStructure = false,
   includeUsers = false,
   role,
-  parkingLotIds,
 }: ReferenceLabelOptions) {
   const isAdmin = role === 'ADMIN';
   const isSecurity = role === 'SECURITY';
@@ -42,50 +37,34 @@ export function useReferenceLabels({
     queryKey: ['bookings', isUser ? 'my' : 'all', context],
     queryFn: isUser ? getMyBookings : getBookings,
     enabled: Boolean(isUser || canUseOperationalData),
-    staleTime: REFERENCE_LABEL_STALE_MS,
   });
 
   const vehiclesQuery = useQuery({
     queryKey: ['vehicles', isUser ? 'my' : 'all', context],
     queryFn: isUser ? getMyVehicles : getVehicles,
     enabled: Boolean(isUser || isAdmin),
-    staleTime: REFERENCE_LABEL_STALE_MS,
   });
 
   const usersQuery = useQuery({
     queryKey: ['users', context],
     queryFn: getUsers,
     enabled: includeUsers && isAdmin,
-    staleTime: REFERENCE_LABEL_STALE_MS,
   });
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots', context],
     queryFn: getParkingLots,
     enabled: canLoadParkingStructure,
-    staleTime: REFERENCE_LABEL_STALE_MS,
   });
 
-  const resolvedParkingLotIds = useMemo(() => {
-    if (parkingLotIds?.length) {
-      return [...new Set(parkingLotIds)].sort((left, right) => left - right);
-    }
-
-    return (parkingLotsQuery.data ?? [])
-      .map((lot) => lot.id)
-      .sort((left, right) => left - right);
-  }, [parkingLotIds, parkingLotsQuery.data]);
-
   const slotsQuery = useQuery({
-    queryKey: ['slots', context, resolvedParkingLotIds.join(',')],
+    queryKey: ['slots', context, parkingLotsQuery.data?.map((lot) => lot.id).join(',')],
     queryFn: async () => {
-      const nestedSlots = await Promise.all(
-        resolvedParkingLotIds.map((lotId) => getSlots(lotId)),
-      );
+      const lots = parkingLotsQuery.data ?? [];
+      const nestedSlots = await Promise.all(lots.map((lot) => getSlots(lot.id)));
       return nestedSlots.flat();
     },
-    enabled: canLoadParkingStructure && resolvedParkingLotIds.length > 0,
-    staleTime: REFERENCE_LABEL_STALE_MS,
+    enabled: canLoadParkingStructure && Boolean(parkingLotsQuery.data?.length),
   });
 
   const bookingById = useMemo(() => asMap<Booking>(bookingsQuery.data), [bookingsQuery.data]);

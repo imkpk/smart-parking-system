@@ -16,6 +16,11 @@ import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
+import {
+  parkingEventListInclude,
+  presentParkingEvent,
+  presentParkingEvents,
+} from './parking-event.presenter';
 
 const PARKING_EVENT_UNIQUE_MESSAGES = {
   bookingId: 'Parking event already exists for this booking',
@@ -81,7 +86,7 @@ export class ParkingEventsService {
         await this.slotLifecycleService.validateSlotReserved(booking.slotId, tx);
         await this.slotLifecycleService.occupySlot(booking.slotId, tx);
 
-        return tx.parkingEvent.create({
+        const createdEvent = await tx.parkingEvent.create({
           data: {
             organizationId: booking.organizationId,
             bookingId: booking.id,
@@ -92,7 +97,10 @@ export class ParkingEventsService {
             checkInTime: new Date(),
             status: ParkingEventStatus.ACTIVE,
           },
+          include: parkingEventListInclude,
         });
+
+        return presentParkingEvent(createdEvent);
       });
     } catch (error) {
       handlePrismaUniqueConstraint(
@@ -143,6 +151,7 @@ export class ParkingEventsService {
           durationMinutes,
           feeAmount,
         },
+        include: parkingEventListInclude,
       });
 
       await tx.booking.update({
@@ -177,41 +186,44 @@ export class ParkingEventsService {
           );
 
     return {
-      parkingEvent,
+      parkingEvent: presentParkingEvent(parkingEvent),
       ...paymentResult,
     };
   }
 
-  findActive(currentUser: SafeUser) {
-    return this.prisma.parkingEvent.findMany({
+  async findActive(currentUser: SafeUser) {
+    const events = await this.prisma.parkingEvent.findMany({
       where: {
         status: ParkingEventStatus.ACTIVE,
         ...this.accessPolicy.buildOrganizationWhere(currentUser),
       },
       orderBy: { checkInTime: 'desc' },
+      include: parkingEventListInclude,
     });
+
+    return presentParkingEvents(events);
   }
 
-  findHistory(user: SafeUser) {
-    return this.prisma.parkingEvent.findMany({
+  async findHistory(user: SafeUser) {
+    const events = await this.prisma.parkingEvent.findMany({
       where: this.accessPolicy.buildUserScopedWhere(user),
       orderBy: {
         createdAt: 'desc',
       },
-      include: {
-        booking: true,
-        vehicle: true,
-        slot: true,
-        parkingLot: true,
-      },
+      include: parkingEventListInclude,
     });
+
+    return presentParkingEvents(events);
   }
 
-  findAll(currentUser: SafeUser) {
-    return this.prisma.parkingEvent.findMany({
+  async findAll(currentUser: SafeUser) {
+    const events = await this.prisma.parkingEvent.findMany({
       where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { checkInTime: 'desc' },
+      include: parkingEventListInclude,
     });
+
+    return presentParkingEvents(events);
   }
 
   async findOne(id: number, currentUser: SafeUser) {
@@ -220,6 +232,7 @@ export class ParkingEventsService {
         id,
         ...this.accessPolicy.buildOrganizationWhere(currentUser),
       },
+      include: parkingEventListInclude,
     });
 
     if (!parkingEvent) {
@@ -232,7 +245,7 @@ export class ParkingEventsService {
       'You can only view your own parking history',
     );
 
-    return parkingEvent;
+    return presentParkingEvent(parkingEvent);
   }
 
   private calculateFee(durationMinutes: number) {

@@ -67,29 +67,27 @@ export function filterPayments(
   );
 }
 
-export function getParkingEventSearchValues(event: ParkingEvent, labels: ReferenceLabels) {
+export function getParkingEventSearchValues(event: ParkingEvent) {
   return [
     formatSessionNo(event.id),
     event.id,
     formatBookingNo(event.bookingId),
     event.bookingId,
-    labels.getBookingCode(event.bookingId),
-    labels.getCustomerLabel(event.userId),
-    labels.getVehicleLabel(event.vehicleId),
-    labels.getParkingLotLabel(event.parkingLotId),
-    labels.getSlotLabel(event.slotId),
+    event.bookingCode,
+    event.customerName,
+    event.customerEmail,
+    event.customerPhone,
+    event.vehicleNumber,
+    event.parkingLotName,
+    event.slotNumber,
     event.status,
     formatStatusLabel(event.status),
   ];
 }
 
-export function filterParkingEvents(
-  events: ParkingEvent[],
-  query: string,
-  labels: ReferenceLabels,
-) {
+export function filterParkingEvents(events: ParkingEvent[], query: string) {
   return events.filter((event) =>
-    matchesSearch(query, getParkingEventSearchValues(event, labels)),
+    matchesSearch(query, getParkingEventSearchValues(event)),
   );
 }
 

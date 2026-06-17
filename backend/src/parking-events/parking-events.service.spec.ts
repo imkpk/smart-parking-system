@@ -11,7 +11,43 @@ import { ParkingLotValidationService } from '../parking-lots/parking-lot-validat
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { adminUser, normalUser, securityUser } from '../test/test-users';
 import { org1, org2 } from '../test/test-tenant-fixtures';
+import {
+  parkingEventListInclude,
+  presentParkingEvent,
+} from './parking-event.presenter';
 import { ParkingEventsService } from './parking-events.service';
+
+function buildEnrichedParkingEvent(
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    id: org1.parkingEvent.id,
+    organizationId: DEFAULT_ORGANIZATION_ID,
+    bookingId: org1.booking.id,
+    userId: normalUser.id,
+    vehicleId: org1.vehicle.id,
+    slotId: org1.slot.id,
+    parkingLotId: org1.parkingLot.id,
+    checkInTime: new Date('2026-06-14T10:00:00.000Z'),
+    checkOutTime: null,
+    status: ParkingEventStatus.ACTIVE,
+    durationMinutes: null,
+    feeAmount: null,
+    createdAt: new Date('2026-06-14T10:00:00.000Z'),
+    updatedAt: new Date('2026-06-14T10:00:00.000Z'),
+    booking: { id: org1.booking.id, bookingCode: org1.booking.bookingCode },
+    vehicle: { id: org1.vehicle.id, vehicleNumber: org1.vehicle.vehicleNumber },
+    slot: { id: org1.slot.id, slotNumber: org1.slot.slotNumber },
+    parkingLot: { id: org1.parkingLot.id, name: org1.parkingLot.name },
+    user: {
+      id: normalUser.id,
+      name: normalUser.name,
+      email: normalUser.email,
+      phone: normalUser.phone,
+    },
+    ...overrides,
+  };
+}
 
 describe('ParkingEventsService', () => {
   let service: ParkingEventsService;
@@ -100,7 +136,7 @@ describe('ParkingEventsService', () => {
   });
 
   it('checks in a confirmed booking and marks slot occupied', async () => {
-    const parkingEvent = { id: 100, bookingId: booking.id, status: ParkingEventStatus.ACTIVE };
+    const parkingEvent = buildEnrichedParkingEvent({ id: 100, bookingId: booking.id });
     prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
@@ -131,8 +167,9 @@ describe('ParkingEventsService', () => {
         parkingLotId: booking.parkingLotId,
         status: ParkingEventStatus.ACTIVE,
       }),
+      include: parkingEventListInclude,
     });
-    expect(result).toBe(parkingEvent);
+    expect(result).toEqual(presentParkingEvent(parkingEvent));
   });
 
   it('checks in by booking id', async () => {
@@ -141,7 +178,9 @@ describe('ParkingEventsService', () => {
     prisma.parkingEvent.findUnique.mockResolvedValue(null);
     prisma.slot.findUnique.mockResolvedValue(booking.slot);
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
-    prisma.parkingEvent.create.mockResolvedValue({ id: 100 });
+    prisma.parkingEvent.create.mockResolvedValue(
+      buildEnrichedParkingEvent({ id: 100, bookingId: booking.id }),
+    );
 
     await service.checkIn({ bookingId: booking.id }, securityUser);
 
@@ -271,13 +310,15 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      userId: booking.userId,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 121,
-      feeAmount: 110,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        userId: booking.userId,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 121,
+        feeAmount: 110,
+      }),
+    );
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.checkOut({ parkingEventId: activeEvent.id }, securityUser);
@@ -295,6 +336,7 @@ describe('ParkingEventsService', () => {
         durationMinutes: 121,
         feeAmount: 110,
       }),
+      include: parkingEventListInclude,
     });
     expect(prisma.booking.update).toHaveBeenCalledWith({
       where: { id: booking.id },
@@ -346,13 +388,15 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      userId: booking.userId,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 30,
-      feeAmount: 50,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        userId: booking.userId,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 30,
+        feeAmount: 50,
+      }),
+    );
 
     await service.checkOut({ parkingEventId: activeEvent.id }, securityUser);
 
@@ -362,6 +406,7 @@ describe('ParkingEventsService', () => {
         durationMinutes: 30,
         feeAmount: 50,
       }),
+      include: parkingEventListInclude,
     });
   });
 
@@ -375,13 +420,15 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      userId: booking.userId,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 0,
-      feeAmount: 50,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        userId: booking.userId,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 0,
+        feeAmount: 50,
+      }),
+    );
 
     await service.checkOut({ parkingEventId: activeEvent.id }, securityUser);
 
@@ -391,6 +438,7 @@ describe('ParkingEventsService', () => {
         durationMinutes: 0,
         feeAmount: 50,
       }),
+      include: parkingEventListInclude,
     });
   });
 
@@ -405,12 +453,14 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 30,
-      feeAmount: 50,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 30,
+        feeAmount: 50,
+      }),
+    );
     paymentClientService.initiatePayment.mockResolvedValue({
       paymentInitiated: false,
       paymentError: 'Payment service unavailable',
@@ -435,12 +485,14 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 0,
-      feeAmount: null,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 0,
+        feeAmount: null,
+      }),
+    );
 
     const result = await service.checkOut({ parkingEventId: activeEvent.id }, securityUser);
 
@@ -462,12 +514,14 @@ describe('ParkingEventsService', () => {
       status: ParkingEventStatus.ACTIVE,
     };
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
-    prisma.parkingEvent.update.mockResolvedValue({
-      ...activeEvent,
-      status: ParkingEventStatus.COMPLETED,
-      durationMinutes: 30,
-      feeAmount: 50,
-    });
+    prisma.parkingEvent.update.mockResolvedValue(
+      buildEnrichedParkingEvent({
+        ...activeEvent,
+        status: ParkingEventStatus.COMPLETED,
+        durationMinutes: 30,
+        feeAmount: 50,
+      }),
+    );
 
     await service.checkOut({ parkingEventId: activeEvent.id }, securityUser, 'Bearer security-token');
 
@@ -497,68 +551,68 @@ describe('ParkingEventsService', () => {
   });
 
   it('lists active parking events scoped to organization', async () => {
-    prisma.parkingEvent.findMany.mockResolvedValue([{ id: 1, status: ParkingEventStatus.ACTIVE }]);
+    const event = buildEnrichedParkingEvent({ id: 1, status: ParkingEventStatus.ACTIVE });
+    prisma.parkingEvent.findMany.mockResolvedValue([event]);
 
     const result = await service.findActive(securityUser);
 
     expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith({
       where: { status: ParkingEventStatus.ACTIVE, organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { checkInTime: 'desc' },
+      include: parkingEventListInclude,
     });
-    expect(result).toHaveLength(1);
+    expect(result).toEqual([presentParkingEvent(event)]);
   });
 
   it('lists current user parking history scoped to organization', async () => {
-    prisma.parkingEvent.findMany.mockResolvedValue([{ id: 1, userId: normalUser.id }]);
+    const event = buildEnrichedParkingEvent({ id: 1, userId: normalUser.id });
+    prisma.parkingEvent.findMany.mockResolvedValue([event]);
 
     const result = await service.findHistory(normalUser);
 
     expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith({
       where: { userId: normalUser.id, organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { createdAt: 'desc' },
-      include: {
-        booking: true,
-        vehicle: true,
-        slot: true,
-        parkingLot: true,
-      },
+      include: parkingEventListInclude,
     });
-    expect(result).toHaveLength(1);
+    expect(result).toEqual([presentParkingEvent(event)]);
   });
 
   it('lists all parking events scoped to organization', async () => {
-    prisma.parkingEvent.findMany.mockResolvedValue([org1.parkingEvent]);
+    const event = buildEnrichedParkingEvent({ id: org1.parkingEvent.id });
+    prisma.parkingEvent.findMany.mockResolvedValue([event]);
 
     const result = await service.findAll(adminUser);
 
     expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith({
       where: { organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { checkInTime: 'desc' },
+      include: parkingEventListInclude,
     });
-    expect(result).toHaveLength(1);
+    expect(result).toEqual([presentParkingEvent(event)]);
   });
 
   it('allows admin to view any parking event in their organization', async () => {
-    const event = { id: 1, userId: normalUser.id };
+    const event = buildEnrichedParkingEvent({ id: 1, userId: normalUser.id });
     prisma.parkingEvent.findFirst.mockResolvedValue(event);
 
-    await expect(service.findOne(1, adminUser)).resolves.toBe(event);
+    await expect(service.findOne(1, adminUser)).resolves.toEqual(presentParkingEvent(event));
   });
 
   it('allows security to view any parking event in their organization', async () => {
-    const event = { id: 1, userId: normalUser.id };
+    const event = buildEnrichedParkingEvent({ id: 1, userId: normalUser.id });
     prisma.parkingEvent.findFirst.mockResolvedValue(event);
 
     await expect(
       service.findOne(1, { ...adminUser, role: Role.SECURITY }),
-    ).resolves.toBe(event);
+    ).resolves.toEqual(presentParkingEvent(event));
   });
 
   it('allows users to view their own parking event', async () => {
-    const event = { id: 1, userId: normalUser.id };
+    const event = buildEnrichedParkingEvent({ id: 1, userId: normalUser.id });
     prisma.parkingEvent.findFirst.mockResolvedValue(event);
 
-    await expect(service.findOne(1, normalUser)).resolves.toBe(event);
+    await expect(service.findOne(1, normalUser)).resolves.toEqual(presentParkingEvent(event));
   });
 
   it('blocks users from viewing another user parking event', async () => {

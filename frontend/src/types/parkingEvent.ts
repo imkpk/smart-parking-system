@@ -14,6 +14,13 @@ export interface ParkingEvent {
   feeAmount: number | string | null;
   createdAt: string;
   updatedAt: string;
+  bookingCode?: string;
+  vehicleNumber?: string;
+  slotNumber?: string;
+  parkingLotName?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string | null;
 }
 
 export interface CheckInPayload {
