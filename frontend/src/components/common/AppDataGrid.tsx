@@ -90,7 +90,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
 }) {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
-    pageSize: 10,
+    pageSize: 5,
   });
 
   const gridRowSelectionModel: GridRowSelectionModel | undefined = rowSelectionModel
@@ -132,7 +132,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             ? (model) => onRowSelectionModelChange(Array.from(model.ids))
             : undefined
         }
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[5, 10, 25, 50]}
         paginationModel={paginationModel}
         rowSelectionModel={gridRowSelectionModel}
         rows={rows}
