@@ -2,6 +2,7 @@ package com.smartparking.payment.support;
 
 import com.smartparking.payment.model.Payment;
 import com.smartparking.payment.model.PaymentMethod;
+import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,19 @@ public final class PaymentTestFixtures {
         ReflectionTestUtils.setField(payment, "id", id);
         ReflectionTestUtils.setField(payment, "createdAt", now);
         ReflectionTestUtils.setField(payment, "updatedAt", now);
+        return payment;
+    }
+
+    public static Payment razorpayPayment(
+            Long id,
+            Long userId,
+            PaymentStatus status,
+            String gatewayOrderId
+    ) {
+        Payment payment = payment(id, userId, status, new BigDecimal("80.00"));
+        payment.setProvider(PaymentProviderType.RAZORPAY.name());
+        payment.setGatewayOrderId(gatewayOrderId);
+        payment.setGatewayStatus("created");
         return payment;
     }
 
