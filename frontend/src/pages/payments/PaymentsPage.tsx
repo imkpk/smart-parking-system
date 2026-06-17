@@ -469,7 +469,6 @@ export function PaymentsPage() {
       <AppDataGrid
         columns={columns}
         emptyState={paymentEmptyState}
-        height={520}
         loading={isPaymentLoading}
         rows={rows}
         search={{

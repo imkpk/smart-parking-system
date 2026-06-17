@@ -343,7 +343,6 @@ export function BookingsPage() {
           illustration: search ? 'empty' : 'booking',
           title: search ? 'No matching bookings' : 'No bookings found',
         }}
-        height="calc(100vh - 200px)"
         loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
         rows={bookingRows}
         search={{

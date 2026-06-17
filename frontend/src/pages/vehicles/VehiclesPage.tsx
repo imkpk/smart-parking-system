@@ -257,7 +257,6 @@ export function VehiclesPage() {
           illustration: search ? 'empty' : 'cityDriver',
           title: search ? 'No matching vehicles' : 'No vehicles found',
         }}
-        height="calc(100vh - 200px)"
         loading={vehiclesQuery.isLoading || vehiclesQuery.isFetching}
         rows={vehicleRows}
         search={{

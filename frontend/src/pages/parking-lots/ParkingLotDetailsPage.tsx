@@ -817,7 +817,6 @@ function FloorsSection({
           illustration: floorSearch ? 'empty' : 'locationSearch',
           title: floorSearch ? 'No matching floors' : 'No floors found',
         }}
-        height={420}
         rows={filteredFloors}
         search={{
           onChange: (event) => setFloorSearch(event.target.value),
@@ -1061,7 +1060,6 @@ function SlotsSection({
         checkboxSelection
         columns={columns}
         emptyState={slotEmptyState}
-        height={520}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}

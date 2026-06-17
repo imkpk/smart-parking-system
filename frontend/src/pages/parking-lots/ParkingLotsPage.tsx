@@ -303,7 +303,6 @@ export function ParkingLotsPage() {
               illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking lots' : 'No parking lots found',
             }}
-            height="calc(100vh - 240px)"
             loading={parkingLotsQuery.isFetching}
             rows={filteredParkingLots}
             search={{

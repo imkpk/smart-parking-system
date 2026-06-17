@@ -437,9 +437,6 @@ export function ParkingEventsPage() {
   const activeError = activeEventsQuery.error;
   const historyError = historyQuery.error;
 
-  const operatorGridHeight = 'calc(100vh - 340px)';
-  const userGridHeight = 'calc(100vh - 240px)';
-
   return (
     <Stack spacing={3}>
       <PageHeader title="Parking Events" />
@@ -528,7 +525,6 @@ export function ParkingEventsPage() {
               illustration: search ? 'empty' : 'cityDriver',
               title: search ? 'No matching active events' : 'No active parking events',
             }}
-            height={operatorGridHeight}
             loading={
               activeEventsQuery.isLoading || activeEventsQuery.isFetching
             }
@@ -569,7 +565,6 @@ export function ParkingEventsPage() {
               illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking events' : 'No parking event history',
             }}
-            height={isUser ? userGridHeight : operatorGridHeight}
             loading={historyQuery.isLoading || historyQuery.isFetching}
             rows={historyRows}
             search={{
