@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import parkLogo from '../../assets/illustrations/at-the-park.svg?url';
+import { brand } from '../../theme/tokens';
 
 export function AppLogo({ showText = true }: { showText?: boolean }) {
   return (
@@ -12,7 +13,7 @@ export function AppLogo({ showText = true }: { showText?: boolean }) {
       }}
     >
       <Box
-        alt="Smart Parking"
+        alt={brand.name}
         component="img"
         src={parkLogo}
         sx={{
@@ -26,10 +27,10 @@ export function AppLogo({ showText = true }: { showText?: boolean }) {
       {showText ? (
         <Box minWidth={0}>
           <Typography fontWeight={700} noWrap variant="subtitle1">
-            Smart Parking
+            {brand.name}
           </Typography>
           <Typography color="text.secondary" noWrap variant="caption">
-            Management System
+            {brand.tagline}
           </Typography>
         </Box>
       ) : null}

@@ -39,7 +39,7 @@ const warningStyle: StatusStyle = {
 };
 
 const primaryStyle: StatusStyle = {
-  bgcolor: 'rgba(25, 118, 210, 0.12)',
+  bgcolor: 'rgba(21, 101, 192, 0.12)',
   borderColor: 'primary.main',
   color: 'primary.dark',
 };
