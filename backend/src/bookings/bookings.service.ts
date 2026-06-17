@@ -63,8 +63,13 @@ export class BookingsService {
 
         await this.slotLifecycleService.reserveSlot(slot.id, tx);
 
+        if (!currentUser.organizationId) {
+          throw new ForbiddenException('Organization context is required to create a booking');
+        }
+
         return tx.booking.create({
           data: {
+            organizationId: currentUser.organizationId,
             userId: currentUser.id,
             vehicleId: vehicle.id,
             slotId: slot.id,

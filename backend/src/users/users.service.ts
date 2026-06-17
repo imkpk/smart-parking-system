@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from './types/safe-user.type';
@@ -7,6 +8,8 @@ import { SafeUser } from './types/safe-user.type';
 const USER_UNIQUE_MESSAGES = {
   email: 'Email already exists',
   phone: 'Phone number already exists',
+  'organizationId,email': 'Email already exists',
+  'organizationId,phone': 'Phone number already exists',
 };
 
 @Injectable()
@@ -23,14 +26,20 @@ export class UsersService {
   }
 
   findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { email },
+    return this.prisma.user.findFirst({
+      where: {
+        email,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
     });
   }
 
   findByPhone(phone: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { phone },
+    return this.prisma.user.findFirst({
+      where: {
+        phone,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
     });
   }
 
@@ -68,6 +77,7 @@ export class UsersService {
   toSafeUser(user: User): SafeUser {
     return {
       id: user.id,
+      organizationId: user.organizationId,
       name: user.name,
       email: user.email,
       phone: user.phone,

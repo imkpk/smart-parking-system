@@ -2,8 +2,9 @@
 
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { AuthService } from './auth.service';
-import { normalUser, userRecord } from '../test/test-users';
+import { adminUser, adminUserRecord, normalUser, userRecord } from '../test/test-users';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -54,6 +55,7 @@ describe('AuthService', () => {
       phone: normalUser.phone,
       passwordHash: 'hashed-password',
       role: normalUser.role,
+      organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
     });
     expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
     expect(jwtService.sign).toHaveBeenCalledWith({
@@ -103,8 +105,29 @@ describe('AuthService', () => {
       password: 'password123',
     });
 
+    expect(usersService.findByEmail).toHaveBeenCalledWith(normalUser.email);
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', userRecord.passwordHash);
     expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
+  });
+
+  it('logs in existing ADMIN in the default organization without tenant input', async () => {
+    usersService.findByEmail.mockResolvedValue(adminUserRecord);
+    usersService.toSafeUser.mockReturnValue(adminUser);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    const result = await service.login({
+      email: adminUser.email,
+      password: 'password123',
+    });
+
+    expect(usersService.findByEmail).toHaveBeenCalledWith(adminUser.email);
+    expect(result).toEqual({ user: adminUser, accessToken: 'signed-token' });
+    expect(jwtService.sign).toHaveBeenCalledWith({
+      sub: adminUser.id,
+      email: adminUser.email,
+      role: adminUser.role,
+    });
+    expect(result.user).toHaveProperty('organizationId', DEFAULT_ORGANIZATION_ID);
   });
 
   it('rejects invalid login password', async () => {

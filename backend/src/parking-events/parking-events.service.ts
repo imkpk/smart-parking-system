@@ -79,6 +79,7 @@ export class ParkingEventsService {
 
         return tx.parkingEvent.create({
           data: {
+            organizationId: booking.organizationId,
             bookingId: booking.id,
             userId: booking.userId,
             vehicleId: booking.vehicleId,

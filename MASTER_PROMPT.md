@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.2.0  
+**Version:** 1.2.2  
 **Last updated:** 2026-06-17  
-**Current branch:** `develop`  
+**Current branch:** `feature/phase-1a-organization-schema`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -220,15 +220,22 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | Inter font + unDraw illustrations | frontend/src/assets/illustrations/ |
 | Illustration + EmptyState components | frontend/src/components/common/ |
 
+### Phase 1 — Multi-tenancy 🔄
+
+| Phase | What | Status | Report |
+|-------|------|--------|--------|
+| 1a | Organization schema + migration + seed | 🔄 PR #40 open | .grok/reports/phase-1a-organization-schema.md |
+
 ---
 
 ## 8. In progress (current sprint)
 
 ```text
-[🔄] Phase 1 — Multi-tenancy core
-     First branch: feature/phase-1a-organization-schema
-     Branch strategy: docs/project-plan/09-branch-strategy.md
-     Prereq: E2E Razorpay smoke test on develop (recommended)
+[🔄] Phase 1a — Organization schema (PR #40 open, CI green)
+     Branch: feature/phase-1a-organization-schema
+     Report: .grok/reports/phase-1a-organization-schema.md
+     Scope: Organization model, organizationId columns, migration, seed, default org
+     Next: Phase 1b tenant guard + JWT claims
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -245,7 +252,8 @@ Execute in this order unless the human redirects:
 [x] Merge phase 8c webhook handler → develop (PR #35 ✅)
 [x] Merge PR #36 docs/design foundation → develop (PR #36 ✅)
 [ ] End-to-end test: book → check-in → check-out → Razorpay pay → webhook → receipt
-[ ] Phase 1a: feature/phase-1a-organization-schema
+[🔄] Phase 1a: feature/phase-1a-organization-schema (open PR)
+[ ] Phase 1b: tenant-scoping-backend (TenantGuard, JWT)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
 
@@ -543,6 +551,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.1.0 | Grok + human | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
 | 2026-06-17 | 1.1.1 | Grok + human | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
 | 2026-06-17 | 1.2.0 | Grok + human | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
+| 2026-06-17 | 1.2.1 | Grok | Phase 1a implementation: Organization model, Role expansion, organizationId on tenant tables, migration backfill, prisma seed, service wiring. PR pending. |
+| 2026-06-17 | 1.2.2 | Grok | Added Phase 1a completion report (.grok/reports/phase-1a-organization-schema.md); updated reports README with payment phases 7a–8c and Phase 1a. |
 
 ---
 

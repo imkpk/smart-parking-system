@@ -10,6 +10,8 @@ import { PrismaService } from '../prisma/prisma.service';
 const VEHICLE_UNIQUE_MESSAGES = {
   vehicleNumber: 'Vehicle number already exists',
   registrationNo: 'Vehicle number already exists',
+  'organizationId,vehicleNumber': 'Vehicle number already exists',
+  'organizationId,registrationNo': 'Vehicle number already exists',
 };
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -23,11 +25,21 @@ export class VehiclesService {
   ) {}
 
   async create(userId: number, createVehicleDto: CreateVehicleDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    if (!user?.organizationId) {
+      throw new BadRequestException('User organization is required to register a vehicle');
+    }
+
     try {
       return await this.prisma.vehicle.create({
         data: {
           ...createVehicleDto,
           userId,
+          organizationId: user.organizationId,
         },
       });
     } catch (error) {

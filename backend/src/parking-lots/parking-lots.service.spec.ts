@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { ParkingLotType } from '@prisma/client';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { ParkingLotValidationService } from './parking-lot-validation.service';
 import { ParkingLotsService } from './parking-lots.service';
 
@@ -60,6 +61,7 @@ describe('ParkingLotsService', () => {
         state: parkingLot.state,
         pincode: parkingLot.pincode,
         isActive: parkingLot.isActive,
+        organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
       },
     });
     expect(result).toBe(parkingLot);

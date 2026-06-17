@@ -100,6 +100,7 @@ describe('BookingsService', () => {
     });
     expect(prisma.booking.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        organizationId: normalUser.organizationId,
         userId: normalUser.id,
         vehicleId: vehicle.id,
         slotId: slot.id,
@@ -131,6 +132,21 @@ describe('BookingsService', () => {
         startTime: '2026-06-14T10:00:00.000Z',
       }),
     ).rejects.toThrow('Booking code already exists');
+  });
+
+  it('prevents booking when organization context is missing', async () => {
+    prisma.vehicle.findFirst.mockResolvedValue(vehicle);
+    prisma.slot.findFirst.mockResolvedValue(slot);
+    prisma.booking.count.mockResolvedValue(0);
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.create({ ...normalUser, organizationId: null }, {
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        startTime: '2026-06-14T10:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('prevents booking with someone else vehicle', async () => {

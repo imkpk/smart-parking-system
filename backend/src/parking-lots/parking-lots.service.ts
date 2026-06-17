@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateParkingLotDto } from './dto/create-parking-lot.dto';
 import { UpdateParkingLotDto } from './dto/update-parking-lot.dto';
@@ -13,7 +14,10 @@ export class ParkingLotsService {
 
   create(createParkingLotDto: CreateParkingLotDto) {
     return this.prisma.parkingLot.create({
-      data: createParkingLotDto,
+      data: {
+        ...createParkingLotDto,
+        organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
+      },
     });
   }
 
