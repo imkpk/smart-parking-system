@@ -1,11 +1,11 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { adminUser, normalUser } from '../test/test-users';
+import { DEFAULT_ORGANIZATION_ID, OTHER_ORGANIZATION_ID } from '../organizations/organizations.constants';
+import { adminUser, normalUser, securityUser } from '../test/test-users';
 import { AccessPolicyService } from './access-policy.service';
 
 describe('AccessPolicyService', () => {
   let service: AccessPolicyService;
-  const securityUser = { ...adminUser, id: 3, role: Role.SECURITY };
 
   beforeEach(() => {
     service = new AccessPolicyService();
@@ -16,6 +16,45 @@ describe('AccessPolicyService', () => {
     expect(service.isSecurity(securityUser)).toBe(true);
     expect(service.isUser(normalUser)).toBe(true);
     expect(service.isOperationalRole(securityUser)).toBe(true);
+  });
+
+  it('requires organization context', () => {
+    expect(service.getRequiredOrganizationId(normalUser)).toBe(DEFAULT_ORGANIZATION_ID);
+    expect(() =>
+      service.getRequiredOrganizationId({ ...normalUser, organizationId: null }),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('checks organization access', () => {
+    expect(service.canAccessOrganization(normalUser, DEFAULT_ORGANIZATION_ID)).toBe(true);
+    expect(service.canAccessOrganization(normalUser, OTHER_ORGANIZATION_ID)).toBe(false);
+    expect(service.canAccessOrganization({ ...normalUser, organizationId: null }, 1)).toBe(false);
+  });
+
+  it('asserts same organization access', () => {
+    expect(() =>
+      service.assertSameOrganization(normalUser, DEFAULT_ORGANIZATION_ID),
+    ).not.toThrow();
+    expect(() =>
+      service.assertSameOrganization(normalUser, OTHER_ORGANIZATION_ID),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('builds organization-scoped where clauses', () => {
+    expect(service.buildOrganizationWhere(normalUser)).toEqual({
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
+    expect(service.buildParkingLotOrganizationWhere(adminUser)).toEqual({
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
+    expect(service.buildFloorOrganizationWhere(securityUser)).toEqual({
+      parkingLot: { organizationId: DEFAULT_ORGANIZATION_ID },
+    });
+    expect(service.buildSlotOrganizationWhere(normalUser)).toEqual({
+      floor: {
+        parkingLot: { organizationId: DEFAULT_ORGANIZATION_ID },
+      },
+    });
   });
 
   it('allows owners to access their own resources', () => {
@@ -64,8 +103,15 @@ describe('AccessPolicyService', () => {
   });
 
   it('builds user-scoped where clauses', () => {
-    expect(service.buildUserScopedWhere(normalUser)).toEqual({ userId: normalUser.id });
-    expect(service.buildUserScopedWhere(adminUser)).toEqual({});
-    expect(service.buildUserScopedWhere(securityUser)).toEqual({});
+    expect(service.buildUserScopedWhere(normalUser)).toEqual({
+      userId: normalUser.id,
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
+    expect(service.buildUserScopedWhere(adminUser)).toEqual({
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
+    expect(service.buildUserScopedWhere(securityUser)).toEqual({
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
   });
 });

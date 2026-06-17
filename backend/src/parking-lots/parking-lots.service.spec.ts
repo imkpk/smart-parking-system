@@ -1,6 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { ParkingLotType } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
+import { adminUser } from '../test/test-users';
+import { org1, org2 } from '../test/test-tenant-fixtures';
 import { ParkingLotValidationService } from './parking-lot-validation.service';
 import { ParkingLotsService } from './parking-lots.service';
 
@@ -24,6 +27,7 @@ describe('ParkingLotsService', () => {
     state: 'Telangana',
     pincode: '500001',
     isActive: true,
+    organizationId: DEFAULT_ORGANIZATION_ID,
   };
 
   beforeEach(() => {
@@ -36,13 +40,17 @@ describe('ParkingLotsService', () => {
       },
     };
     const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
-    service = new ParkingLotsService(prisma as never, parkingLotValidationService);
+    service = new ParkingLotsService(
+      prisma as never,
+      parkingLotValidationService,
+      new AccessPolicyService(),
+    );
   });
 
   it('creates a parking lot', async () => {
     prisma.parkingLot.create.mockResolvedValue(parkingLot);
 
-    const result = await service.create({
+    const result = await service.create(adminUser, {
       name: parkingLot.name,
       type: parkingLot.type,
       address: parkingLot.address,
@@ -67,23 +75,35 @@ describe('ParkingLotsService', () => {
     expect(result).toBe(parkingLot);
   });
 
-  it('returns only active parking lots by default', async () => {
-    prisma.parkingLot.findMany.mockResolvedValue([parkingLot]);
+  it('returns only active parking lots scoped to the current organization', async () => {
+    prisma.parkingLot.findMany.mockResolvedValue([org1.parkingLot]);
 
-    const result = await service.findAll();
+    const result = await service.findAll(adminUser);
 
     expect(prisma.parkingLot.findMany).toHaveBeenCalledWith({
-      where: { isActive: true },
+      where: { isActive: true, organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'asc' },
     });
-    expect(result).toEqual([parkingLot]);
+    expect(result).toEqual([org1.parkingLot]);
+  });
+
+  it('does not return parking lots from another organization', async () => {
+    prisma.parkingLot.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll(org2.adminUser);
+
+    expect(prisma.parkingLot.findMany).toHaveBeenCalledWith({
+      where: { isActive: true, organizationId: org2.organizationId },
+      orderBy: { id: 'asc' },
+    });
+    expect(result).toEqual([]);
   });
 
   it('soft deletes a parking lot', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue(parkingLot);
     prisma.parkingLot.update.mockResolvedValue({ ...parkingLot, isActive: false });
 
-    const result = await service.remove(parkingLot.id);
+    const result = await service.remove(parkingLot.id, adminUser);
 
     expect(prisma.parkingLot.update).toHaveBeenCalledWith({
       where: { id: parkingLot.id },
@@ -96,7 +116,7 @@ describe('ParkingLotsService', () => {
     prisma.parkingLot.findFirst.mockResolvedValue(parkingLot);
     prisma.parkingLot.update.mockResolvedValue({ ...parkingLot, name: 'Updated Lot' });
 
-    const result = await service.update(parkingLot.id, { name: 'Updated Lot' });
+    const result = await service.update(parkingLot.id, adminUser, { name: 'Updated Lot' });
 
     expect(prisma.parkingLot.update).toHaveBeenCalledWith({
       where: { id: parkingLot.id },
@@ -108,6 +128,6 @@ describe('ParkingLotsService', () => {
   it('throws when parking lot is not active or missing', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue(null);
 
-    await expect(service.findOne(404)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(404, adminUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 });

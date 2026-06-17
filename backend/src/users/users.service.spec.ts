@@ -1,8 +1,9 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { UsersService } from './users.service';
-import { userRecord } from '../test/test-users';
+import { adminUser, normalUserOrg2, userRecord } from '../test/test-users';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -24,7 +25,7 @@ describe('UsersService', () => {
         findFirst: jest.fn(),
       },
     };
-    service = new UsersService(prisma as never);
+    service = new UsersService(prisma as never, new AccessPolicyService());
   });
 
   it('creates a user and removes passwordHash from the response', async () => {
@@ -51,9 +52,9 @@ describe('UsersService', () => {
   });
 
   it('throws when user is not found', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue(null);
 
-    await expect(service.findOne(999)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(999, adminUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('finds a user by email', async () => {
@@ -184,24 +185,57 @@ describe('UsersService', () => {
     ).rejects.toBe(error);
   });
 
-  it('lists users as safe users', async () => {
+  it('lists users as safe users scoped to organization', async () => {
     prisma.user.findMany.mockResolvedValue([userRecord]);
 
-    const result = await service.findAll();
+    const result = await service.findAll(adminUser);
 
     expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { id: 'asc' },
     });
     expect(result[0]).not.toHaveProperty('passwordHash');
   });
 
-  it('finds one user as a safe user', async () => {
-    prisma.user.findUnique.mockResolvedValue(userRecord);
+  it('does not list users from another organization', async () => {
+    prisma.user.findMany.mockResolvedValue([]);
 
-    const result = await service.findOne(userRecord.id);
+    const result = await service.findAll(adminUser);
 
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
+      orderBy: { id: 'asc' },
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('finds one user as a safe user scoped to organization', async () => {
+    prisma.user.findFirst.mockResolvedValue(userRecord);
+
+    const result = await service.findOne(userRecord.id, adminUser);
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: userRecord.id,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
+    });
     expect(result.id).toBe(userRecord.id);
     expect(result).not.toHaveProperty('passwordHash');
+  });
+
+  it('does not return a user from another organization', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOne(normalUserOrg2.id, adminUser)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: normalUserOrg2.id,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+      },
+    });
   });
 
   it('returns only active user by id', async () => {

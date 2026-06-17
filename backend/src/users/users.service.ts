@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,7 +15,10 @@ const USER_UNIQUE_MESSAGES = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessPolicy: AccessPolicyService,
+  ) {}
 
   async create(data: Prisma.UserCreateInput): Promise<SafeUser> {
     try {
@@ -43,17 +47,21 @@ export class UsersService {
     });
   }
 
-  async findAll(): Promise<SafeUser[]> {
+  async findAll(currentUser: SafeUser): Promise<SafeUser[]> {
     const users = await this.prisma.user.findMany({
+      where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { id: 'asc' },
     });
 
     return users.map((user) => this.toSafeUser(user));
   }
 
-  async findOne(id: number): Promise<SafeUser> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+  async findOne(id: number, currentUser: SafeUser): Promise<SafeUser> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
     });
 
     if (!user) {

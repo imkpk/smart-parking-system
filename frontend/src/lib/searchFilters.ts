@@ -67,49 +67,51 @@ export function filterPayments(
   );
 }
 
-export function getParkingEventSearchValues(event: ParkingEvent, labels: ReferenceLabels) {
+export function getParkingEventSearchValues(event: ParkingEvent) {
   return [
     formatSessionNo(event.id),
     event.id,
     formatBookingNo(event.bookingId),
     event.bookingId,
-    labels.getBookingCode(event.bookingId),
-    labels.getCustomerLabel(event.userId),
-    labels.getVehicleLabel(event.vehicleId),
-    labels.getParkingLotLabel(event.parkingLotId),
-    labels.getSlotLabel(event.slotId),
+    event.bookingCode,
+    event.customerName,
+    event.customerEmail,
+    event.customerPhone,
+    event.vehicleNumber,
+    event.parkingLotName,
+    event.floorName,
+    event.slotNumber,
     event.status,
     formatStatusLabel(event.status),
   ];
 }
 
-export function filterParkingEvents(
-  events: ParkingEvent[],
-  query: string,
-  labels: ReferenceLabels,
-) {
+export function filterParkingEvents(events: ParkingEvent[], query: string) {
   return events.filter((event) =>
-    matchesSearch(query, getParkingEventSearchValues(event, labels)),
+    matchesSearch(query, getParkingEventSearchValues(event)),
   );
 }
 
-export function getBookingSearchValues(booking: Booking, labels: ReferenceLabels) {
+export function getBookingSearchValues(booking: Booking) {
   return [
     formatBookingNo(booking.id),
     booking.id,
     booking.bookingCode,
-    labels.getCustomerLabel(booking.userId),
-    labels.getVehicleLabel(booking.vehicleId),
-    labels.getParkingLotLabel(booking.parkingLotId),
-    labels.getSlotLabel(booking.slotId),
+    booking.customerName,
+    booking.customerEmail,
+    booking.customerPhone,
+    booking.vehicleNumber,
+    booking.parkingLotName,
+    booking.floorName,
+    booking.slotNumber,
     booking.status,
     formatStatusLabel(booking.status),
   ];
 }
 
-export function filterBookings(bookings: Booking[], query: string, labels: ReferenceLabels) {
+export function filterBookings(bookings: Booking[], query: string) {
   return bookings.filter((booking) =>
-    matchesSearch(query, getBookingSearchValues(booking, labels)),
+    matchesSearch(query, getBookingSearchValues(booking)),
   );
 }
 

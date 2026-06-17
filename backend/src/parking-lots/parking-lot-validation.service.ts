@@ -14,11 +14,12 @@ export class ParkingLotValidationService {
 
   async getActiveParkingLotOrThrow(
     parkingLotId: number,
+    organizationId: number,
     tx?: Prisma.TransactionClient,
   ) {
     const client = this.getClient(tx);
     const parkingLot = await client.parkingLot.findFirst({
-      where: { id: parkingLotId, isActive: true },
+      where: { id: parkingLotId, isActive: true, organizationId },
     });
 
     if (!parkingLot) {
@@ -28,12 +29,16 @@ export class ParkingLotValidationService {
     return parkingLot;
   }
 
-  async getActiveFloorOrThrow(floorId: number, tx?: Prisma.TransactionClient) {
+  async getActiveFloorOrThrow(
+    floorId: number,
+    organizationId: number,
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = this.getClient(tx);
     const floor = await client.floor.findFirst({
       where: {
         id: floorId,
-        parkingLot: { isActive: true },
+        parkingLot: { isActive: true, organizationId },
       },
     });
 
@@ -44,12 +49,16 @@ export class ParkingLotValidationService {
     return floor;
   }
 
-  async getActiveSlotOrThrow(slotId: number, tx?: Prisma.TransactionClient) {
+  async getActiveSlotOrThrow(
+    slotId: number,
+    organizationId: number,
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = this.getClient(tx);
     const slot = await client.slot.findFirst({
       where: {
         id: slotId,
-        floor: { parkingLot: { isActive: true } },
+        floor: { parkingLot: { isActive: true, organizationId } },
       },
       include: {
         floor: {

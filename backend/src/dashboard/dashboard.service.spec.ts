@@ -1,5 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { ParkingEventStatus, SlotStatus } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
+import { adminUser } from '../test/test-users';
+import { org2 } from '../test/test-tenant-fixtures';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { DashboardService } from './dashboard.service';
 
@@ -25,10 +29,14 @@ describe('DashboardService', () => {
     };
 
     const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
-    service = new DashboardService(prisma as never, parkingLotValidationService);
+    service = new DashboardService(
+      prisma as never,
+      parkingLotValidationService,
+      new AccessPolicyService(),
+    );
   });
 
-  it('returns admin summary', async () => {
+  it('returns admin summary scoped to organization', async () => {
     prisma.user.count.mockResolvedValue(5);
     prisma.parkingLot.count.mockResolvedValue(2);
     prisma.slot.count.mockResolvedValue(10);
@@ -43,7 +51,7 @@ describe('DashboardService', () => {
       { status: SlotStatus.MAINTENANCE, _count: { _all: 1 } },
     ]);
 
-    await expect(service.getAdminSummary()).resolves.toEqual({
+    await expect(service.getAdminSummary(adminUser)).resolves.toEqual({
       totalUsers: 5,
       totalParkingLots: 2,
       totalSlots: 10,
@@ -55,15 +63,46 @@ describe('DashboardService', () => {
       activeParkingEvents: 3,
       completedParkingEvents: 4,
     });
-    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
-      where: { status: ParkingEventStatus.ACTIVE },
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
+    });
+    expect(prisma.parkingLot.count).toHaveBeenCalledWith({
+      where: { isActive: true, organizationId: DEFAULT_ORGANIZATION_ID },
+    });
+    expect(prisma.slot.count).toHaveBeenCalledWith({
+      where: {
+        floor: {
+          parkingLot: { organizationId: DEFAULT_ORGANIZATION_ID },
+        },
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
     });
     expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
-      where: { status: ParkingEventStatus.COMPLETED },
+      where: { status: ParkingEventStatus.ACTIVE, organizationId: DEFAULT_ORGANIZATION_ID },
+    });
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
+      where: { status: ParkingEventStatus.COMPLETED, organizationId: DEFAULT_ORGANIZATION_ID },
     });
   });
 
-  it('returns parking lot summary', async () => {
+  it('uses a different organization scope for another tenant admin', async () => {
+    prisma.user.count.mockResolvedValue(1);
+    prisma.parkingLot.count.mockResolvedValue(1);
+    prisma.slot.count.mockResolvedValue(2);
+    prisma.booking.count.mockResolvedValue(1);
+    prisma.parkingEvent.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+    prisma.slot.groupBy.mockResolvedValue([]);
+
+    await service.getAdminSummary(org2.adminUser);
+
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: { organizationId: org2.organizationId },
+    });
+  });
+
+  it('returns parking lot summary scoped to organization', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue({ id: 1, name: 'Lot A' });
     prisma.floor.count.mockResolvedValue(2);
     prisma.slot.count.mockResolvedValue(10);
@@ -74,7 +113,7 @@ describe('DashboardService', () => {
     prisma.booking.count.mockResolvedValue(4);
     prisma.parkingEvent.count.mockResolvedValue(1);
 
-    const result = await service.getParkingLotSummary(1);
+    const result = await service.getParkingLotSummary(1, adminUser);
 
     expect(result).toEqual({
       parkingLotId: 1,
@@ -89,11 +128,16 @@ describe('DashboardService', () => {
       activeEvents: 1,
     });
     expect(prisma.parkingLot.findFirst).toHaveBeenCalledWith({
-      where: { id: 1, isActive: true },
+      where: { id: 1, isActive: true, organizationId: DEFAULT_ORGANIZATION_ID },
     });
     expect(prisma.slot.groupBy).toHaveBeenCalledWith({
       by: ['status'],
-      where: { floor: { parkingLotId: 1 } },
+      where: {
+        floor: {
+          parkingLotId: 1,
+          parkingLot: { organizationId: DEFAULT_ORGANIZATION_ID },
+        },
+      },
       _count: { _all: true },
     });
   });
@@ -101,7 +145,7 @@ describe('DashboardService', () => {
   it('throws when parking lot summary target is missing', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue(null);
 
-    await expect(service.getParkingLotSummary(404)).rejects.toBeInstanceOf(
+    await expect(service.getParkingLotSummary(404, adminUser)).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
@@ -123,7 +167,7 @@ describe('DashboardService', () => {
       },
     ]);
 
-    await expect(service.getRecentEvents()).resolves.toEqual([
+    await expect(service.getRecentEvents(adminUser)).resolves.toEqual([
       {
         parkingEventId: 1,
         bookingId: 2,
@@ -137,6 +181,7 @@ describe('DashboardService', () => {
       },
     ]);
     expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith({
+      where: { organizationId: DEFAULT_ORGANIZATION_ID },
       orderBy: { checkInTime: 'desc' },
       take: 10,
       include: {
@@ -150,9 +195,10 @@ describe('DashboardService', () => {
   it('returns today bookings with related user, vehicle, slot, and parking lot', async () => {
     prisma.booking.findMany.mockResolvedValue([{ id: 1 }]);
 
-    await expect(service.getTodayBookings()).resolves.toEqual([{ id: 1 }]);
+    await expect(service.getTodayBookings(adminUser)).resolves.toEqual([{ id: 1 }]);
     expect(prisma.booking.findMany).toHaveBeenCalledWith({
       where: {
+        organizationId: DEFAULT_ORGANIZATION_ID,
         startTime: {
           gte: expect.any(Date),
           lt: expect.any(Date),
@@ -180,7 +226,7 @@ describe('DashboardService', () => {
       { status: SlotStatus.RESERVED, _count: { _all: 2 } },
     ]);
 
-    await expect(service.getSlotStatusSummary()).resolves.toEqual({
+    await expect(service.getSlotStatusSummary(adminUser)).resolves.toEqual({
       availableSlots: 0,
       occupiedSlots: 0,
       reservedSlots: 2,
@@ -188,7 +234,11 @@ describe('DashboardService', () => {
     });
     expect(prisma.slot.groupBy).toHaveBeenCalledWith({
       by: ['status'],
-      where: undefined,
+      where: {
+        floor: {
+          parkingLot: { organizationId: DEFAULT_ORGANIZATION_ID },
+        },
+      },
       _count: { _all: true },
     });
   });

@@ -6,6 +6,9 @@ import {
 import { AccessPolicyService } from '../common/access-policy.service';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafeUser } from '../users/types/safe-user.type';
+import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 const VEHICLE_UNIQUE_MESSAGES = {
   vehicleNumber: 'Vehicle number already exists',
@@ -13,9 +16,6 @@ const VEHICLE_UNIQUE_MESSAGES = {
   'organizationId,vehicleNumber': 'Vehicle number already exists',
   'organizationId,registrationNo': 'Vehicle number already exists',
 };
-import { SafeUser } from '../users/types/safe-user.type';
-import { CreateVehicleDto } from './dto/create-vehicle.dto';
-import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 @Injectable()
 export class VehiclesService {
@@ -24,22 +24,15 @@ export class VehiclesService {
     private readonly accessPolicy: AccessPolicyService,
   ) {}
 
-  async create(userId: number, createVehicleDto: CreateVehicleDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      throw new BadRequestException('User organization is required to register a vehicle');
-    }
+  async create(currentUser: SafeUser, createVehicleDto: CreateVehicleDto) {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
 
     try {
       return await this.prisma.vehicle.create({
         data: {
           ...createVehicleDto,
-          userId,
-          organizationId: user.organizationId,
+          userId: currentUser.id,
+          organizationId,
         },
       });
     } catch (error) {
@@ -51,33 +44,31 @@ export class VehiclesService {
     }
   }
 
-  findMine(userId: number) {
+  findMine(currentUser: SafeUser) {
+    const organizationWhere = this.accessPolicy.buildOrganizationWhere(currentUser);
+
     return this.prisma.vehicle.findMany({
-      where: { userId },
+      where: {
+        userId: currentUser.id,
+        ...organizationWhere,
+      },
       orderBy: { id: 'asc' },
     });
   }
 
-  findAll() {
+  findAll(currentUser: SafeUser) {
     return this.prisma.vehicle.findMany({
+      where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { id: 'asc' },
     });
   }
 
-  async findOneForAdmin(id: number) {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id },
-    });
-
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
-    }
-
-    return vehicle;
+  async findOneForAdmin(id: number, currentUser: SafeUser) {
+    return this.findOne(id, currentUser);
   }
 
   async update(id: number, currentUser: SafeUser, updateVehicleDto: UpdateVehicleDto) {
-    const vehicle = await this.findOne(id);
+    const vehicle = await this.findOne(id, currentUser);
     this.accessPolicy.assertOwnerOrAdmin(
       currentUser,
       vehicle.userId,
@@ -99,7 +90,7 @@ export class VehiclesService {
   }
 
   async remove(id: number, currentUser: SafeUser) {
-    const vehicle = await this.findOne(id);
+    const vehicle = await this.findOne(id, currentUser);
     this.accessPolicy.assertOwnerOrAdmin(
       currentUser,
       vehicle.userId,
@@ -119,9 +110,12 @@ export class VehiclesService {
     });
   }
 
-  private async findOne(id: number) {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id },
+  private async findOne(id: number, currentUser: SafeUser) {
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: {
+        id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
     });
 
     if (!vehicle) {

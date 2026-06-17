@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotLifecycleService } from './slot-lifecycle.service';
 
@@ -18,13 +19,14 @@ describe('SlotLifecycleService', () => {
     };
   };
 
+  const organizationId = DEFAULT_ORGANIZATION_ID;
   const slot = {
     id: 20,
     slotType: SlotType.CAR,
     status: SlotStatus.AVAILABLE,
     floor: {
       parkingLotId: 30,
-      parkingLot: { id: 30, isActive: true },
+      parkingLot: { id: 30, isActive: true, organizationId },
     },
   };
 
@@ -45,7 +47,7 @@ describe('SlotLifecycleService', () => {
     prisma.slot.findFirst.mockResolvedValue(slot);
 
     await expect(
-      service.validateSlotAvailable(slot.id, VehicleType.CAR),
+      service.validateSlotAvailable(slot.id, VehicleType.CAR, organizationId),
     ).resolves.toBe(slot);
   });
 
@@ -56,7 +58,7 @@ describe('SlotLifecycleService', () => {
     });
 
     await expect(
-      service.validateSlotAvailable(slot.id, VehicleType.CAR),
+      service.validateSlotAvailable(slot.id, VehicleType.CAR, organizationId),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -64,7 +66,7 @@ describe('SlotLifecycleService', () => {
     prisma.slot.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.validateSlotAvailable(404, VehicleType.CAR),
+      service.validateSlotAvailable(404, VehicleType.CAR, organizationId),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -72,7 +74,7 @@ describe('SlotLifecycleService', () => {
     prisma.slot.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.validateSlotAvailable(slot.id, VehicleType.CAR),
+      service.validateSlotAvailable(slot.id, VehicleType.CAR, organizationId),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -80,7 +82,7 @@ describe('SlotLifecycleService', () => {
     prisma.slot.findFirst.mockResolvedValue(slot);
 
     await expect(
-      service.validateSlotAvailable(slot.id, VehicleType.BIKE),
+      service.validateSlotAvailable(slot.id, VehicleType.BIKE, organizationId),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

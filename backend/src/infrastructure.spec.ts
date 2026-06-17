@@ -10,6 +10,7 @@ import { AssignmentsService } from './assignments/assignments.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { BookingsModule } from './bookings/bookings.module';
+import { AccessPolicyService } from './common/access-policy.service';
 import { CurrentUser } from './common/decorators/current-user.decorator';
 import { ROLES_KEY, Roles } from './common/decorators/roles.decorator';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -155,7 +156,12 @@ describe('Infrastructure', () => {
     );
 
     await expect(
-      strategy.validate({ sub: normalUser.id, email: normalUser.email, role: normalUser.role }),
+      strategy.validate({
+        sub: normalUser.id,
+        email: normalUser.email,
+        role: normalUser.role,
+        organizationId: normalUser.organizationId,
+      }),
     ).resolves.toBe(normalUser);
   });
 
@@ -166,7 +172,7 @@ describe('Infrastructure', () => {
     );
 
     await expect(
-      strategy.validate({ sub: 404, email: 'missing@example.com', role: Role.USER }),
+      strategy.validate({ sub: 404, email: 'missing@example.com', role: Role.USER, organizationId: 1 }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
@@ -194,7 +200,11 @@ describe('Infrastructure', () => {
     });
     expect(new AssignmentsService()).toBeInstanceOf(AssignmentsService);
     expect(
-      new DashboardService({} as never, new ParkingLotValidationService({} as never)),
+      new DashboardService(
+        {} as never,
+        new ParkingLotValidationService({} as never),
+        new AccessPolicyService(),
+      ),
     ).toBeInstanceOf(DashboardService);
   });
 });

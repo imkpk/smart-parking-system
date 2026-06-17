@@ -1,16 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { ParkingEventStatus, SlotStatus } from '@prisma/client';
+import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafeUser } from '../users/types/safe-user.type';
 
 @Injectable()
 export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly parkingLotValidationService: ParkingLotValidationService,
+    private readonly accessPolicy: AccessPolicyService,
   ) {}
 
-  async getAdminSummary() {
+  async getAdminSummary(currentUser: SafeUser) {
+    const organizationWhere = this.accessPolicy.buildOrganizationWhere(currentUser);
+    const slotOrganizationWhere = this.accessPolicy.buildSlotOrganizationWhere(currentUser);
+
     const [
       totalUsers,
       totalParkingLots,
@@ -20,17 +26,17 @@ export class DashboardService {
       completedParkingEvents,
       slotStatusSummary,
     ] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.parkingLot.count({ where: { isActive: true } }),
-      this.prisma.slot.count(),
-      this.prisma.booking.count(),
+      this.prisma.user.count({ where: organizationWhere }),
+      this.prisma.parkingLot.count({ where: { isActive: true, ...organizationWhere } }),
+      this.prisma.slot.count({ where: slotOrganizationWhere }),
+      this.prisma.booking.count({ where: organizationWhere }),
       this.prisma.parkingEvent.count({
-        where: { status: ParkingEventStatus.ACTIVE },
+        where: { status: ParkingEventStatus.ACTIVE, ...organizationWhere },
       }),
       this.prisma.parkingEvent.count({
-        where: { status: ParkingEventStatus.COMPLETED },
+        where: { status: ParkingEventStatus.COMPLETED, ...organizationWhere },
       }),
-      this.getSlotStatusCounts(),
+      this.getSlotStatusCounts(currentUser),
     ]);
 
     return {
@@ -47,9 +53,11 @@ export class DashboardService {
     };
   }
 
-  async getParkingLotSummary(id: number) {
+  async getParkingLotSummary(id: number, currentUser: SafeUser) {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
     const parkingLot = await this.parkingLotValidationService.getActiveParkingLotOrThrow(
       id,
+      organizationId,
     );
 
     const todayRange = this.getTodayRange();
@@ -60,20 +68,26 @@ export class DashboardService {
       todayBookings,
       activeEvents,
     ] = await Promise.all([
-      this.prisma.floor.count({ where: { parkingLotId: id } }),
-      this.prisma.slot.count({
-        where: { floor: { parkingLotId: id } },
+      this.prisma.floor.count({
+        where: { parkingLotId: id, parkingLot: { organizationId } },
       }),
-      this.getSlotStatusCounts(id),
+      this.prisma.slot.count({
+        where: {
+          floor: { parkingLotId: id, parkingLot: { organizationId } },
+        },
+      }),
+      this.getSlotStatusCounts(currentUser, id),
       this.prisma.booking.count({
         where: {
           parkingLotId: id,
+          organizationId,
           startTime: todayRange,
         },
       }),
       this.prisma.parkingEvent.count({
         where: {
           parkingLotId: id,
+          organizationId,
           status: ParkingEventStatus.ACTIVE,
         },
       }),
@@ -93,8 +107,10 @@ export class DashboardService {
     };
   }
 
-  async getRecentEvents() {
+  async getRecentEvents(currentUser: SafeUser) {
+    const organizationWhere = this.accessPolicy.buildOrganizationWhere(currentUser);
     const events = await this.prisma.parkingEvent.findMany({
+      where: organizationWhere,
       orderBy: { checkInTime: 'desc' },
       take: 10,
       include: {
@@ -117,9 +133,14 @@ export class DashboardService {
     }));
   }
 
-  getTodayBookings() {
+  getTodayBookings(currentUser: SafeUser) {
+    const organizationWhere = this.accessPolicy.buildOrganizationWhere(currentUser);
+
     return this.prisma.booking.findMany({
-      where: { startTime: this.getTodayRange() },
+      where: {
+        ...organizationWhere,
+        startTime: this.getTodayRange(),
+      },
       orderBy: { startTime: 'asc' },
       include: {
         user: {
@@ -137,18 +158,26 @@ export class DashboardService {
     });
   }
 
-  async getSlotStatusSummary() {
-    return this.getSlotStatusCounts();
+  async getSlotStatusSummary(currentUser: SafeUser) {
+    return this.getSlotStatusCounts(currentUser);
   }
 
-  private async getSlotStatusCounts(parkingLotId?: number) {
+  private async getSlotStatusCounts(currentUser: SafeUser, parkingLotId?: number) {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
     const groupedStatuses = await this.prisma.slot.groupBy({
       by: ['status'],
       where:
         parkingLotId === undefined
-          ? undefined
+          ? {
+              floor: {
+                parkingLot: { organizationId },
+              },
+            }
           : {
-              floor: { parkingLotId },
+              floor: {
+                parkingLotId,
+                parkingLot: { organizationId },
+              },
             },
       _count: {
         _all: true,

@@ -62,6 +62,25 @@ describe('AuthService', () => {
       sub: normalUser.id,
       email: normalUser.email,
       role: normalUser.role,
+      organizationId: DEFAULT_ORGANIZATION_ID,
+    });
+  });
+
+  it('includes organizationId in JWT payload on login', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+    usersService.toSafeUser.mockReturnValue(normalUser);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    await service.login({
+      email: normalUser.email,
+      password: 'password123',
+    });
+
+    expect(jwtService.sign).toHaveBeenCalledWith({
+      sub: normalUser.id,
+      email: normalUser.email,
+      role: normalUser.role,
+      organizationId: DEFAULT_ORGANIZATION_ID,
     });
   });
 
@@ -126,6 +145,7 @@ describe('AuthService', () => {
       sub: adminUser.id,
       email: adminUser.email,
       role: adminUser.role,
+      organizationId: DEFAULT_ORGANIZATION_ID,
     });
     expect(result.user).toHaveProperty('organizationId', DEFAULT_ORGANIZATION_ID);
   });
@@ -153,5 +173,24 @@ describe('AuthService', () => {
     await expect(
       service.login({ email: normalUser.email, password: 'password123' }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('includes null organizationId in JWT when user has no organization', async () => {
+    const userWithoutOrg = { ...userRecord, organizationId: null };
+    usersService.findByEmail.mockResolvedValue(userWithoutOrg);
+    usersService.toSafeUser.mockReturnValue({ ...normalUser, organizationId: null });
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    await service.login({
+      email: normalUser.email,
+      password: 'password123',
+    });
+
+    expect(jwtService.sign).toHaveBeenCalledWith({
+      sub: normalUser.id,
+      email: normalUser.email,
+      role: normalUser.role,
+      organizationId: null,
+    });
   });
 });

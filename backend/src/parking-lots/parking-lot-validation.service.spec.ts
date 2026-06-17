@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { ParkingLotValidationService } from './parking-lot-validation.service';
 
 describe('ParkingLotValidationService', () => {
@@ -9,7 +10,8 @@ describe('ParkingLotValidationService', () => {
     slot: { findFirst: jest.Mock };
   };
 
-  const parkingLot = { id: 1, name: 'Lot A', isActive: true };
+  const organizationId = DEFAULT_ORGANIZATION_ID;
+  const parkingLot = { id: 1, name: 'Lot A', isActive: true, organizationId };
   const floor = { id: 10, parkingLotId: 1, name: 'Level 1', level: 1 };
   const slot = {
     id: 20,
@@ -33,16 +35,18 @@ describe('ParkingLotValidationService', () => {
   it('returns an active parking lot', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue(parkingLot);
 
-    await expect(service.getActiveParkingLotOrThrow(parkingLot.id)).resolves.toBe(parkingLot);
+    await expect(
+      service.getActiveParkingLotOrThrow(parkingLot.id, organizationId),
+    ).resolves.toBe(parkingLot);
     expect(prisma.parkingLot.findFirst).toHaveBeenCalledWith({
-      where: { id: parkingLot.id, isActive: true },
+      where: { id: parkingLot.id, isActive: true, organizationId },
     });
   });
 
   it('throws when parking lot is missing or inactive', async () => {
     prisma.parkingLot.findFirst.mockResolvedValue(null);
 
-    await expect(service.getActiveParkingLotOrThrow(404)).rejects.toBeInstanceOf(
+    await expect(service.getActiveParkingLotOrThrow(404, organizationId)).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
@@ -50,11 +54,11 @@ describe('ParkingLotValidationService', () => {
   it('returns a floor in an active parking lot', async () => {
     prisma.floor.findFirst.mockResolvedValue(floor);
 
-    await expect(service.getActiveFloorOrThrow(floor.id)).resolves.toBe(floor);
+    await expect(service.getActiveFloorOrThrow(floor.id, organizationId)).resolves.toBe(floor);
     expect(prisma.floor.findFirst).toHaveBeenCalledWith({
       where: {
         id: floor.id,
-        parkingLot: { isActive: true },
+        parkingLot: { isActive: true, organizationId },
       },
     });
   });
@@ -62,17 +66,19 @@ describe('ParkingLotValidationService', () => {
   it('throws when floor is missing or belongs to an inactive parking lot', async () => {
     prisma.floor.findFirst.mockResolvedValue(null);
 
-    await expect(service.getActiveFloorOrThrow(404)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getActiveFloorOrThrow(404, organizationId)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('returns a slot in an active parking lot', async () => {
     prisma.slot.findFirst.mockResolvedValue(slot);
 
-    await expect(service.getActiveSlotOrThrow(slot.id)).resolves.toBe(slot);
+    await expect(service.getActiveSlotOrThrow(slot.id, organizationId)).resolves.toBe(slot);
     expect(prisma.slot.findFirst).toHaveBeenCalledWith({
       where: {
         id: slot.id,
-        floor: { parkingLot: { isActive: true } },
+        floor: { parkingLot: { isActive: true, organizationId } },
       },
       include: {
         floor: {
@@ -87,6 +93,8 @@ describe('ParkingLotValidationService', () => {
   it('throws when slot is missing or belongs to an inactive parking lot', async () => {
     prisma.slot.findFirst.mockResolvedValue(null);
 
-    await expect(service.getActiveSlotOrThrow(404)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getActiveSlotOrThrow(404, organizationId)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

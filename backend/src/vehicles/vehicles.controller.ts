@@ -30,25 +30,28 @@ export class VehiclesController {
     @CurrentUser() currentUser: SafeUser,
     @Body() createVehicleDto: CreateVehicleDto,
   ) {
-    return this.vehiclesService.create(currentUser.id, createVehicleDto);
+    return this.vehiclesService.create(currentUser, createVehicleDto);
   }
 
   @Get('my')
   @Roles(Role.USER, Role.ADMIN)
   findMine(@CurrentUser() currentUser: SafeUser) {
-    return this.vehiclesService.findMine(currentUser.id);
+    return this.vehiclesService.findMine(currentUser);
   }
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
-    return this.vehiclesService.findAll();
+  findAll(@CurrentUser() currentUser: SafeUser) {
+    return this.vehiclesService.findAll(currentUser);
   }
 
   @Get(':id')
   @Roles(Role.ADMIN)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.vehiclesService.findOneForAdmin(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: SafeUser,
+  ) {
+    return this.vehiclesService.findOneForAdmin(id, currentUser);
   }
 
   @Patch(':id')

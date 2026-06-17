@@ -33,13 +33,13 @@ export class BookingsController {
   @Get('my')
   @Roles(Role.USER)
   findMine(@CurrentUser() currentUser: SafeUser) {
-    return this.bookingsService.findMine(currentUser.id);
+    return this.bookingsService.findMine(currentUser);
   }
 
   @Get()
   @Roles(Role.ADMIN, Role.SECURITY)
-  findAll() {
-    return this.bookingsService.findAll();
+  findAll(@CurrentUser() currentUser: SafeUser) {
+    return this.bookingsService.findAll(currentUser);
   }
 
   @Get(':id')
