@@ -1,18 +1,15 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import { ReactNode } from 'react';
-import type { IllustrationName } from '../../assets/illustrations';
-import { Illustration } from '../../components/common/Illustration';
+import { brandAssets } from '../../assets/brand';
 import { ThemeModeToggle } from '../../components/common/ThemeModeToggle';
 
 export function AuthPageShell({
   title,
   subtitle,
-  illustration = 'secureLogin',
   children,
 }: {
   title: string;
   subtitle: string;
-  illustration?: IllustrationName;
   children: ReactNode;
 }) {
   return (
@@ -45,10 +42,27 @@ export function AuthPageShell({
         <Stack
           alignItems="center"
           justifyContent="center"
-          spacing={2}
-          sx={{ display: { xs: 'none', md: 'flex' }, px: 2 }}
+          spacing={2.5}
+          sx={{ display: { xs: 'none', md: 'flex' }, px: 1 }}
         >
-          <Illustration maxWidth={360} name={illustration} />
+          <Box
+            alt="Smart Parking admin dashboard preview"
+            component="img"
+            src={brandAssets.authHeroDashboard}
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 12px 40px rgba(0, 0, 0, 0.45)'
+                  : '0 12px 32px rgba(21, 101, 192, 0.12)',
+              display: 'block',
+              height: 'auto',
+              maxWidth: 400,
+              width: '100%',
+            }}
+          />
           <Typography color="text.secondary" textAlign="center" variant="body1">
             Manage parking lots, bookings, check-ins, and payments from one workspace.
           </Typography>
