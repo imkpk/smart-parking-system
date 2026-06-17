@@ -30,7 +30,7 @@ import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
-import { PageHeader } from '../../components/common/PageHeader';
+import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
@@ -234,9 +234,9 @@ export function VehiclesPage() {
         description={isAdmin ? 'View and manage registered vehicles.' : 'Register and manage your vehicles.'}
         action={
           canManageVehicles ? (
-            <Button onClick={openCreateForm} startIcon={<Add />} variant="contained">
+            <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
               Add Vehicle
-            </Button>
+            </HeaderActionButton>
           ) : null
         }
       />
@@ -263,6 +263,7 @@ export function VehiclesPage() {
           description: search
             ? 'Try a vehicle number, brand, model, or owner name.'
             : 'Register a vehicle to start creating bookings.',
+          illustration: search ? 'empty' : 'cityDriver',
           title: search ? 'No matching vehicles' : 'No vehicles found',
         }}
         height="calc(100vh - 245px)"

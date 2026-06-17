@@ -1,4 +1,4 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, ButtonProps, Stack, SxProps, Theme, Typography } from '@mui/material';
 import { ReactNode } from 'react';
 
 export function PageHeader({
@@ -12,8 +12,8 @@ export function PageHeader({
 }) {
   return (
     <Stack
-      alignItems="flex-start"
-      direction="row"
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      direction={{ xs: 'column', sm: 'row' }}
       justifyContent="space-between"
       spacing={2}
     >
@@ -41,7 +41,14 @@ export function PageHeader({
         ) : null}
       </Box>
       {action ? (
-        <Box sx={{ flexShrink: 0, pt: { xs: 0.25, sm: 0 } }}>
+        <Box
+          sx={{
+            alignSelf: { xs: 'stretch', sm: 'center' },
+            display: 'flex',
+            flexShrink: 0,
+            justifyContent: { xs: 'stretch', sm: 'flex-end' },
+          }}
+        >
           {action}
         </Box>
       ) : null}
@@ -51,14 +58,66 @@ export function PageHeader({
 
 export function HeaderActionButton({
   children,
-  onClick,
+  sx,
+  variant = 'contained',
+  ...props
 }: {
   children: ReactNode;
-  onClick: () => void;
-}) {
+} & Omit<ButtonProps, 'size'> & Record<string, unknown>) {
   return (
-    <Button onClick={onClick} variant="contained">
+    <Button
+      size="medium"
+      variant={variant}
+      sx={{
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        width: { xs: '100%', sm: 'auto' },
+        ...sx,
+      }}
+      {...props}
+    >
       {children}
     </Button>
+  );
+}
+
+export function ToolbarButton({ sx, ...props }: ButtonProps) {
+  return (
+    <Button
+      size="medium"
+      sx={{
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        width: { xs: '100%', sm: 'auto' },
+        ...sx,
+      }}
+      {...props}
+    />
+  );
+}
+
+export function ActionButtonGroup({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <Stack
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      direction={{ xs: 'column', sm: 'row' }}
+      flexWrap="wrap"
+      spacing={1}
+      sx={{
+        flexShrink: 0,
+        justifyContent: { xs: 'stretch', sm: 'flex-end' },
+        rowGap: 1,
+        width: '100%',
+        ...sx,
+      }}
+    >
+      {children}
+    </Stack>
   );
 }

@@ -18,8 +18,6 @@ import {
   Stack,
   Switch,
   TextField,
-  useMediaQuery,
-  useTheme,
   Tooltip,
 } from '@mui/material';
 import { Add, Delete, Edit, OpenInNew } from '@mui/icons-material';
@@ -37,7 +35,7 @@ import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
-import { PageHeader } from '../../components/common/PageHeader';
+import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
@@ -79,8 +77,6 @@ const emptyForm: ParkingLotPayload = {
 export function ParkingLotsPage() {
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
-  const theme = useTheme();
-  const isCompactAction = useMediaQuery(theme.breakpoints.down('md'));
   const [formOpen, setFormOpen] = useState(false);
   const [editingParkingLot, setEditingParkingLot] = useState<ParkingLot | null>(null);
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
@@ -268,21 +264,9 @@ export function ParkingLotsPage() {
     <Stack spacing={3}>
       <PageHeader
         action={
-          <Tooltip title="Create Parking Lot">
-            <Button
-              aria-label="Create Parking Lot"
-              onClick={openCreateForm}
-              startIcon={isCompactAction ? undefined : <Add />}
-              variant="contained"
-              sx={{
-                height: { xs: 44, md: 40 },
-                minWidth: { xs: 44, md: 180 },
-                px: { xs: 0, md: 2 },
-              }}
-            >
-              {isCompactAction ? <Add /> : 'Create Parking Lot'}
-            </Button>
-          </Tooltip>
+          <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
+            Create Parking Lot
+          </HeaderActionButton>
         }
         title="Parking Lots"
         description="Create, update, and deactivate parking lots."
@@ -332,6 +316,7 @@ export function ParkingLotsPage() {
               description: search
                 ? 'Try a parking lot name, city, state, or pincode.'
                 : 'Create a parking lot to start managing floors and slots.',
+              illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking lots' : 'No parking lots found',
             }}
             height="calc(100vh - 290px)"

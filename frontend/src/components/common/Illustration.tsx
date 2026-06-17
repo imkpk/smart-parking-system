@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import {
   illustrations,
   type IllustrationName,
@@ -13,13 +13,15 @@ export function Illustration({
   maxWidth?: number | string;
   name: IllustrationName;
 }) {
+  const theme = useTheme();
+
   return (
     <Box
-      alt={alt}
+      alt={alt || `${name} illustration`}
       component="img"
       src={illustrations[name]}
       sx={{
-        '--primary-svg-color': 'var(--illustration-accent, #1f6feb)',
+        '--primary-svg-color': theme.palette.primary.main,
         display: 'block',
         height: 'auto',
         maxWidth,

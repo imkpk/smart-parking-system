@@ -34,7 +34,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
-import { PageHeader } from '../../components/common/PageHeader';
+import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
@@ -318,9 +318,9 @@ export function BookingsPage() {
         description={isUser ? 'Create, review, and cancel your parking bookings.' : 'Review parking bookings.'}
         action={
           isUser ? (
-            <Button onClick={openCreateForm} startIcon={<Add />} variant="contained">
+            <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
               Create Booking
-            </Button>
+            </HeaderActionButton>
           ) : null
         }
       />
@@ -349,6 +349,7 @@ export function BookingsPage() {
             : isUser
               ? 'Create a booking to reserve a parking slot.'
               : 'Bookings will appear here when customers reserve slots.',
+          illustration: search ? 'empty' : 'booking',
           title: search ? 'No matching bookings' : 'No bookings found',
         }}
         height="calc(100vh - 245px)"

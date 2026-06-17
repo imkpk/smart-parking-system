@@ -54,6 +54,7 @@ export function RegisterPage() {
 
   return (
     <AuthPageShell
+      illustration="orderCar"
       title="Create account"
       subtitle="Register a Smart Parking user."
     >
@@ -99,7 +100,7 @@ export function RegisterPage() {
             <MenuItem value="ADMIN">Admin</MenuItem>
           </Select>
         </FormControl>
-        <Button disabled={isSubmitting} type="submit" variant="contained">
+        <Button disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
           Create account
         </Button>
         <Link component={RouterLink} to="/login" underline="hover">
