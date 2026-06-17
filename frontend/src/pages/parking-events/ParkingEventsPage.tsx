@@ -257,19 +257,29 @@ export function ParkingEventsPage() {
     queryFn: isUser ? getParkingEventHistory : getParkingEvents,
     enabled: isUser || isAdmin
   });
+
+  const referencedParkingLotIds = useMemo(() => {
+    const events = [
+      ...(activeEventsQuery.data ?? []),
+      ...(historyQuery.data ?? []),
+    ];
+
+    return [...new Set(events.map((event) => event.parkingLotId))];
+  }, [activeEventsQuery.data, historyQuery.data]);
+
   const labels = useReferenceLabels({
     context: 'event-enrichment',
     includeParkingStructure: canOperateParkingEvents || isUser,
     includeUsers: isAdmin,
-    role: user?.role
+    role: user?.role,
+    parkingLotIds: referencedParkingLotIds,
   });
 
   const invalidateParkingEvents = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
       queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-      queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
     ]);
   };
 
