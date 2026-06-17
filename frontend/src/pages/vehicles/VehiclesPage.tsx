@@ -31,7 +31,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
@@ -248,14 +248,6 @@ export function VehiclesPage() {
         </Alert>
       ) : null}
 
-      <SearchField
-        label="Search vehicles"
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch('')}
-        placeholder="Search by vehicle number, type, brand, model, color, or owner"
-        value={search}
-      />
-
       <AppDataGrid
         columns={columns}
         emptyState={{
@@ -265,9 +257,14 @@ export function VehiclesPage() {
           illustration: search ? 'empty' : 'cityDriver',
           title: search ? 'No matching vehicles' : 'No vehicles found',
         }}
-        height="calc(100vh - 245px)"
         loading={vehiclesQuery.isLoading || vehiclesQuery.isFetching}
         rows={vehicleRows}
+        search={{
+          onChange: (event) => setSearch(event.target.value),
+          onClear: () => setSearch(''),
+          placeholder: 'Search by vehicle number, type, brand, model, color, or owner',
+          value: search,
+        }}
       />
 
       <Dialog fullWidth maxWidth="sm" onClose={closeForm} open={formOpen}>

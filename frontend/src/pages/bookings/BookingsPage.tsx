@@ -35,7 +35,7 @@ import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -332,14 +332,6 @@ export function BookingsPage() {
         </Alert>
       ) : null}
 
-      <SearchField
-        label="Search bookings"
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch('')}
-        placeholder="Search by booking no, booking code, customer, vehicle number, parking lot, floor, slot, or status"
-        value={search}
-      />
-
       <AppDataGrid
         columns={columns}
         emptyState={{
@@ -351,9 +343,15 @@ export function BookingsPage() {
           illustration: search ? 'empty' : 'booking',
           title: search ? 'No matching bookings' : 'No bookings found',
         }}
-        height="calc(100vh - 245px)"
         loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
         rows={bookingRows}
+        search={{
+          onChange: (event) => setSearch(event.target.value),
+          onClear: () => setSearch(''),
+          placeholder:
+            'Search by booking no, booking code, customer, vehicle number, parking lot, floor, slot, or status',
+          value: search,
+        }}
       />
 
       <Dialog fullWidth maxWidth="sm" onClose={() => setFormOpen(false)} open={formOpen}>

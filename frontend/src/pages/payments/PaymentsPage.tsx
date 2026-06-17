@@ -34,7 +34,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { PageHeader } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { PaymentStatusChip } from '../../components/common/PaymentStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatCard } from '../../components/common/StatCard';
@@ -464,22 +464,19 @@ export function PaymentsPage() {
         </Box>
       ) : null}
 
-      <SearchField
-        label="Search payments"
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch('')}
-        placeholder="Search by receipt no, booking no, vehicle number, status, or payment reference"
-        value={search}
-      />
-
       <QueryErrorAlert error={paymentError} fallbackMessage="Could not load payments." />
 
       <AppDataGrid
         columns={columns}
         emptyState={paymentEmptyState}
-        height={520}
         loading={isPaymentLoading}
         rows={rows}
+        search={{
+          onChange: (event) => setSearch(event.target.value),
+          onClear: () => setSearch(''),
+          placeholder: 'Search by receipt no, booking no, vehicle number, status, or payment reference',
+          value: search,
+        }}
       />
 
       <DetailsDialog

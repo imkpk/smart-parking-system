@@ -36,7 +36,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
@@ -294,21 +294,6 @@ export function ParkingLotsPage() {
             overflow: 'hidden',
           }}
         >
-          <Box
-            sx={{
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              p: 2,
-            }}
-          >
-            <SearchField
-              label="Search parking lots"
-              onChange={(event) => setSearch(event.target.value)}
-              onClear={() => setSearch('')}
-              placeholder="Search by name, type, city, state, or pincode"
-              value={search}
-            />
-          </Box>
           <AppDataGrid
             columns={columns}
             emptyState={{
@@ -318,9 +303,14 @@ export function ParkingLotsPage() {
               illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking lots' : 'No parking lots found',
             }}
-            height="calc(100vh - 290px)"
             loading={parkingLotsQuery.isFetching}
             rows={filteredParkingLots}
+            search={{
+              onChange: (event) => setSearch(event.target.value),
+              onClear: () => setSearch(''),
+              placeholder: 'Search by name, type, city, state, or pincode',
+              value: search,
+            }}
           />
         </Paper>
       ) : null}

@@ -34,7 +34,7 @@ import {
 } from '../../components/common/DetailsDialog';
 import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import {
@@ -438,7 +438,7 @@ export function ParkingEventsPage() {
   const historyError = historyQuery.error;
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={3}>
       <PageHeader title="Parking Events" />
 
       {canOperateParkingEvents ? (
@@ -508,15 +508,6 @@ export function ParkingEventsPage() {
         </Paper>
       )}
 
-      <Box sx={{ mt: 2 }}>
-        <SearchField
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch('')}
-          placeholder='Search by session no, booking no, vehicle number, customer, parking lot, slot, or status'
-          value={search}
-        />
-      </Box>
-
       {canOperateParkingEvents && activeTab === 'active' ? (
         <Stack spacing={2}>
           {activeError ? (
@@ -534,11 +525,17 @@ export function ParkingEventsPage() {
               illustration: search ? 'empty' : 'cityDriver',
               title: search ? 'No matching active events' : 'No active parking events',
             }}
-            height='calc(100vh - 360px)'
             loading={
               activeEventsQuery.isLoading || activeEventsQuery.isFetching
             }
             rows={activeRows}
+            search={{
+              onChange: (event) => setSearch(event.target.value),
+              onClear: () => setSearch(''),
+              placeholder:
+                'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
+              value: search,
+            }}
           />
         </Stack>
       ) : null}
@@ -568,9 +565,15 @@ export function ParkingEventsPage() {
               illustration: search ? 'empty' : 'park',
               title: search ? 'No matching parking events' : 'No parking event history',
             }}
-            height='calc(100vh - 300px)'
             loading={historyQuery.isLoading || historyQuery.isFetching}
             rows={historyRows}
+            search={{
+              onChange: (event) => setSearch(event.target.value),
+              onClear: () => setSearch(''),
+              placeholder:
+                'Search by session no, booking no, vehicle number, customer, parking lot, slot, or status',
+              value: search,
+            }}
           />
         </Stack>
       ) : null}

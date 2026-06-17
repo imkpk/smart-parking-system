@@ -47,14 +47,14 @@ import {
   PageHeader,
   ToolbarButton,
 } from '../../components/common/PageHeader';
-import { SearchField } from '../../components/common/SearchField';
+
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
-import { filterSlots } from '../../lib/searchFilters';
+import { filterFloors, filterSlots } from '../../lib/searchFilters';
 import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
@@ -761,6 +761,12 @@ function FloorsSection({
   onEdit: (floor: Floor) => void;
 }) {
   const [detailsFloor, setDetailsFloor] = useState<Floor | null>(null);
+  const [floorSearch, setFloorSearch] = useState('');
+
+  const filteredFloors = useMemo(
+    () => filterFloors(floors, floorSearch, parkingLotName),
+    [floorSearch, floors, parkingLotName],
+  );
 
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
@@ -805,12 +811,19 @@ function FloorsSection({
       <AppDataGrid
         columns={columns}
         emptyState={{
-          description: 'Create a floor to start adding slots.',
-          illustration: 'locationSearch',
-          title: 'No floors found',
+          description: floorSearch
+            ? 'Try a floor name or floor number.'
+            : 'Create a floor to start adding slots.',
+          illustration: floorSearch ? 'empty' : 'locationSearch',
+          title: floorSearch ? 'No matching floors' : 'No floors found',
         }}
-        height={420}
-        rows={floors}
+        rows={filteredFloors}
+        search={{
+          onChange: (event) => setFloorSearch(event.target.value),
+          onClear: () => setFloorSearch(''),
+          placeholder: 'Search by floor name or floor number',
+          value: floorSearch,
+        }}
       />
       <DetailsDialog
         onClose={() => setDetailsFloor(null)}
@@ -950,21 +963,6 @@ function SlotsSection({
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-      <Box
-        sx={{
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          p: 2,
-        }}
-      >
-        <SearchField
-          label="Search slots"
-          onChange={(event) => onSlotSearchChange(event.target.value)}
-          onClear={() => onSlotSearchChange('')}
-          placeholder="Search by slot number, floor, status, or vehicle type"
-          value={slotSearch}
-        />
-      </Box>
       <Stack spacing={2} p={2}>
         <Box
           sx={{
@@ -1062,10 +1060,15 @@ function SlotsSection({
         checkboxSelection
         columns={columns}
         emptyState={slotEmptyState}
-        height={520}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}
+        search={{
+          onChange: (event) => onSlotSearchChange(event.target.value),
+          onClear: () => onSlotSearchChange(''),
+          placeholder: 'Search by slot number, floor, status, or vehicle type',
+          value: slotSearch,
+        }}
       />
       <DetailsDialog
         onClose={() => setDetailsSlot(null)}
