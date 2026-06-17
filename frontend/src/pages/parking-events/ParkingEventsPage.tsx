@@ -438,10 +438,12 @@ export function ParkingEventsPage() {
   const historyError = historyQuery.error;
 
   const gridShellSx = {
+    alignSelf: 'stretch',
     display: 'flex',
     flex: 1,
     flexDirection: 'column',
-    minHeight: { xs: 480, lg: 0 },
+    minHeight: { xs: 480, lg: 360 },
+    width: '100%',
   } as const;
 
   return (
@@ -531,6 +533,7 @@ export function ParkingEventsPage() {
           ) : null}
           <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
             <AppDataGrid
+              checkboxSelection={false}
               columns={activeColumns}
               emptyState={{
                 description: search
@@ -572,6 +575,7 @@ export function ParkingEventsPage() {
           ) : null}
           <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
             <AppDataGrid
+              checkboxSelection={false}
               columns={historyColumns}
               emptyState={{
                 description: search

@@ -61,6 +61,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         ids: new Set(rowSelectionModel)
       }
     : undefined;
+  const fillsContainer = height === '100%';
 
   return (
     <Paper
@@ -70,10 +71,10 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        height,
         minHeight: 0,
         overflow: 'hidden',
         width: '100%',
+        ...(fillsContainer ? { flex: 1, height: 'auto' } : { height }),
       }}>
       <DataGrid
         checkboxSelection={checkboxSelection}
@@ -82,8 +83,8 @@ export function AppDataGrid<Row extends GridValidRowModel>({
         getRowId={getRowId}
         initialState={{
           pagination: {
-            paginationModel: { pageSize: 5, page: 0 }
-          }
+            paginationModel: { pageSize: 10, page: 0 },
+          },
         }}
         loading={loading}
         localeText={{ noRowsLabel: emptyState ? '' : noRowsLabel }}
@@ -92,7 +93,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             ? (model) => onRowSelectionModelChange(Array.from(model.ids))
             : undefined
         }
-        pageSizeOptions={[5, 10, 25]}
+        pageSizeOptions={[10, 25, 50]}
         rowSelectionModel={gridRowSelectionModel}
         rows={rows}
         density="comfortable"
