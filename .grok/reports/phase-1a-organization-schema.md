@@ -1,8 +1,8 @@
 # Phase 1a — Organization Schema & Tenant Columns
 
-**Status:** PR open ([#40](https://github.com/imkpk/smart-parking-system/pull/40))  
-**Branch:** `feature/phase-1a-organization-schema`  
-**Commit:** `6a8590b`
+**Status:** Merged ([#40](https://github.com/imkpk/smart-parking-system/pull/40))  
+**Branch:** `feature/phase-1a-organization-schema` (merged to `develop`)  
+**Commits:** `6a8590b` (schema), `7849a03` (admin login fix), `afb197c` (dev build fix)
 
 ## 1. Scope
 
@@ -10,7 +10,7 @@ Introduce multi-tenant data model foundation in the backend:
 
 - `Organization` model with plan limits and white-label fields (for Phase 2)
 - Expanded `Role` enum: `SUPER_ADMIN`, `TENANT_ADMIN`
-- `organizationId` on all tenant-scoped tables
+- `organizationId` on direct tenant-scoped tables (see §3)
 - Migration with default org backfill for existing data
 - Prisma seed for default organization
 - Service wiring: new records connect to default org; per-tenant unique constraints
@@ -56,7 +56,9 @@ Introduce multi-tenant data model foundation in the backend:
 
 ### Tenant-scoped tables
 
-`organizationId` added to: `User` (nullable — platform roles may omit org later), `ParkingLot`, `Vehicle`, `Booking`, `ParkingEvent`, `SlotAssignment`.
+**Direct `organizationId` column** on: `User` (nullable — platform roles may omit org later), `ParkingLot`, `Vehicle`, `Booking`, `ParkingEvent`, and `SlotAssignment`.
+
+**No direct `organizationId` in Phase 1a:** `Floor` and `ParkingSlot` (`Slot`). They inherit tenant context through their parent `ParkingLot` (`Floor.parkingLotId` → `ParkingLot.organizationId`). Explicit `organizationId` on floor/slot rows and query scoping for those tables are deferred to **Phase 1b**.
 
 ### Per-tenant unique constraints
 

@@ -6,7 +6,7 @@
 
 **Version:** 1.2.2  
 **Last updated:** 2026-06-17  
-**Current branch:** `feature/phase-1a-organization-schema`  
+**Current branch:** `develop`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
