@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/payments/health",
+                                "/api/payments/webhook/razorpay",
                                 "/actuator/health",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

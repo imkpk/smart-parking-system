@@ -20,6 +20,9 @@ public final class PaymentApiDocs {
     public static final String VERIFY_SUMMARY = "Verify Razorpay payment";
     public static final String VERIFY_DESCRIPTION =
             "Verifies Razorpay payment signature and marks an INITIATED Razorpay payment as SUCCESS.";
+    public static final String RAZORPAY_WEBHOOK_SUMMARY = "Razorpay payment webhook";
+    public static final String RAZORPAY_WEBHOOK_DESCRIPTION =
+            "Receives Razorpay server-to-server webhook events and updates payment status after signature verification.";
 
     public static final String PAYMENT_ID_EXAMPLE = "1";
     public static final String USER_ID_EXAMPLE = "1";
