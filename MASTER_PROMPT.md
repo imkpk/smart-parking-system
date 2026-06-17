@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.1.1  
+**Version:** 1.2.0  
 **Last updated:** 2026-06-17  
-**Current branch:** `docs/saas-project-plan-and-design-foundation` (PR #36 → develop)  
+**Current branch:** `develop`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -225,13 +225,13 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 ## 8. In progress (current sprint)
 
 ```text
-[🔄] PR #36 — SaaS project plan + MASTER_PROMPT + design foundation
-     Branch: docs/saas-project-plan-and-design-foundation
-     Scope: docs/project-plan/, MASTER_PROMPT.md, design assets, Illustration component
-     Status: Synced with develop (includes merged PR #35 / phase 8c)
+[🔄] Phase 1 — Multi-tenancy core
+     First branch: feature/phase-1a-organization-schema
+     Branch strategy: docs/project-plan/09-branch-strategy.md
+     Prereq: E2E Razorpay smoke test on develop (recommended)
 ```
 
-**Before starting new work:** merge PR #36, then begin Phase 1 multi-tenancy.
+**Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
 
 ---
 
@@ -243,8 +243,9 @@ Execute in this order unless the human redirects:
 
 ```text
 [x] Merge phase 8c webhook handler → develop (PR #35 ✅)
-[ ] Merge PR #36 docs/design foundation → develop
+[x] Merge PR #36 docs/design foundation → develop (PR #36 ✅)
 [ ] End-to-end test: book → check-in → check-out → Razorpay pay → webhook → receipt
+[ ] Phase 1a: feature/phase-1a-organization-schema
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
 
@@ -510,6 +511,8 @@ Generic agents will suggest: monolith merge, library rewrites, over-abstracted p
 | Gap analysis | docs/project-plan/05-gap-analysis.md |
 | HLD v1 (archived) | docs/project-plan/06-hld-current-system.md |
 | HLD v2 (current) | docs/project-plan/07-hld-saas-v2.md |
+| Branch strategy | docs/project-plan/09-branch-strategy.md |
+| PR template | .github/pull_request_template.md |
 | Agent coding rules | .grok/AGENTS.md |
 | Phase reports | .grok/reports/ |
 
@@ -539,6 +542,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.0.0 | Grok + human | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
 | 2026-06-17 | 1.1.0 | Grok + human | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
 | 2026-06-17 | 1.1.1 | Grok + human | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
+| 2026-06-17 | 1.2.0 | Grok + human | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
 
 ---
 
@@ -551,7 +555,8 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: merge PR #36, E2E Razorpay test, then Phase 1 multi-tenancy.
+Current focus: Phase 1a (organization schema). Branch: feature/phase-1a-organization-schema from develop.
+Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
 

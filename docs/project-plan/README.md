@@ -18,6 +18,7 @@ This folder holds product direction, architecture, and phased delivery. `MASTER_
 | 6 | [HLD — Current System (v1)](./06-hld-current-system.md) | Original single-tenant diagram (archived) |
 | 7 | [HLD — SaaS v2](./07-hld-saas-v2.md) | **Current** multi-tenant architecture + [diagram](./diagrams/hld-saas-v2.svg) |
 | 8 | [Design System Governance](./08-design-system.md) | License audit, compare process, controlled theme rules |
+| 9 | [Branch Strategy](./09-branch-strategy.md) | **State-of-the-art** trunk-based delivery, PR stacks, SemVer |
 
 ## How to use this folder
 

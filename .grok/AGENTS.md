@@ -63,6 +63,8 @@ docs/project-plan/05-gap-analysis.md
 docs/project-plan/07-hld-saas-v2.md      — current HLD (multi-tenant)
 docs/project-plan/diagrams/hld-saas-v2.svg — architecture diagram
 docs/project-plan/08-design-system.md      — design governance (no random themes)
+docs/project-plan/09-branch-strategy.md    — trunk-based delivery, PR stacks, SemVer
+.github/pull_request_template.md           — required PR checklist
 ```
 
 ### Design system rule
