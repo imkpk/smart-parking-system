@@ -49,6 +49,7 @@ import { getApiErrorMessage } from '../../lib/apiError';
 import {
   getParkingEventBookingLabel,
   getParkingEventCustomerLabel,
+  getParkingEventFloorLabel,
   getParkingEventParkingLotLabel,
   getParkingEventSlotLabel,
   getParkingEventVehicleLabel,
@@ -81,6 +82,7 @@ function buildParkingEventSummaryRows(
   rows.push(
     { label: 'Vehicle Number', value: getParkingEventVehicleLabel(event) },
     { label: 'Parking Lot', value: getParkingEventParkingLotLabel(event) },
+    { label: 'Floor', value: getParkingEventFloorLabel(event) },
     { label: 'Slot', value: getParkingEventSlotLabel(event) },
     { label: 'Status', value: <ParkingEventStatusChip status={event.status} /> },
     { label: 'Checked In At', value: formatDateTime(event.checkInTime) },
@@ -149,6 +151,12 @@ function buildParkingEventHistoryColumns({
       headerName: 'Parking Lot',
       minWidth: 180,
       valueGetter: (_value, row) => getParkingEventParkingLotLabel(row)
+    },
+    {
+      field: 'floorName',
+      headerName: 'Floor',
+      minWidth: 120,
+      valueGetter: (_value, row) => getParkingEventFloorLabel(row)
     },
     {
       field: 'slotNumber',
@@ -326,17 +334,23 @@ export function ParkingEventsPage() {
         valueGetter: (_value, row) => getParkingEventVehicleLabel(row),
       },
       {
-        field: 'slotNumber',
-        headerName: 'Slot',
-        minWidth: 130,
-        valueGetter: (_value, row) => getParkingEventSlotLabel(row)
-      },
-      {
         field: 'parkingLotName',
         flex: 1,
         headerName: 'Parking Lot',
         minWidth: 180,
         valueGetter: (_value, row) => getParkingEventParkingLotLabel(row)
+      },
+      {
+        field: 'floorName',
+        headerName: 'Floor',
+        minWidth: 120,
+        valueGetter: (_value, row) => getParkingEventFloorLabel(row)
+      },
+      {
+        field: 'slotNumber',
+        headerName: 'Slot',
+        minWidth: 130,
+        valueGetter: (_value, row) => getParkingEventSlotLabel(row)
       },
       createStatusColumn<ParkingEvent>((row) => (
         <ParkingEventStatusChip status={row.status} />

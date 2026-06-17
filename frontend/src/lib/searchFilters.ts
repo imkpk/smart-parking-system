@@ -79,6 +79,7 @@ export function getParkingEventSearchValues(event: ParkingEvent) {
     event.customerPhone,
     event.vehicleNumber,
     event.parkingLotName,
+    event.floorName,
     event.slotNumber,
     event.status,
     formatStatusLabel(event.status),

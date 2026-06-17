@@ -17,6 +17,7 @@ export interface ParkingEvent {
   bookingCode?: string;
   vehicleNumber?: string;
   slotNumber?: string;
+  floorName?: string;
   parkingLotName?: string;
   customerName?: string;
   customerEmail?: string;

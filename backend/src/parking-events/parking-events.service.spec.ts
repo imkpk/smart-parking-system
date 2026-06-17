@@ -37,7 +37,11 @@ function buildEnrichedParkingEvent(
     updatedAt: new Date('2026-06-14T10:00:00.000Z'),
     booking: { id: org1.booking.id, bookingCode: org1.booking.bookingCode },
     vehicle: { id: org1.vehicle.id, vehicleNumber: org1.vehicle.vehicleNumber },
-    slot: { id: org1.slot.id, slotNumber: org1.slot.slotNumber },
+    slot: {
+      id: org1.slot.id,
+      slotNumber: org1.slot.slotNumber,
+      floor: { id: org1.floor.id, name: org1.floor.name },
+    },
     parkingLot: { id: org1.parkingLot.id, name: org1.parkingLot.name },
     user: {
       id: normalUser.id,

@@ -50,9 +50,10 @@ describe('Controllers', () => {
     };
     const controller = new UsersController(usersService as never);
 
-    await expect(controller.findAll()).resolves.toEqual([normalUser]);
-    await expect(controller.findOne(1)).resolves.toBe(normalUser);
-    expect(usersService.findOne).toHaveBeenCalledWith(1);
+    await expect(controller.findAll(adminUser)).resolves.toEqual([normalUser]);
+    await expect(controller.findOne(adminUser, 1)).resolves.toBe(normalUser);
+    expect(usersService.findAll).toHaveBeenCalledWith(adminUser);
+    expect(usersService.findOne).toHaveBeenCalledWith(1, adminUser);
   });
 
   it('ParkingLotsController delegates CRUD operations', async () => {

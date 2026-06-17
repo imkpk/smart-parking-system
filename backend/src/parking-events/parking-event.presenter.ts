@@ -17,6 +17,12 @@ export const parkingEventListInclude = {
     select: {
       id: true,
       slotNumber: true,
+      floor: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   },
   parkingLot: {
@@ -43,6 +49,7 @@ export type ParkingEventListItem = Omit<ParkingEventWithRelations, 'booking' | '
   bookingCode: string;
   vehicleNumber: string;
   slotNumber: string;
+  floorName: string;
   parkingLotName: string;
   customerName: string;
   customerEmail: string;
@@ -57,6 +64,7 @@ export function presentParkingEvent(event: ParkingEventWithRelations): ParkingEv
     bookingCode: booking.bookingCode,
     vehicleNumber: vehicle.vehicleNumber,
     slotNumber: slot.slotNumber,
+    floorName: slot.floor.name,
     parkingLotName: parkingLot.name,
     customerName: user.name,
     customerEmail: user.email,

@@ -22,7 +22,11 @@ describe('parking-event.presenter', () => {
     updatedAt: new Date('2026-06-18T00:00:00.000Z'),
     booking: { id: 10, bookingCode: 'BK-001' },
     vehicle: { id: 3, vehicleNumber: 'KA01AB1234' },
-    slot: { id: 4, slotNumber: 'A-01' },
+    slot: {
+      id: 4,
+      slotNumber: 'A-01',
+      floor: { id: 6, name: 'Level 1' },
+    },
     parkingLot: { id: 5, name: 'Main Lot' },
     user: {
       id: 2,
@@ -51,6 +55,7 @@ describe('parking-event.presenter', () => {
       bookingCode: 'BK-001',
       vehicleNumber: 'KA01AB1234',
       slotNumber: 'A-01',
+      floorName: 'Level 1',
       parkingLotName: 'Main Lot',
       customerName: 'Test User',
       customerEmail: 'user@example.com',

@@ -28,3 +28,7 @@ export function getParkingEventParkingLotLabel(event: ParkingEvent): string {
 export function getParkingEventSlotLabel(event: ParkingEvent): string {
   return event.slotNumber ?? `Slot #${event.slotId}`;
 }
+
+export function getParkingEventFloorLabel(event: ParkingEvent): string {
+  return event.floorName ?? '-';
+}
