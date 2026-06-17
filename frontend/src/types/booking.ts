@@ -12,6 +12,14 @@ export interface Booking {
   bookingCode: string;
   createdAt: string;
   updatedAt: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string | null;
+  vehicleNumber?: string;
+  parkingLotName?: string;
+  slotNumber?: string;
+  floorId?: number;
+  floorName?: string;
 }
 
 export interface BookingPayload {

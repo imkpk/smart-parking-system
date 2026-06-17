@@ -11,6 +11,7 @@ import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
+import { bookingListInclude, presentBooking, presentBookings } from './booking.presenter';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 const BOOKING_UNIQUE_MESSAGES = {
@@ -67,7 +68,7 @@ export class BookingsService {
 
         await this.slotLifecycleService.reserveSlot(slot.id, tx);
 
-        return tx.booking.create({
+        const createdBooking = await tx.booking.create({
           data: {
             organizationId,
             userId: currentUser.id,
@@ -81,7 +82,10 @@ export class BookingsService {
               : undefined,
             bookingCode: this.generateBookingCode(),
           },
+          include: bookingListInclude,
         });
+
+        return presentBooking(createdBooking);
       });
     } catch (error) {
       handlePrismaUniqueConstraint(
@@ -92,21 +96,27 @@ export class BookingsService {
     }
   }
 
-  findMine(currentUser: SafeUser) {
-    return this.prisma.booking.findMany({
+  async findMine(currentUser: SafeUser) {
+    const bookings = await this.prisma.booking.findMany({
       where: {
         userId: currentUser.id,
         ...this.accessPolicy.buildOrganizationWhere(currentUser),
       },
       orderBy: { id: 'desc' },
+      include: bookingListInclude,
     });
+
+    return presentBookings(bookings);
   }
 
-  findAll(currentUser: SafeUser) {
-    return this.prisma.booking.findMany({
+  async findAll(currentUser: SafeUser) {
+    const bookings = await this.prisma.booking.findMany({
       where: this.accessPolicy.buildOrganizationWhere(currentUser),
       orderBy: { id: 'desc' },
+      include: bookingListInclude,
     });
+
+    return presentBookings(bookings);
   }
 
   async findOne(id: number, currentUser: SafeUser) {
@@ -115,6 +125,7 @@ export class BookingsService {
         id,
         ...this.accessPolicy.buildOrganizationWhere(currentUser),
       },
+      include: bookingListInclude,
     });
 
     if (!booking) {
@@ -127,7 +138,7 @@ export class BookingsService {
       'You can only view your own bookings',
     );
 
-    return booking;
+    return presentBooking(booking);
   }
 
   async cancel(id: number, currentUser: SafeUser) {
@@ -156,11 +167,12 @@ export class BookingsService {
       const cancelledBooking = await tx.booking.update({
         where: { id },
         data: { status: BookingStatus.CANCELLED },
+        include: bookingListInclude,
       });
 
       await this.slotLifecycleService.releaseReservedSlot(booking.slotId, tx);
 
-      return cancelledBooking;
+      return presentBooking(cancelledBooking);
     });
   }
 

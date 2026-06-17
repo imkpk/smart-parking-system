@@ -38,9 +38,15 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
-import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import {
+  getBookingCustomerLabel,
+  getBookingFloorLabel,
+  getBookingParkingLotLabel,
+  getBookingSlotLabel,
+  getBookingVehicleLabel,
+} from '../../lib/bookingDisplay';
 import { formatBookingNo, formatDateTime } from '../../lib/formatters';
 import { filterBookings } from '../../lib/searchFilters';
 import { Booking } from '../../types/booking';
@@ -68,7 +74,6 @@ const activeBookingStatuses = ['PENDING', 'CONFIRMED'];
 
 function buildBookingSummaryRows(
   booking: Booking,
-  labels: ReturnType<typeof useReferenceLabels>,
   showCustomer: boolean,
 ): DetailsRow[] {
   const rows: DetailsRow[] = [
@@ -77,13 +82,14 @@ function buildBookingSummaryRows(
   ];
 
   if (showCustomer) {
-    rows.push({ label: 'Customer', value: labels.getCustomerLabel(booking.userId) });
+    rows.push({ label: 'Customer', value: getBookingCustomerLabel(booking) });
   }
 
   rows.push(
-    { label: 'Vehicle Number', value: labels.getVehicleLabel(booking.vehicleId) },
-    { label: 'Parking Lot', value: labels.getParkingLotLabel(booking.parkingLotId) },
-    { label: 'Slot', value: labels.getSlotLabel(booking.slotId) },
+    { label: 'Vehicle Number', value: getBookingVehicleLabel(booking) },
+    { label: 'Parking Lot', value: getBookingParkingLotLabel(booking) },
+    { label: 'Floor', value: getBookingFloorLabel(booking) },
+    { label: 'Slot', value: getBookingSlotLabel(booking) },
     { label: 'Start Time', value: formatDateTime(booking.startTime) },
     { label: 'End Time', value: formatDateTime(booking.endTime) },
     { label: 'Status', value: <BookingStatusChip status={booking.status} /> },
@@ -99,6 +105,7 @@ function buildBookingTechnicalRows(booking: Booking): DetailsRow[] {
     { label: 'vehicleId', value: booking.vehicleId },
     { label: 'slotId', value: booking.slotId },
     { label: 'parkingLotId', value: booking.parkingLotId },
+    { label: 'floorId', value: booking.floorId ?? '-' },
     { label: 'status', value: booking.status },
   ];
 }
@@ -109,15 +116,9 @@ function toLocalDateTimeValue(date = new Date()) {
 }
 
 export function BookingsPage() {
-  const { user, isAdmin, isUser, canOperateParkingEvents } = useUserRole();
+  const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
-  const labels = useReferenceLabels({
-    context: 'bookings',
-    includeParkingStructure: true,
-    includeUsers: isAdmin,
-    role: user?.role,
-  });
   const [formOpen, setFormOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
     ...emptyBookingForm,
@@ -180,8 +181,8 @@ export function BookingsPage() {
   });
 
   const bookingRows = useMemo(
-    () => filterBookings(bookingsQuery.data ?? [], search, labels),
-    [bookingsQuery.data, labels, search],
+    () => filterBookings(bookingsQuery.data ?? [], search),
+    [bookingsQuery.data, search],
   );
 
   const columns = useMemo<GridColDef<Booking>[]>(
@@ -196,31 +197,37 @@ export function BookingsPage() {
       ...(canOperateParkingEvents
         ? [
             {
-              field: 'userId',
+              field: 'customerName',
               flex: 1,
               headerName: 'Customer',
               minWidth: 220,
-              valueGetter: (_value, row) => labels.getCustomerLabel(row.userId),
+              valueGetter: (_value, row) => getBookingCustomerLabel(row),
             } satisfies GridColDef<Booking>,
           ]
         : []),
       {
-        field: 'vehicleId',
+        field: 'vehicleNumber',
         headerName: 'Vehicle Number',
         minWidth: 170,
-        valueGetter: (_value, row) => labels.getVehicleLabel(row.vehicleId),
+        valueGetter: (_value, row) => getBookingVehicleLabel(row),
       },
       {
-        field: 'parkingLotId',
+        field: 'parkingLotName',
         headerName: 'Parking Lot',
         minWidth: 170,
-        valueGetter: (_value, row) => labels.getParkingLotLabel(row.parkingLotId),
+        valueGetter: (_value, row) => getBookingParkingLotLabel(row),
       },
       {
-        field: 'slotId',
+        field: 'floorName',
+        headerName: 'Floor',
+        minWidth: 120,
+        valueGetter: (_value, row) => getBookingFloorLabel(row),
+      },
+      {
+        field: 'slotNumber',
         headerName: 'Slot',
         minWidth: 130,
-        valueGetter: (_value, row) => labels.getSlotLabel(row.slotId),
+        valueGetter: (_value, row) => getBookingSlotLabel(row),
       },
       {
         field: 'status',
@@ -270,7 +277,7 @@ export function BookingsPage() {
           ]
         : []),
     ],
-    [canOperateParkingEvents, isUser, labels],
+    [canOperateParkingEvents, isUser],
   );
 
   const openCreateForm = () => {
@@ -330,7 +337,7 @@ export function BookingsPage() {
         label="Search bookings"
         onChange={(event) => setSearch(event.target.value)}
         onClear={() => setSearch('')}
-        placeholder="Search by booking no, booking code, customer, vehicle number, parking lot, slot, or status"
+        placeholder="Search by booking no, booking code, customer, vehicle number, parking lot, floor, slot, or status"
         value={search}
       />
 
@@ -456,7 +463,7 @@ export function BookingsPage() {
         open={Boolean(detailsBooking)}
         summaryRows={
           detailsBooking
-            ? buildBookingSummaryRows(detailsBooking, labels, canOperateParkingEvents)
+            ? buildBookingSummaryRows(detailsBooking, canOperateParkingEvents)
             : []
         }
         technicalRows={detailsBooking ? buildBookingTechnicalRows(detailsBooking) : []}

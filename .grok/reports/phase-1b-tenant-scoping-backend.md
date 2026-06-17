@@ -132,6 +132,29 @@ npm run test:cov     — 213/213 passed, 100% coverage
 6. Confirm org 1 lists do not include org 2 lots/vehicles/bookings/events
 7. Confirm org 1 ADMIN cannot read org 2 parking lot by ID (404)
 
-## 12. Next phase
+## 12. PR review fixes
+
+### Parking Events repeated slots API calls
+- **Problem:** Opening `/parking-events` triggered dozens of `GET /parking-lots/:id/slots` calls because list endpoints returned only raw IDs.
+- **Root cause:** `ParkingEventsPage` used `useReferenceLabels({ includeParkingStructure: true })` to resolve customer, vehicle, lot, and slot labels client-side.
+- **API-level fix:** Added `parking-event.presenter.ts` with Prisma `include` for `user`, `vehicle`, `parkingLot`, `slot.floor`; all parking-event read/write endpoints return flat display fields (`bookingCode`, `customerName`, `customerEmail`, `vehicleNumber`, `parkingLotName`, `floorName`, `slotNumber`).
+- **Frontend changes:** `ParkingEventsPage` reads enriched API fields via `parkingEventDisplay.ts`; removed `useReferenceLabels` from the page; search uses embedded fields.
+- **Validation:** Backend 217 tests at 100% coverage; frontend build/tests pass; Parking Events page no longer calls general slots API for row labels.
+
+### Users API tenant leak
+- **Problem:** `UsersService.findAll` / `findOne` returned users across all organizations.
+- **Root cause:** Controller did not pass `CurrentUser`; service queries had no `organizationId` filter.
+- **API-level fix:** `UsersController` passes `@CurrentUser()`; `findAll` / `findOne` scope with `AccessPolicyService.buildOrganizationWhere`. `findActiveById` unchanged for JWT validation.
+- **Frontend changes:** None required.
+- **Validation:** Org 1 admin cannot list/read org 2 users (404); backend tests cover isolation.
+
+### Bookings repeated slots API calls
+- **Problem:** Opening `/bookings` triggered repeated `GET /parking-lots/:id/slots` calls for table/details/search labels.
+- **Root cause:** `BookingsPage` used `useReferenceLabels({ includeParkingStructure: true })` to resolve customer, vehicle, lot, and slot labels client-side.
+- **API-level fix:** Added `booking.presenter.ts` with Prisma `include` for `user`, `vehicle`, `parkingLot`, `slot.floor`; `create`, `findMine`, `findAll`, `findOne`, and `cancel` return flat display fields (`customerName`, `customerEmail`, `customerPhone`, `vehicleNumber`, `parkingLotName`, `floorId`, `floorName`, `slotNumber`) while keeping existing IDs and codes.
+- **Frontend changes:** `BookingsPage` reads enriched API fields via `bookingDisplay.ts`; removed `useReferenceLabels` from the page; search uses embedded fields. Create-booking form still uses `getAvailableSlotsForBooking` only after lot/vehicle selection.
+- **Validation:** Backend build/tests pass; frontend build/tests pass; Bookings list page no longer calls general slots API for row labels; available-slots flow unchanged.
+
+## 13. Next phase
 
 Phase 1c/1d: tenant onboarding API and frontend tenant context in `AuthProvider` (per roadmap).

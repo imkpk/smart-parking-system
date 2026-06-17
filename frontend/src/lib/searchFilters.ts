@@ -92,23 +92,26 @@ export function filterParkingEvents(events: ParkingEvent[], query: string) {
   );
 }
 
-export function getBookingSearchValues(booking: Booking, labels: ReferenceLabels) {
+export function getBookingSearchValues(booking: Booking) {
   return [
     formatBookingNo(booking.id),
     booking.id,
     booking.bookingCode,
-    labels.getCustomerLabel(booking.userId),
-    labels.getVehicleLabel(booking.vehicleId),
-    labels.getParkingLotLabel(booking.parkingLotId),
-    labels.getSlotLabel(booking.slotId),
+    booking.customerName,
+    booking.customerEmail,
+    booking.customerPhone,
+    booking.vehicleNumber,
+    booking.parkingLotName,
+    booking.floorName,
+    booking.slotNumber,
     booking.status,
     formatStatusLabel(booking.status),
   ];
 }
 
-export function filterBookings(bookings: Booking[], query: string, labels: ReferenceLabels) {
+export function filterBookings(bookings: Booking[], query: string) {
   return bookings.filter((booking) =>
-    matchesSearch(query, getBookingSearchValues(booking, labels)),
+    matchesSearch(query, getBookingSearchValues(booking)),
   );
 }
 
