@@ -19,13 +19,14 @@ import {
 } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   getPayments,
   getPaymentSummary,
   getUserPayments,
   mockPaymentFailure,
   mockPaymentSuccess,
+  verifyRazorpayPayment,
 } from '../../api/paymentsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
@@ -46,6 +47,11 @@ import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { filterPayments } from '../../lib/searchFilters';
+import {
+  buildVerifyRazorpayPaymentRequest,
+  canShowPayNow,
+} from '../../lib/paymentRazorpay';
+import { openRazorpayCheckout } from '../../lib/razorpayCheckout';
 import {
   formatBookingNo,
   formatCurrency,
@@ -80,9 +86,18 @@ function buildPaymentSummaryRows(
     { label: 'Amount', value: formatCurrency(payment.amount, payment.currency) },
     { label: 'Currency', value: payment.currency },
     { label: 'Payment Status', value: <PaymentStatusChip status={payment.status} /> },
+    { label: 'Provider', value: formatStatusLabel(payment.provider) },
     { label: 'Method', value: formatStatusLabel(payment.paymentMethod) },
     { label: 'Payment Reference', value: payment.providerReference ?? '-' },
   );
+
+  if (payment.provider === 'RAZORPAY' && payment.gatewayOrderId) {
+    rows.push({ label: 'Gateway Order', value: payment.gatewayOrderId });
+  }
+
+  if (payment.gatewayStatus) {
+    rows.push({ label: 'Gateway Status', value: payment.gatewayStatus });
+  }
 
   if (payment.failureReason) {
     rows.push({ label: 'Failure Reason', value: payment.failureReason });
@@ -99,6 +114,9 @@ function buildPaymentTechnicalRows(payment: Payment): DetailsRow[] {
     { label: 'parkingEventId', value: payment.parkingEventId },
     { label: 'bookingId', value: payment.bookingId },
     { label: 'userId', value: payment.userId },
+    { label: 'provider', value: payment.provider },
+    { label: 'gatewayOrderId', value: payment.gatewayOrderId ?? '-' },
+    { label: 'gatewayStatus', value: payment.gatewayStatus ?? '-' },
     { label: 'providerReference', value: payment.providerReference ?? '-' },
     { label: 'status', value: payment.status },
     { label: 'paymentMethod', value: payment.paymentMethod },
@@ -113,6 +131,7 @@ export function PaymentsPage() {
   const [actionTarget, setActionTarget] = useState<PaymentAction>(null);
   const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
+  const [payingPaymentId, setPayingPaymentId] = useState<number | null>(null);
 
   const summaryQuery = useQuery({
     queryKey: ['payments', 'summary'],
@@ -152,6 +171,19 @@ export function PaymentsPage() {
     },
     onError: (error) => showError(getApiErrorMessage(error)),
   });
+  const verifyRazorpayMutation = useMutation({
+    mutationFn: verifyRazorpayPayment,
+    onSuccess: async () => {
+      await invalidatePayments();
+      showSuccess('Payment completed successfully.');
+      setPayingPaymentId(null);
+    },
+    onError: (error) => {
+      showError(getApiErrorMessage(error, 'Payment verification failed.'));
+      setPayingPaymentId(null);
+    },
+  });
+
   const mockFailureMutation = useMutation({
     mutationFn: mockPaymentFailure,
     onSuccess: async () => {
@@ -174,6 +206,39 @@ export function PaymentsPage() {
   const rows = useMemo(
     () => filterPayments(baseRows, search, labels),
     [baseRows, labels, search],
+  );
+
+  const payNowAccess = useMemo(
+    () => ({
+      isAdmin,
+      isUser,
+      currentUserId: user?.id,
+    }),
+    [isAdmin, isUser, user?.id],
+  );
+
+  const handlePayNow = useCallback(
+    async (payment: Payment) => {
+      setPayingPaymentId(payment.id);
+
+      await openRazorpayCheckout({
+        payment,
+        onSuccess: async (response) => {
+          await verifyRazorpayMutation.mutateAsync(
+            buildVerifyRazorpayPaymentRequest(payment.id, response),
+          );
+        },
+        onDismiss: () => {
+          showError('Payment was cancelled.');
+          setPayingPaymentId(null);
+        },
+        onError: (message) => {
+          showError(message);
+          setPayingPaymentId(null);
+        },
+      });
+    },
+    [showError, verifyRazorpayMutation],
   );
 
   const columns = useMemo<GridColDef<Payment>[]>(
@@ -217,6 +282,12 @@ export function PaymentsPage() {
       },
       { field: 'paymentMethod', headerName: 'Method', minWidth: 130 },
       {
+        field: 'provider',
+        headerName: 'Provider',
+        minWidth: 120,
+        valueGetter: (_value, row) => formatStatusLabel(row.provider),
+      },
+      {
         field: 'providerReference',
         flex: 1,
         headerName: 'Payment Reference',
@@ -225,6 +296,33 @@ export function PaymentsPage() {
       },
       createDateTimeColumn<Payment>('createdAt', 'Created On', (row) => row.createdAt),
       createDetailsColumn<Payment>(setDetailsPayment),
+      ...(isAdmin || isUser
+        ? [
+            {
+              field: 'payNow',
+              align: 'right',
+              filterable: false,
+              headerAlign: 'right',
+              headerName: 'Pay',
+              minWidth: 120,
+              sortable: false,
+              renderCell: ({ row }) =>
+                canShowPayNow(row, payNowAccess) ? (
+                  <Button
+                    disabled={
+                      payingPaymentId === row.id ||
+                      verifyRazorpayMutation.isPending
+                    }
+                    onClick={() => void handlePayNow(row)}
+                    size="small"
+                    variant="contained"
+                  >
+                    Pay Now
+                  </Button>
+                ) : null,
+            } satisfies GridColDef<Payment>,
+          ]
+        : []),
       ...(isAdmin
         ? [
             {
@@ -241,7 +339,7 @@ export function PaymentsPage() {
                     <span>
                       <IconButton
                         color="success"
-                        disabled={row.status !== 'INITIATED'}
+                        disabled={row.status !== 'INITIATED' || row.provider !== 'MOCK'}
                         onClick={() => setActionTarget({ type: 'success', payment: row })}
                       >
                         <CheckCircle />
@@ -252,7 +350,7 @@ export function PaymentsPage() {
                     <span>
                       <IconButton
                         color="error"
-                        disabled={row.status !== 'INITIATED'}
+                        disabled={row.status !== 'INITIATED' || row.provider !== 'MOCK'}
                         onClick={() => setActionTarget({ type: 'failure', payment: row })}
                       >
                         <ErrorOutline />
@@ -265,7 +363,16 @@ export function PaymentsPage() {
           ]
         : []),
     ],
-    [isAdmin, isSecurity, labels],
+    [
+      isAdmin,
+      isSecurity,
+      isUser,
+      labels,
+      payNowAccess,
+      payingPaymentId,
+      verifyRazorpayMutation.isPending,
+      handlePayNow,
+    ],
   );
 
   const paymentError = isUser ? userPaymentsQuery.error : paymentsQuery.error;
