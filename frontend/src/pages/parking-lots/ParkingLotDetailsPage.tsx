@@ -483,9 +483,21 @@ export function ParkingLotDetailsPage() {
       <PageHeader
         title={parkingLotQuery.data?.name ?? 'Parking Lot'}
         action={
-          <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
-            Back
-          </HeaderActionButton>
+          <ActionButtonGroup>
+            {parkingLotId ? (
+              <HeaderActionButton
+                component={RouterLink}
+                startIcon={<ViewModule />}
+                to={`/parking-lots/${parkingLotId}/slot-map`}
+                variant="outlined"
+              >
+                Visual map
+              </HeaderActionButton>
+            ) : null}
+            <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
+              Back
+            </HeaderActionButton>
+          </ActionButtonGroup>
         }
       />
 

@@ -6,7 +6,7 @@
 
 **Version:** 1.10.0
 **Last updated:** 2026-06-19  
-**Current branch:** `feature/phase-4b-slot-map-api`
+**Current branch:** `feature/phase-4c-visual-slot-map-ui`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 4 LOOP 4B — backend slot map API (feature/phase-4b-slot-map-api).
-4A contract merged (PR #86). Next: 4C frontend UI → 4D acceptance.
+Phase 4 LOOP 4C — frontend visual slot map UI (feature/phase-4c-visual-slot-map-ui).
+4A–4B merged (PRs #86–#87). Next: 4D acceptance.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -363,8 +363,8 @@ Execute in this order unless the human redirects:
 
 ```text
 [x] 4A: visual slot map contract — PR #86 ✅
-[x] 4B: tenant-scoped GET /parking-lots/:id/slot-map API — PR pending
-[ ] 4C: Visual slot map UI (/parking-lots/:id/slot-map)
+[x] 4B: tenant-scoped GET /parking-lots/:id/slot-map API — PR #87 ✅
+[x] 4C: Visual slot map UI (/parking-lots/:id/slot-map) — PR pending
 [ ] 4D: acceptance tests + demo polish
 [ ] Logical grid layout (no x/y coordinates)
 [ ] Floor/status/type filters + legend
@@ -659,6 +659,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.9.3 | Grok | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse, 220px expanded width, dashboard spacing polish, view-all outlined buttons, favicon. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
 | 2026-06-19 | 1.10.0 | Grok | Phase 4 LOOP 4A: visual slot map contract — API shape, role rules, logical grid layout, frontend route/component plan, acceptance criteria. Report: `.grok/reports/phase-4-visual-slot-map-contract.md`. |
 | 2026-06-19 | 1.10.1 | Grok | Phase 4 LOOP 4B: visual slot map API — `GET /parking-lots/:id/slot-map`, role-safe occupancy, filters, legend, tests. Report: `.grok/reports/phase-4b-slot-map-api.md`. |
+| 2026-06-19 | 1.10.2 | Grok | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. |
 
 ---
 
