@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 **Last updated:** 2026-06-18  
-**Current branch:** `develop`
+**Current branch:** `docs/phase-2-whitelabel-branding-contract`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -277,8 +277,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 1 multi-tenancy complete (1a–1d + acceptance).
-Next major milestone: Phase 2 white-label branding (await human approval).
+Phase 2 white-label branding — LOOP 2A contract in progress.
+Loops: 2A contract → 2B backend API → 2C frontend provider → 2D login/shell → 2E settings → acceptance.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -320,13 +320,15 @@ Execute in this order unless the human redirects:
 
 **Exit criteria:** Two organizations in DB see completely separate data. ✅ Met.
 
-### Phase 2 — White-label
+### Phase 2 — White-label (IN PROGRESS)
 
 ```text
-[ ] Per-tenant logo, name, primaryColor
-[ ] Dynamic MUI theme per tenant
-[ ] Branded login + sidebar
-[ ] TENANT_ADMIN settings page
+[x] LOOP 2A: branding contract (.grok/reports/phase-2-whitelabel-branding-contract.md)
+[ ] LOOP 2B: backend branding API (public + current + PATCH)
+[ ] LOOP 2C: TenantBrandingProvider + theme integration
+[ ] LOOP 2D: branded login + app shell
+[ ] LOOP 2E: TENANT_ADMIN branding settings UI
+[ ] FINAL: Phase 2 acceptance verification
 ```
 
 ### Phase 3 — Operator dashboard
@@ -618,6 +620,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added SUPER_ADMIN-only `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
 | 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support SUPER_ADMIN/TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
 | 2026-06-18 | 1.6.0 | Grok | Phase 1 tenant isolation acceptance: added acceptance tests/report; Phase 1a–1d marked complete. |
+| 2026-06-18 | 1.7.0 | Grok | Phase 2 LOOP 2A: white-label branding contract — API plan, data model, frontend provider contract, acceptance criteria. |
 
 ---
 
