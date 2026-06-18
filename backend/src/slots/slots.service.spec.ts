@@ -1,8 +1,21 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Prisma, SlotStatus, SlotType, VehicleType } from '@prisma/client';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BookingStatus,
+  ParkingEventStatus,
+  Prisma,
+  SlotStatus,
+  SlotType,
+  VehicleType,
+} from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
-import { adminUser } from '../test/test-users';
+import {
+  adminUser,
+  normalUser,
+  securityUser,
+  superAdminUser,
+  tenantAdminUser,
+} from '../test/test-users';
 import { org1, org2 } from '../test/test-tenant-fixtures';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { SlotsService } from './slots.service';
@@ -12,7 +25,7 @@ describe('SlotsService', () => {
   let prisma: {
     $transaction: jest.Mock;
     parkingLot: { findFirst: jest.Mock };
-    floor: { findFirst: jest.Mock };
+    floor: { findFirst: jest.Mock; findMany: jest.Mock };
     slot: {
       findFirst: jest.Mock;
       findMany: jest.Mock;
@@ -28,7 +41,7 @@ describe('SlotsService', () => {
     prisma = {
       $transaction: jest.fn(async (callback) => callback(prisma)),
       parkingLot: { findFirst: jest.fn() },
-      floor: { findFirst: jest.fn() },
+      floor: { findFirst: jest.fn(), findMany: jest.fn() },
       slot: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -273,5 +286,183 @@ describe('SlotsService', () => {
     prisma.slot.deleteMany.mockResolvedValue({ count: 0 });
 
     await expect(service.removeBulk([404], adminUser)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  describe('getSlotMap', () => {
+    const occupiedSlot = {
+      id: 21,
+      slotNumber: 'A-02',
+      slotType: SlotType.CAR,
+      status: SlotStatus.OCCUPIED,
+      floor: { id: 10, name: 'Level 1', level: 1 },
+      bookings: [],
+      events: [
+        {
+          id: 301,
+          checkInTime: new Date('2026-06-19T08:00:00.000Z'),
+          bookingId: 201,
+          booking: { id: 201, bookingCode: 'BK-ORG1' },
+          vehicle: { vehicleNumber: 'TS09EA1234' },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      prisma.parkingLot.findFirst.mockResolvedValue(org1.parkingLot);
+      prisma.floor.findMany.mockResolvedValue([
+        {
+          id: 10,
+          name: 'Level 1',
+          level: 1,
+          _count: { slots: 2 },
+        },
+      ]);
+    });
+
+    it('returns tenant admin slot map with legend and occupancy', async () => {
+      prisma.slot.findMany.mockResolvedValue([
+        {
+          id: 20,
+          slotNumber: 'A-01',
+          slotType: SlotType.CAR,
+          status: SlotStatus.AVAILABLE,
+          floor: { id: 10, name: 'Level 1', level: 1 },
+          bookings: [],
+          events: [],
+        },
+        occupiedSlot,
+      ]);
+
+      const result = await service.getSlotMap(1, tenantAdminUser);
+
+      expect(result.parkingLot).toEqual({
+        id: 1,
+        name: 'Org1 Lot',
+        isActive: true,
+      });
+      expect(result.floors).toEqual([
+        { id: 10, name: 'Level 1', level: 1, slotCount: 2 },
+      ]);
+      expect(result.legend).toEqual({
+        AVAILABLE: 1,
+        RESERVED: 0,
+        OCCUPIED: 1,
+        MAINTENANCE: 0,
+        UNKNOWN: 0,
+      });
+      expect(result.groups[0].slots[1].occupancy).toEqual({
+        state: 'OCCUPIED',
+        bookingId: 201,
+        eventId: 301,
+        vehicleNumber: 'TS09EA1234',
+        bookingCode: 'BK-ORG1',
+        checkedInAt: '2026-06-19T08:00:00.000Z',
+      });
+    });
+
+    it('returns security operational map without requiring admin role', async () => {
+      prisma.slot.findMany.mockResolvedValue([occupiedSlot]);
+
+      const result = await service.getSlotMap(1, securityUser);
+
+      expect(result.groups[0].slots[0].occupancy?.vehicleNumber).toBe('TS09EA1234');
+      expect(result.groups[0].slots[0].occupancy?.bookingCode).toBe('BK-ORG1');
+    });
+
+    it('returns user-safe occupancy without vehicle or booking code', async () => {
+      prisma.slot.findMany.mockResolvedValue([occupiedSlot]);
+
+      const result = await service.getSlotMap(1, normalUser);
+
+      expect(result.groups[0].slots[0].occupancy).toEqual({
+        state: 'OCCUPIED',
+        bookingId: 201,
+        eventId: 301,
+        checkedInAt: '2026-06-19T08:00:00.000Z',
+      });
+    });
+
+    it('blocks cross-tenant slot map access', async () => {
+      prisma.parkingLot.findFirst.mockResolvedValue(null);
+
+      await expect(service.getSlotMap(org2.parkingLot.id, adminUser)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('requires organization context for super admin', async () => {
+      await expect(service.getSlotMap(1, superAdminUser)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it('applies floor, status, and vehicle type filters', async () => {
+      prisma.slot.findMany.mockResolvedValue([]);
+
+      await service.getSlotMap(1, adminUser, {
+        floorId: 10,
+        status: SlotStatus.AVAILABLE,
+        vehicleType: SlotType.EV,
+      });
+
+      expect(prisma.slot.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            floor: {
+              parkingLotId: 1,
+              parkingLot: { isActive: true, organizationId: DEFAULT_ORGANIZATION_ID },
+              id: 10,
+            },
+            status: SlotStatus.AVAILABLE,
+            slotType: SlotType.EV,
+          },
+        }),
+      );
+    });
+
+    it('returns controlled empty response when no slots match filters', async () => {
+      prisma.slot.findMany.mockResolvedValue([]);
+
+      const result = await service.getSlotMap(1, adminUser, { floorId: 999 });
+
+      expect(result.groups).toEqual([]);
+      expect(result.legend).toEqual({
+        AVAILABLE: 0,
+        RESERVED: 0,
+        OCCUPIED: 0,
+        MAINTENANCE: 0,
+        UNKNOWN: 0,
+      });
+      expect(result.selectedFloorId).toBe(999);
+    });
+
+    it('includes reserved booking summary for admin', async () => {
+      prisma.slot.findMany.mockResolvedValue([
+        {
+          id: 22,
+          slotNumber: 'B-01',
+          slotType: SlotType.CAR,
+          status: SlotStatus.RESERVED,
+          floor: { id: 10, name: 'Level 1', level: 1 },
+          bookings: [
+            {
+              id: 202,
+              bookingCode: 'BK-RES',
+              vehicle: { vehicleNumber: 'TS10ZZ9999' },
+            },
+          ],
+          events: [],
+        },
+      ]);
+
+      const result = await service.getSlotMap(1, adminUser);
+
+      expect(result.groups[0].slots[0].occupancy).toEqual({
+        state: 'RESERVED',
+        bookingId: 202,
+        vehicleNumber: 'TS10ZZ9999',
+        bookingCode: 'BK-RES',
+      });
+    });
   });
 });

@@ -8,7 +8,16 @@ import { SafeUser } from '../users/types/safe-user.type';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { DeleteSlotsDto } from './dto/delete-slots.dto';
+import { SlotMapQueryDto } from './dto/slot-map-query.dto';
 import { UpdateSlotStatusDto } from './dto/update-slot-status.dto';
+import {
+  createEmptyLegend,
+  incrementLegend,
+  mapSlotToMapItem,
+  slotMapBookingInclude,
+  slotMapEventInclude,
+} from './slot-map.util';
+import { SlotMapFloorGroup, SlotMapResponse } from './types/slot-map-response.type';
 
 const SLOT_UNIQUE_MESSAGES = {
   'floorId,slotNumber': 'Slot already exists',
@@ -39,6 +48,104 @@ export class SlotsService {
       },
       orderBy: [{ floorId: 'asc' }, { slotNumber: 'asc' }],
     });
+  }
+
+  async getSlotMap(
+    parkingLotId: number,
+    currentUser: SafeUser,
+    query: SlotMapQueryDto = {},
+  ): Promise<SlotMapResponse> {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+    const parkingLot = await this.parkingLotValidationService.getActiveParkingLotOrThrow(
+      parkingLotId,
+      organizationId,
+    );
+
+    const floors = await this.prisma.floor.findMany({
+      where: {
+        parkingLotId,
+        parkingLot: { isActive: true, organizationId },
+      },
+      orderBy: [{ level: 'asc' }, { name: 'asc' }],
+      include: {
+        _count: { select: { slots: true } },
+      },
+    });
+
+    const slots = await this.prisma.slot.findMany({
+      where: {
+        floor: {
+          parkingLotId,
+          parkingLot: { isActive: true, organizationId },
+          ...(query.floorId ? { id: query.floorId } : {}),
+        },
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.vehicleType ? { slotType: query.vehicleType } : {}),
+      },
+      include: {
+        floor: { select: { id: true, name: true, level: true } },
+        bookings: slotMapBookingInclude,
+        events: slotMapEventInclude,
+      },
+      orderBy: [{ floorId: 'asc' }, { slotNumber: 'asc' }],
+    });
+
+    const isUserRole = this.accessPolicy.isUser(currentUser);
+    const legend = createEmptyLegend();
+    const groupsByFloor = new Map<number, SlotMapFloorGroup>();
+
+    for (const slot of slots) {
+      const item = mapSlotToMapItem(slot, currentUser, isUserRole);
+      incrementLegend(legend, item.status);
+
+      const existing = groupsByFloor.get(slot.floor.id);
+
+      if (existing) {
+        existing.slots.push(item);
+        continue;
+      }
+
+      groupsByFloor.set(slot.floor.id, {
+        floorId: slot.floor.id,
+        floorName: slot.floor.name,
+        level: slot.floor.level,
+        slots: [item],
+      });
+    }
+
+    const groups = [...groupsByFloor.values()].sort((left, right) => {
+      const leftLevel = left.level ?? Number.MAX_SAFE_INTEGER;
+      const rightLevel = right.level ?? Number.MAX_SAFE_INTEGER;
+
+      if (leftLevel !== rightLevel) {
+        return leftLevel - rightLevel;
+      }
+
+      return left.floorName.localeCompare(right.floorName);
+    });
+
+    return {
+      parkingLot: {
+        id: parkingLot.id,
+        name: parkingLot.name,
+        isActive: parkingLot.isActive,
+      },
+      floors: floors.map((floor) => ({
+        id: floor.id,
+        name: floor.name,
+        level: floor.level,
+        slotCount: floor._count.slots,
+      })),
+      selectedFloorId: query.floorId ?? null,
+      groups,
+      legend,
+      filters: {
+        floorId: query.floorId ?? null,
+        status: query.status ?? null,
+        vehicleType: query.vehicleType ?? null,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
   }
 
   async findAvailableByParkingLot(

@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SafeUser } from '../users/types/safe-user.type';
 import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
+import { SlotMapQueryDto } from './dto/slot-map-query.dto';
 import { CreateBulkSlotsDto } from './dto/create-bulk-slots.dto';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { DeleteSlotsDto } from './dto/delete-slots.dto';
@@ -35,6 +36,16 @@ export class SlotsController {
     @CurrentUser() currentUser: SafeUser,
   ) {
     return this.slotsService.findByParkingLot(parkingLotId, currentUser);
+  }
+
+  @Get('parking-lots/:parkingLotId/slot-map')
+  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY, Role.USER)
+  getSlotMap(
+    @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
+    @CurrentUser() currentUser: SafeUser,
+    @Query() query: SlotMapQueryDto,
+  ) {
+    return this.slotsService.getSlotMap(parkingLotId, currentUser, query);
   }
 
   @Get('parking-lots/:parkingLotId/available-slots')
