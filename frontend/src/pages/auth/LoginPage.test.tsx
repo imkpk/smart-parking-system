@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Route, Routes } from 'react-router-dom';
 import { useAuth } from '../../providers/AuthProvider';
 import { createMockUser, renderWithProviders } from '../../test/test-utils';
 import { LoginPage } from './LoginPage';
@@ -48,6 +49,29 @@ describe('LoginPage', () => {
       email: 'user@example.com',
       password: 'wrong-password',
     });
+  });
+
+  it('redirects to role home when already authenticated', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'ADMIN' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: loginMock,
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/dashboard" element={<div>Admin Home</div>} />
+      </Routes>,
+      { route: '/login' },
+    );
+
+    expect(screen.getByText('Admin Home')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it('calls login with submitted credentials on success', async () => {

@@ -48,6 +48,50 @@ describe('openRazorpayCheckout', () => {
     expect(onError).toHaveBeenCalledWith('Payment is missing Razorpay order details.');
   });
 
+  it('shows friendly error when Razorpay script fails to load', async () => {
+    const onError = vi.fn();
+
+    const checkoutPromise = openRazorpayCheckout({
+      payment: createPayment({
+        provider: 'RAZORPAY',
+        gatewayOrderId: 'order_test_123',
+      }),
+      onSuccess: vi.fn(),
+      onError,
+    });
+
+    const script = document.getElementById('razorpay-checkout-js') as HTMLScriptElement;
+    script.onerror?.(new Event('error') as Event);
+
+    await checkoutPromise;
+
+    expect(onError).toHaveBeenCalledWith(
+      'Could not load Razorpay checkout. Please try again.',
+    );
+  });
+
+  it('shows friendly error when Razorpay is missing after script load', async () => {
+    const onError = vi.fn();
+
+    const checkoutPromise = openRazorpayCheckout({
+      payment: createPayment({
+        provider: 'RAZORPAY',
+        gatewayOrderId: 'order_test_123',
+      }),
+      onSuccess: vi.fn(),
+      onError,
+    });
+
+    const script = document.getElementById('razorpay-checkout-js') as HTMLScriptElement;
+    script.onload?.(new Event('load') as Event);
+
+    await checkoutPromise;
+
+    expect(onError).toHaveBeenCalledWith(
+      'Could not load Razorpay checkout. Please try again.',
+    );
+  });
+
   it('calls verify flow on successful Razorpay callback', async () => {
     const onSuccess = vi.fn();
     const open = vi.fn();

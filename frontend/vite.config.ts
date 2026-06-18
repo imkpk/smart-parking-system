@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const muiIconMock = path.resolve(projectRoot, 'src/test/mocks/muiIcon.tsx');
@@ -30,6 +31,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    testTimeout: 20000,
     fileParallelism: false,
     pool: 'forks',
     poolOptions: {
@@ -46,7 +48,16 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/types/**',
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+      ],
     },
   },
 });

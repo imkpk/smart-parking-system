@@ -38,6 +38,31 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByText('Bookings Content')).not.toBeInTheDocument();
   });
 
+  it('shows loading spinner while auth state is loading', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: true,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<ProtectedRoute />}>
+          <Route path="/bookings" element={<div>Bookings Content</div>} />
+        </Route>
+      </Routes>,
+      { route: '/bookings' },
+    );
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByText('Bookings Content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
+  });
+
   it('allows authenticated users to access protected content', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: createMockUser({ role: 'USER' }),
@@ -88,6 +113,31 @@ describe('RoleRoute', () => {
     );
 
     expect(screen.getByText(/you do not have access to this page/i)).toBeInTheDocument();
+    expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
+  });
+
+  it('shows login prompt when user is null', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+          <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+        </Route>
+      </Routes>,
+      { route: '/admin/dashboard' },
+    );
+
+    expect(screen.getByText(/you do not have access to this page/i)).toBeInTheDocument();
+    expect(screen.getByText('Please login again.')).toBeInTheDocument();
     expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
   });
 
