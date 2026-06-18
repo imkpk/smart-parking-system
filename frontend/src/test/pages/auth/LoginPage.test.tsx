@@ -12,6 +12,21 @@ vi.mock('@/providers/AuthProvider', () => ({
   useAuth: vi.fn(),
 }));
 
+vi.mock('@/hooks/useTenantSlugFromRoute', () => ({
+  useTenantSlugFromRoute: vi.fn(),
+}));
+
+vi.mock('@/providers/TenantBrandingProvider', () => ({
+  useTenantBranding: vi.fn(() => ({
+    branding: { name: 'Smart Parking', loginTitle: 'Sign in' },
+    isLoading: false,
+    error: null,
+    tenantSlug: null,
+    setTenantSlug: vi.fn(),
+    refreshBranding: vi.fn(),
+  })),
+}));
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({

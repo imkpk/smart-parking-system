@@ -36,6 +36,7 @@ import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
 import { formatRole } from '../../lib/formatRole';
 import { useAuth } from '../../providers/AuthProvider';
+import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 260;
@@ -111,6 +112,7 @@ function isNavItemActive(pathname: string, item: NavItem) {
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  const { branding } = useTenantBranding();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -167,7 +169,7 @@ export function AppLayout() {
             sx={{ minWidth: 0, width: '100%' }}
           >
             <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
-              <AppLogo showText />
+              <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText />
             </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
@@ -184,7 +186,7 @@ export function AppLayout() {
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
-            <AppLogo showText={false} />
+            <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText={false} />
             {!isMobile ? (
               <Tooltip title="Expand sidebar">
                 <IconButton

@@ -7,12 +7,14 @@ import {
 } from '@mui/material';
 import { FormEvent, useState } from 'react';
 import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
+import { useTenantSlugFromRoute } from '../../hooks/useTenantSlugFromRoute';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
 import { authTextFieldProps } from './authFieldProps';
 import { AuthPageShell } from './AuthPageShell';
 
 export function LoginPage() {
+  useTenantSlugFromRoute();
   const { isAuthenticated, login, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');

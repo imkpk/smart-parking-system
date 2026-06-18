@@ -19,6 +19,17 @@ vi.mock('@/providers/AuthProvider', () => ({
   useAuth: vi.fn(),
 }));
 
+vi.mock('@/providers/TenantBrandingProvider', () => ({
+  useTenantBranding: vi.fn(() => ({
+    branding: { name: 'Smart Parking', loginTitle: 'Sign in' },
+    isLoading: false,
+    error: null,
+    tenantSlug: null,
+    setTenantSlug: vi.fn(),
+    refreshBranding: vi.fn(),
+  })),
+}));
+
 import { AppLayout } from '@/components/layout/AppLayout';
 
 function renderAppLayout(route: string) {
