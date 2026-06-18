@@ -16,6 +16,14 @@
 - [ ] `payment-service` (Spring Boot)
 - [ ] `docs` only
 
+## UI/E2E impact
+
+- [ ] No UI/user-flow change
+- [ ] Existing Cypress coverage still applies
+- [ ] Added/updated Cypress smoke test
+- [ ] Cypress not needed because this is style-only/internal
+- [ ] Journey ID: J__
+
 ## Checklist
 
 - [ ] Branch based on latest `develop`
