@@ -2,7 +2,18 @@ import { Box, Typography } from '@mui/material';
 import parkLogo from '../../assets/illustrations/at-the-park.svg?url';
 import { brand } from '../../theme/tokens';
 
-export function AppLogo({ showText = true }: { showText?: boolean }) {
+export function AppLogo({
+  showText = true,
+  name,
+  logoUrl,
+}: {
+  showText?: boolean;
+  name?: string;
+  logoUrl?: string | null;
+}) {
+  const displayName = name ?? brand.name;
+  const logoSrc = logoUrl || parkLogo;
+
   return (
     <Box
       sx={{
@@ -13,9 +24,9 @@ export function AppLogo({ showText = true }: { showText?: boolean }) {
       }}
     >
       <Box
-        alt={brand.name}
+        alt={displayName}
         component="img"
-        src={parkLogo}
+        src={logoSrc}
         sx={{
           display: 'block',
           flexShrink: 0,
@@ -27,7 +38,7 @@ export function AppLogo({ showText = true }: { showText?: boolean }) {
       {showText ? (
         <Box minWidth={0}>
           <Typography noWrap sx={{ fontWeight: 600, lineHeight: 1.2 }} variant="subtitle2">
-            {brand.name}
+            {displayName}
           </Typography>
         </Box>
       ) : null}

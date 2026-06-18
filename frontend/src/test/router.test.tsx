@@ -11,6 +11,18 @@ vi.mock('@/providers/AuthProvider', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+vi.mock('@/providers/TenantBrandingProvider', () => ({
+  useTenantBranding: vi.fn(() => ({
+    branding: { name: 'Smart Parking', loginTitle: 'Sign in' },
+    isLoading: false,
+    error: null,
+    tenantSlug: null,
+    setTenantSlug: vi.fn(),
+    refreshBranding: vi.fn(),
+  })),
+  TenantBrandingProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock('@/pages/auth/LoginPage', () => ({
   LoginPage: () => <div>Login Page</div>,
 }));

@@ -29,7 +29,8 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-1-tenant-isolation-acceptance.md](./phase-1-tenant-isolation-acceptance.md) | Phase 1 tenant isolation acceptance (FINAL LOOP) | PR #69 ✅ |
 | [phase-2-whitelabel-branding-contract.md](./phase-2-whitelabel-branding-contract.md) | Phase 2 white-label branding contract (LOOP 2A) | PR #72 ✅ |
 | [phase-2-backend-branding-api.md](./phase-2-backend-branding-api.md) | Phase 2 backend tenant branding API (LOOP 2B) | PR #73 ✅ |
-| [phase-2-frontend-branding-provider.md](./phase-2-frontend-branding-provider.md) | Phase 2 frontend branding provider (LOOP 2C) | `feature/phase-2-frontend-branding-provider` |
+| [phase-2-frontend-branding-provider.md](./phase-2-frontend-branding-provider.md) | Phase 2 frontend branding provider (LOOP 2C) | PR #74 ✅ |
+| [phase-2-branded-login-shell.md](./phase-2-branded-login-shell.md) | Phase 2 branded login and app shell (LOOP 2D) | `feature/phase-2-branded-login-shell` |
 | [frontend-ui-theme-design-system.md](./frontend-ui-theme-design-system.md) | Frontend theme, illustrations, design system | PR #44 ✅, PR #45 ✅ |
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
 | [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |

@@ -1,7 +1,18 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/test-utils';
 import { AuthPageShell } from '@/pages/auth/AuthPageShell';
+
+vi.mock('@/providers/TenantBrandingProvider', () => ({
+  useTenantBranding: vi.fn(() => ({
+    branding: { name: 'Smart Parking', loginTitle: 'Sign in' },
+    isLoading: false,
+    error: null,
+    tenantSlug: null,
+    setTenantSlug: vi.fn(),
+    refreshBranding: vi.fn(),
+  })),
+}));
 
 describe('AuthPageShell', () => {
   it('renders title, subtitle, children, and theme toggle', () => {
