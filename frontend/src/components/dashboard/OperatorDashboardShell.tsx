@@ -7,6 +7,11 @@ import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { OperatorDashboardMetrics } from '../../types/operatorDashboard';
 import { PageHeader } from '../common/PageHeader';
 
+/** Subtitle to first dashboard row — keep within ~24px. */
+const DASHBOARD_HEADER_CONTENT_GAP = 2;
+/** Vertical gap between dashboard sections (KPI row, charts, activity). */
+const DASHBOARD_SECTION_GAP = 2.5;
+
 export function OperatorDashboardShell({
   title = 'Dashboard',
   accessDeniedMessage = 'Access denied. You do not have permission to view this dashboard.',
@@ -31,9 +36,11 @@ export function OperatorDashboardShell({
     : undefined;
 
   return (
-    <Stack spacing={3} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
+    <Stack spacing={0} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
       <PageHeader
+        compact
         description={description}
+        sx={{ mb: DASHBOARD_HEADER_CONTENT_GAP }}
         title={title}
         action={
           branding.logoUrl ? (
@@ -61,7 +68,11 @@ export function OperatorDashboardShell({
         </Alert>
       ) : null}
 
-      {metrics ? children(metrics) : null}
+      {metrics ? (
+        <Stack spacing={DASHBOARD_SECTION_GAP} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
+          {children(metrics)}
+        </Stack>
+      ) : null}
     </Stack>
   );
 }

@@ -49,6 +49,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-3b-operator-dashboard-ui.md](./phase-3b-operator-dashboard-ui.md) | Phase 3B operator dashboard UI | PR #81 |
 | [phase-3-operator-dashboard-acceptance.md](./phase-3-operator-dashboard-acceptance.md) | Phase 3 operator dashboard acceptance | PR #82 ✅ |
 | [phase-3d-dashboard-polish-charts-pagination.md](./phase-3d-dashboard-polish-charts-pagination.md) | Phase 3D dashboard polish — hero KPIs, donut chart, lot bars, cursor activity feed | PR #83 ✅ |
-| [phase-3e-dashboard-demo-polish.md](./phase-3e-dashboard-demo-polish.md) | Phase 3E dashboard demo polish — KPI icons, donut center label, activity spacing, E2E lot cleanup | `fix/phase-3e-dashboard-demo-polish` |
+| [phase-3e-dashboard-demo-polish.md](./phase-3e-dashboard-demo-polish.md) | Phase 3E dashboard demo polish — KPI icons, donut center label, activity spacing, E2E lot cleanup | merged into `fix/app-shell-sidebar-collapse-behavior` |
+| [app-shell-sidebar-collapse-behavior.md](./app-shell-sidebar-collapse-behavior.md) | App shell sidebar — collapsed by default, 2 min auto-close on desktop | `fix/app-shell-sidebar-collapse-behavior` |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.

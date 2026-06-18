@@ -63,6 +63,9 @@ export function SlotStatusDonutChart({
   })).filter((entry) => entry.value > 0);
 
   const hasData = occupancy.totalSlots > 0 && chartData.length > 0;
+  const utilizationPercent = Number.isFinite(occupancy.utilizationPercent)
+    ? occupancy.utilizationPercent
+    : 0;
 
   const handleStatusNavigate = (statusLabel: string) => {
     const status = slotStatusFromLabel(statusLabel);
@@ -144,8 +147,10 @@ export function SlotStatusDonutChart({
                   <Box
                     sx={{
                       display: 'inline-flex',
+                      height: donut.pieHeight,
                       maxWidth: '100%',
                       position: 'relative',
+                      width: donut.width,
                     }}
                   >
                     <PieChart
@@ -187,25 +192,31 @@ export function SlotStatusDonutChart({
                     />
                     <Stack
                       alignItems="center"
-                      aria-hidden
+                      aria-label={`${utilizationPercent}% utilized`}
                       justifyContent="center"
                       spacing={0.25}
                       sx={{
                         inset: 0,
+                        maxWidth: donut.innerRadius * 1.6,
+                        mx: 'auto',
                         pointerEvents: 'none',
                         position: 'absolute',
+                        textAlign: 'center',
+                        width: '100%',
                       }}
                     >
                       <Typography
+                        color="text.primary"
                         component="p"
+                        fontWeight={800}
                         sx={{
-                          fontSize: { xs: '1.25rem', sm: '1.4rem' },
-                          fontWeight: 700,
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
                           letterSpacing: '-0.02em',
                           lineHeight: 1,
                         }}
+                        variant="h4"
                       >
-                        {occupancy.utilizationPercent}%
+                        {utilizationPercent}%
                       </Typography>
                       <Typography color="text.secondary" variant="caption">
                         Utilized

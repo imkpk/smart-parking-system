@@ -74,6 +74,18 @@ describe('PageHeader', () => {
 
     expect(screen.getByRole('heading', { name: /bookings/i })).toBeInTheDocument();
   });
+
+  it('renders compact header description with tight title spacing', () => {
+    renderWithProviders(
+      <PageHeader compact description="Overview for Acme Parking" title="Dashboard" />,
+    );
+
+    const title = screen.getByRole('heading', { name: /dashboard/i });
+    const description = screen.getByText(/overview for acme parking/i);
+
+    expect(title).toHaveStyle({ marginBottom: '0px' });
+    expect(description).toHaveStyle({ marginTop: '4px', marginBottom: '0px' });
+  });
 });
 
 describe('HeaderActionButton', () => {

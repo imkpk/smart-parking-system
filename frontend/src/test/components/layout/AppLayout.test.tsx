@@ -1,6 +1,7 @@
-import { screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SIDEBAR_AUTO_COLLAPSE_MS } from '@/hooks/useSidebarAutoCollapse';
 import { Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { createMockUser, renderWithProviders } from '@/test/test-utils';
@@ -49,7 +50,12 @@ function renderAppLayout(route: string) {
 describe('AppLayout', () => {
   const logout = vi.fn();
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
+    vi.useRealTimers();
     useMediaQueryMock.mockReturnValue(false);
     vi.mocked(useAuth).mockReturnValue({
       user: createMockUser({ role: 'ADMIN', name: 'Admin User' }),
@@ -159,18 +165,78 @@ describe('AppLayout', () => {
     expect(screen.queryByRole('link', { name: /security dashboard/i })).not.toBeInTheDocument();
   });
 
+  it('starts with the desktop sidebar collapsed by default', () => {
+    renderAppLayout('/admin/dashboard');
+
+    expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /collapse sidebar/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /admin dashboard/i })).toBeInTheDocument();
+  });
+
   it('collapses and expands the desktop sidebar', async () => {
     const user = userEvent.setup();
     renderAppLayout('/admin/dashboard');
 
+    expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /expand sidebar/i }));
+    expect(screen.getByRole('button', { name: /collapse sidebar/i })).toBeInTheDocument();
     expect(screen.getAllByText('Admin Dashboard').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: /collapse sidebar/i }));
     expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
     expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: /expand sidebar/i }));
-    expect(screen.getAllByText('Admin Dashboard').length).toBeGreaterThan(0);
+  it('auto-collapses the expanded desktop sidebar after inactivity', () => {
+    vi.useFakeTimers();
+
+    try {
+      renderAppLayout('/admin/dashboard');
+
+      fireEvent.click(screen.getByRole('button', { name: /expand sidebar/i }));
+      expect(screen.getByRole('button', { name: /collapse sidebar/i })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(SIDEBAR_AUTO_COLLAPSE_MS);
+      });
+
+      expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /collapse sidebar/i })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('resets the desktop auto-collapse timer on sidebar interaction', () => {
+    vi.useFakeTimers();
+
+    try {
+      renderAppLayout('/admin/dashboard');
+
+      fireEvent.click(screen.getByRole('button', { name: /expand sidebar/i }));
+
+      act(() => {
+        vi.advanceTimersByTime(SIDEBAR_AUTO_COLLAPSE_MS - 1_000);
+      });
+
+      fireEvent.mouseMove(screen.getByRole('link', { name: /admin dashboard/i }));
+
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+
+      expect(screen.getByRole('button', { name: /collapse sidebar/i })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(SIDEBAR_AUTO_COLLAPSE_MS);
+      });
+
+      expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('opens the mobile navigation drawer', async () => {

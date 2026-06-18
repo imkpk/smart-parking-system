@@ -12,7 +12,6 @@ import {
 import { SxProps, Theme } from '@mui/material/styles';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { ViewAllActionButton } from './ViewAllActionButton';
 import { getRecentActivity } from '../../api/dashboardApi';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { getApiErrorMessage } from '../../lib/apiError';
@@ -23,6 +22,7 @@ import { RecentActivityItem } from '../../types/operatorDashboard';
 import { EmptyState } from '../common/EmptyState';
 import { ParkingEventStatusChip } from '../common/ParkingEventStatusChip';
 import { SearchField } from '../common/SearchField';
+import { ViewAllActionButton } from './ViewAllActionButton';
 
 const ACTIVITY_PAGE_SIZE = 10;
 const ACTIVITY_PANEL_MIN_HEIGHT = 320;

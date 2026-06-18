@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.9.2
+**Version:** 1.9.3
 **Last updated:** 2026-06-19  
-**Current branch:** `fix/phase-3e-dashboard-demo-polish`
+**Current branch:** `fix/app-shell-sidebar-collapse-behavior`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,7 +287,7 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 3E dashboard demo polish — PR pending (KPI icons, donut center label, activity spacing, E2E lot cleanup).
+App shell + dashboard demo polish — PR pending on fix/app-shell-sidebar-collapse-behavior (sidebar collapse, KPI icons, donut center label, spacing, view-all buttons, demo seed).
 Phase 3 core + 3D merged (PRs #80–#83). Next major milestone: Phase 4 visual slot map (await human approval).
 ```
 
@@ -652,6 +652,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.9.0 | Grok | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
 | 2026-06-18 | 1.9.1 | Grok | Phase 3D dashboard polish: cursor recent-activity API, hero KPI row, slot donut chart, compact lot utilization, activity timeline + Load more. |
 | 2026-06-19 | 1.9.2 | Grok | Phase 3D merged (PR #83). Phase 3E demo polish: KPI icons/helper text, donut center label, tighter chart, activity spacing, demo-seed Hyderabad lot names + E2E artifact cleanup. |
+| 2026-06-19 | 1.9.3 | Grok | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse, 220px expanded width, dashboard spacing polish, view-all outlined buttons, favicon. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
 
 ---
 
