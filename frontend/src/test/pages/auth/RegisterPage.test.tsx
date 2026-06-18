@@ -33,6 +33,8 @@ describe('RegisterPage', () => {
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /role/i }).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /role/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });

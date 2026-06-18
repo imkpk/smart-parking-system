@@ -9,6 +9,7 @@ import { FormEvent, useState } from 'react';
 import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
+import { authTextFieldProps } from './authFieldProps';
 import { AuthPageShell } from './AuthPageShell';
 
 export function LoginPage() {
@@ -43,6 +44,7 @@ export function LoginPage() {
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField
+          {...authTextFieldProps}
           autoComplete="email"
           label="Email"
           onChange={(event) => setEmail(event.target.value)}
@@ -51,6 +53,7 @@ export function LoginPage() {
           value={email}
         />
         <TextField
+          {...authTextFieldProps}
           autoComplete="current-password"
           label="Password"
           onChange={(event) => setPassword(event.target.value)}
