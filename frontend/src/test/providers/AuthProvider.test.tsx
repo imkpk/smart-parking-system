@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentUser, login, register } from '@/api/authApi';
 import { tokenStorage } from '@/lib/tokenStorage';
-import { createMockUser, createTestQueryClient } from '@/test/test-utils';
+import {
+  createMockOrganization,
+  createMockUser,
+  createTestQueryClient,
+} from '@/test/test-utils';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 
 vi.mock('@/api/authApi', () => ({
@@ -161,6 +165,108 @@ describe('AuthProvider', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading')).toHaveTextContent('false');
     });
+  });
+
+  it('exposes tenant context from login response', async () => {
+    const user = userEvent.setup();
+    const organization = createMockOrganization({ id: 7, name: 'Metro Mall', slug: 'metro-mall' });
+    const authResponse = {
+      accessToken: 'tenant-token',
+      user: createMockUser({
+        organizationId: 7,
+        organization,
+        role: 'TENANT_ADMIN',
+      }),
+    };
+    vi.mocked(login).mockResolvedValue(authResponse);
+    vi.mocked(getCurrentUser).mockResolvedValue(authResponse.user);
+
+    function TenantConsumer() {
+      const { login: loginUser, organizationId, organization: tenant } = useAuth();
+
+      return (
+        <div>
+          <button
+            onClick={() =>
+              loginUser({ email: 'tenant@example.com', password: 'secret123' })
+            }
+          >
+            Login
+          </button>
+          <span data-testid="organization-id">{organizationId ?? 'none'}</span>
+          <span data-testid="organization-name">{tenant?.name ?? 'none'}</span>
+        </div>
+      );
+    }
+
+    renderAuthProvider(<TenantConsumer />);
+    await user.click(screen.getByRole('button', { name: /login/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('organization-id')).toHaveTextContent('7');
+    });
+    expect(screen.getByTestId('organization-name')).toHaveTextContent('Metro Mall');
+  });
+
+  it('clears tenant context on logout', async () => {
+    const user = userEvent.setup();
+    tokenStorage.set('existing-token');
+    vi.mocked(getCurrentUser).mockResolvedValue(
+      createMockUser({
+        organizationId: 3,
+        organization: createMockOrganization({ id: 3, name: 'Org Three' }),
+      }),
+    );
+
+    function LogoutTenantConsumer() {
+      const { logout, organizationId, organization } = useAuth();
+
+      return (
+        <div>
+          <button onClick={logout}>Logout</button>
+          <span data-testid="organization-id">{organizationId ?? 'none'}</span>
+          <span data-testid="organization-name">{organization?.name ?? 'none'}</span>
+        </div>
+      );
+    }
+
+    renderAuthProvider(<LogoutTenantConsumer />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('organization-id')).toHaveTextContent('3');
+    });
+
+    await user.click(screen.getByRole('button', { name: /logout/i }));
+
+    expect(screen.getByTestId('organization-id')).toHaveTextContent('none');
+    expect(screen.getByTestId('organization-name')).toHaveTextContent('none');
+  });
+
+  it('handles missing organization data without crashing', async () => {
+    tokenStorage.set('existing-token');
+    vi.mocked(getCurrentUser).mockResolvedValue(
+      createMockUser({ organizationId: null, organization: null, role: 'SUPER_ADMIN' }),
+    );
+
+    function MissingOrgConsumer() {
+      const { organizationId, organization, user } = useAuth();
+
+      return (
+        <div>
+          <span data-testid="organization-id">{organizationId ?? 'none'}</span>
+          <span data-testid="organization-name">{organization?.name ?? 'none'}</span>
+          <span data-testid="role">{user?.role ?? 'none'}</span>
+        </div>
+      );
+    }
+
+    renderAuthProvider(<MissingOrgConsumer />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('role')).toHaveTextContent('SUPER_ADMIN');
+    });
+    expect(screen.getByTestId('organization-id')).toHaveTextContent('none');
+    expect(screen.getByTestId('organization-name')).toHaveTextContent('none');
   });
 
   it('logs out when an unauthorized event is dispatched', async () => {

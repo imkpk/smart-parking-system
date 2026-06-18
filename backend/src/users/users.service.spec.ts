@@ -40,6 +40,7 @@ describe('UsersService', () => {
     expect(result).toEqual({
       id: userRecord.id,
       organizationId: userRecord.organizationId,
+      organization: null,
       name: userRecord.name,
       email: userRecord.email,
       phone: userRecord.phone,
@@ -245,6 +246,15 @@ describe('UsersService', () => {
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: { id: userRecord.id, isActive: true },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
     });
     expect(result?.id).toBe(userRecord.id);
   });
