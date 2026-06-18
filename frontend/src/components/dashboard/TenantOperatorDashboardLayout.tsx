@@ -26,9 +26,9 @@ export function TenantOperatorDashboardLayout({
       <DashboardHeroKpiRow metrics={heroMetrics} />
 
       {occupancy ? (
-        <Grid alignItems="stretch" container spacing={2}>
+        <Grid alignItems="flex-start" container spacing={2}>
           <Grid item lg={showLotUtilization ? 7 : 6} md={showLotUtilization ? 7 : 6} xs={12}>
-            <Stack spacing={2} sx={{ height: '100%' }}>
+            <Stack spacing={2}>
               <SlotStatusDonutChart occupancy={occupancy} />
               {showLotUtilization ? <LotUtilizationCompactList items={lotUtilization} /> : null}
             </Stack>

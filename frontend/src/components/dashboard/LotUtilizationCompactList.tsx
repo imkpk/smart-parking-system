@@ -22,7 +22,7 @@ export function LotUtilizationCompactList({
 }) {
   if (items.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', height: '100%' }}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Typography component="h2" sx={{ mb: 2 }} variant="h6">
             Lot Utilization
@@ -42,9 +42,9 @@ export function LotUtilizationCompactList({
     .slice(0, TOP_LOT_COUNT);
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', height: '100%' }}>
-      <CardContent>
-        <Stack spacing={2}>
+    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+        <Stack spacing={1.5}>
           <Stack alignItems="center" direction="row" justifyContent="space-between" spacing={2}>
             <Typography component="h2" variant="h6">
               Lot Utilization

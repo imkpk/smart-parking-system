@@ -158,8 +158,7 @@ export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: bo
         borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        height: fillHeight ? '100%' : 'auto',
-        minHeight: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : undefined,
+        height: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : 'auto',
       }}
     >
       <CardContent

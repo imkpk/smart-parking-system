@@ -27,9 +27,9 @@ export function SlotStatusDonutChart({ occupancy }: { occupancy: OccupancySummar
   const hasData = occupancy.totalSlots > 0 && chartData.length > 0;
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', height: '100%' }}>
-      <CardContent>
-        <Stack spacing={2}>
+    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+        <Stack spacing={1.5}>
           <Typography component="h2" variant="h6">
             Slot Status
           </Typography>
@@ -40,17 +40,17 @@ export function SlotStatusDonutChart({ occupancy }: { occupancy: OccupancySummar
                 alignItems: 'center',
                 display: 'flex',
                 justifyContent: 'center',
-                minHeight: 220,
+                minHeight: 168,
               }}
             >
               <PieChart
-                height={220}
-                width={280}
+                height={168}
+                width={240}
                 series={[
                   {
                     data: chartData,
-                    innerRadius: 58,
-                    outerRadius: 92,
+                    innerRadius: 44,
+                    outerRadius: 72,
                     paddingAngle: 2,
                     cornerRadius: 4,
                     highlightScope: { fade: 'global', highlight: 'item' },
