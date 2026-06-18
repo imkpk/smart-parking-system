@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.7.4
+**Version:** 1.8.0
 **Last updated:** 2026-06-18  
-**Current branch:** `feature/phase-2-branding-settings-ui`
+**Current branch:** `verify/phase-2-whitelabel-acceptance`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -277,8 +277,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 2 white-label branding — LOOP 2E branding settings UI in progress.
-Loops: 2A ✅ → 2B ✅ → 2C ✅ → 2D ✅ → 2E settings → acceptance.
+Phase 2 white-label branding complete (2A–2E + acceptance).
+Next major milestone: Phase 3 operator dashboard (await human approval).
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -320,16 +320,18 @@ Execute in this order unless the human redirects:
 
 **Exit criteria:** Two organizations in DB see completely separate data. ✅ Met.
 
-### Phase 2 — White-label (IN PROGRESS)
+### Phase 2 — White-label ✅
 
 ```text
-[x] LOOP 2A: branding contract (.grok/reports/phase-2-whitelabel-branding-contract.md) — PR #72 ✅
-[x] LOOP 2B: backend branding API (public + current + PATCH) — PR #73 ✅
+[x] LOOP 2A: branding contract — PR #72 ✅
+[x] LOOP 2B: backend branding API — PR #73 ✅
 [x] LOOP 2C: TenantBrandingProvider + theme integration — PR #74 ✅
 [x] LOOP 2D: branded login + app shell — PR #75 ✅
-[ ] LOOP 2E: TENANT_ADMIN branding settings UI — in progress
-[ ] FINAL: Phase 2 acceptance verification
+[x] LOOP 2E: TENANT_ADMIN branding settings UI — PR #76 ✅
+[x] FINAL: Phase 2 acceptance verification — PR pending
 ```
+
+**Exit criteria:** Per-tenant branding on login/shell; tenant admin can configure branding; tenant isolation preserved. ✅ Met.
 
 ### Phase 3 — Operator dashboard
 
@@ -624,7 +626,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.7.1 | Grok | Phase 2 LOOP 2B: backend tenant branding API — schema fields, public/current/PATCH endpoints, validation, tests. PR #73. |
 | 2026-06-18 | 1.7.2 | Grok | Phase 2 LOOP 2C: TenantBrandingProvider, organizations API client, default branding merge, theme accent overrides. PR #74. |
 | 2026-06-18 | 1.7.3 | Grok | Phase 2 LOOP 2D: branded login page and app shell with tenant slug routes and branded AppLogo. PR #75. |
-| 2026-06-18 | 1.7.4 | Grok | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. |
+| 2026-06-18 | 1.7.4 | Grok | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. PR #76. |
+| 2026-06-18 | 1.8.0 | Grok | Phase 2 complete: white-label acceptance tests/report; branding API, provider, login/shell, settings UI merged. |
 
 ---
 
