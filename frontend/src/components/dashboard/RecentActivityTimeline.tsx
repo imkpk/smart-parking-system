@@ -6,11 +6,13 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Link,
   Stack,
   Typography,
 } from '@mui/material';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { getRecentActivity } from '../../api/dashboardApi';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { getApiErrorMessage } from '../../lib/apiError';
@@ -23,7 +25,7 @@ import { ParkingEventStatusChip } from '../common/ParkingEventStatusChip';
 import { SearchField } from '../common/SearchField';
 
 const ACTIVITY_PAGE_SIZE = 10;
-const ACTIVITY_PANEL_MIN_HEIGHT = 420;
+const ACTIVITY_PANEL_MIN_HEIGHT = 560;
 
 function formatActivityLocation(item: RecentActivityItem) {
   const parts = [item.parkingLotName, item.floorName, item.slotNumber].filter(Boolean);
@@ -36,68 +38,66 @@ function ActivityTimelineItem({ item }: { item: RecentActivityItem }) {
     item.activityType === 'CHECK_OUT' ? item.checkOutTime ?? item.checkInTime : item.checkInTime;
 
   return (
-    <Stack
-      alignItems={{ xs: 'flex-start', sm: 'center' }}
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={1.5}
-      sx={{ width: '100%' }}
-    >
-      <Stack alignItems="center" direction="row" spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
-        <Box
-          sx={{
-            alignItems: 'center',
-            bgcolor: statusStyle.bgcolor,
-            borderRadius: '50%',
-            color: statusStyle.borderColor,
-            display: 'flex',
-            flexShrink: 0,
-            height: 32,
-            justifyContent: 'center',
-            width: 32,
-          }}
-        >
-          {item.activityType === 'CHECK_IN' ? (
-            <LoginIcon sx={{ fontSize: 16 }} />
-          ) : (
-            <LogoutIcon sx={{ fontSize: 16 }} />
-          )}
-        </Box>
+    <Stack direction="row" spacing={1.5} sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          alignItems: 'center',
+          bgcolor: statusStyle.bgcolor,
+          borderRadius: '50%',
+          color: statusStyle.borderColor,
+          display: 'flex',
+          flexShrink: 0,
+          height: 36,
+          justifyContent: 'center',
+          mt: 0.25,
+          width: 36,
+        }}
+      >
+        {item.activityType === 'CHECK_IN' ? (
+          <LoginIcon sx={{ fontSize: 18 }} />
+        ) : (
+          <LogoutIcon sx={{ fontSize: 18 }} />
+        )}
+      </Box>
 
-        <Stack minWidth={0} spacing={0.25} sx={{ flex: 1 }}>
+      <Stack flex={1} minWidth={0} spacing={0.5}>
+        <Stack alignItems="flex-start" direction="row" flexWrap="wrap" justifyContent="space-between" spacing={1}>
           <Stack alignItems="center" direction="row" flexWrap="wrap" spacing={1}>
-            <Typography fontWeight={600} noWrap variant="body2">
+            <Typography fontWeight={600} variant="body2">
               {formatActivityTypeLabel(item.activityType)}
             </Typography>
             <ParkingEventStatusChip status={item.status} />
           </Stack>
-          <Typography fontWeight={600} noWrap variant="body2">
-            {item.vehicleNumber}
+          <Typography color="text.secondary" variant="caption">
+            {formatRelativeTime(timestamp)}
           </Typography>
         </Stack>
+
+        <Typography fontWeight={700} sx={{ wordBreak: 'break-word' }} variant="body2">
+          {item.vehicleNumber}
+        </Typography>
+
+        <Typography color="text.secondary" sx={{ wordBreak: 'break-word' }} variant="body2">
+          {formatActivityLocation(item)}
+        </Typography>
+
+        <Typography color="text.secondary" variant="caption">
+          {formatDateTime(timestamp)}
+        </Typography>
       </Stack>
-
-      <Typography
-        color="text.secondary"
-        noWrap
-        sx={{ flex: 1.2, minWidth: 0, textAlign: { xs: 'left', sm: 'center' } }}
-        variant="body2"
-      >
-        {formatActivityLocation(item)}
-      </Typography>
-
-      <Typography
-        color="text.secondary"
-        sx={{ flexShrink: 0, minWidth: 88, textAlign: { xs: 'left', sm: 'right' } }}
-        title={formatDateTime(timestamp)}
-        variant="caption"
-      >
-        {formatRelativeTime(timestamp)}
-      </Typography>
     </Stack>
   );
 }
 
-export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: boolean }) {
+export function RecentActivityTimeline({
+  fillHeight = false,
+  showViewAllLink = true,
+  viewAllHref = '/parking-events',
+}: {
+  fillHeight?: boolean;
+  showViewAllLink?: boolean;
+  viewAllHref?: string;
+}) {
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -159,6 +159,7 @@ export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: bo
         display: 'flex',
         flexDirection: 'column',
         height: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : 'auto',
+        minHeight: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : undefined,
       }}
     >
       <CardContent
@@ -174,9 +175,16 @@ export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: bo
         }}
       >
         <Stack spacing={1.25}>
-          <Typography component="h2" variant="h6">
-            Recent Activity
-          </Typography>
+          <Stack alignItems="center" direction="row" justifyContent="space-between" spacing={2}>
+            <Typography component="h2" variant="h6">
+              Recent Activity
+            </Typography>
+            {showViewAllLink ? (
+              <Link component={RouterLink} to={viewAllHref} underline="hover" variant="body2">
+                View all activity
+              </Link>
+            ) : null}
+          </Stack>
           <SearchField
             label="Search activity"
             onChange={(event) => setSearchInput(event.target.value)}
@@ -187,7 +195,7 @@ export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: bo
         </Stack>
 
         {isInitialLoading || isSearching ? (
-          <Stack alignItems="center" flex={1} justifyContent="center" minHeight={240}>
+          <Stack alignItems="center" flex={1} justifyContent="center" minHeight={280}>
             <CircularProgress size={28} />
           </Stack>
         ) : null}
@@ -215,13 +223,13 @@ export function RecentActivityTimeline({ fillHeight = false }: { fillHeight?: bo
             ref={scrollContainerRef}
             sx={{
               flex: 1,
-              maxHeight: fillHeight ? 'none' : ACTIVITY_PANEL_MIN_HEIGHT,
-              minHeight: 240,
+              maxHeight: fillHeight ? 'none' : ACTIVITY_PANEL_MIN_HEIGHT - 120,
+              minHeight: 280,
               overflowY: 'auto',
               pr: 0.5,
             }}
           >
-            <Stack divider={<Box sx={{ borderBottom: 1, borderColor: 'divider', my: 1.25 }} />} spacing={1.25}>
+            <Stack divider={<Box sx={{ borderBottom: 1, borderColor: 'divider', my: 1.5 }} />} spacing={1.5}>
               {items.map((item) => (
                 <ActivityTimelineItem item={item} key={item.parkingEventId} />
               ))}

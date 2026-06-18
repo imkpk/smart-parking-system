@@ -75,10 +75,15 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText(/30\/40 · 75%/)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /view all activity/i })).toHaveAttribute(
+      'href',
+      '/parking-events',
+    );
 
     await waitFor(() => {
       expect(screen.getByText('TS09EA1234')).toBeInTheDocument();
       expect(screen.getByText('Check-in')).toBeInTheDocument();
+      expect(screen.getByText(/Lot A · Ground · A-01/)).toBeInTheDocument();
     });
   });
 
@@ -117,6 +122,7 @@ describe('AdminDashboardPage', () => {
 
     expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/search activity/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /view all activity/i })).toBeInTheDocument();
   });
 
   it('renders platform hero KPIs and slot status without tenant lot list', async () => {
