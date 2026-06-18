@@ -38,6 +38,7 @@ export interface RecentActivityItem {
   parkingEventId: number;
   vehicleNumber: string;
   slotNumber: string;
+  floorName: string | null;
   parkingLotName: string;
   status: ParkingEventStatus;
   checkInTime: Date;

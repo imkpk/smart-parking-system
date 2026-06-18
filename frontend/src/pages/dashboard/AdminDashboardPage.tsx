@@ -1,32 +1,39 @@
 import { Stack } from '@mui/material';
-import { DashboardMetricGrid } from '../../components/dashboard/DashboardMetricGrid';
-import { LotUtilizationSection } from '../../components/dashboard/LotUtilizationSection';
-import { OccupancySummarySection } from '../../components/dashboard/OccupancySummarySection';
+import Grid from '@mui/material/GridLegacy';
+import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
-import { RecentActivityTable } from '../../components/dashboard/RecentActivityTable';
+import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
+import { SlotStatusDonutChart } from '../../components/dashboard/SlotStatusDonutChart';
+import { TenantOperatorDashboardLayout } from '../../components/dashboard/TenantOperatorDashboardLayout';
 import {
-  buildPlatformOverviewMetrics,
-  buildTenantAdminMetrics,
+  buildPlatformHeroKpis,
+  buildTenantHeroKpis,
 } from '../../lib/operatorDashboardMetrics';
 
 export function AdminDashboardPage() {
   return (
     <OperatorDashboardShell accessDeniedMessage="Access denied. Admin role is required for this dashboard.">
-      {(metrics) => (
-        <Stack spacing={3}>
-          {metrics.scope === 'PLATFORM' ? (
-            <DashboardMetricGrid metrics={buildPlatformOverviewMetrics(metrics)} />
-          ) : null}
-
-          {metrics.occupancy ? <OccupancySummarySection occupancy={metrics.occupancy} /> : null}
-
-          <DashboardMetricGrid metrics={buildTenantAdminMetrics(metrics)} />
-
-          {metrics.scope === 'TENANT' ? <LotUtilizationSection items={metrics.lotUtilization} /> : null}
-
-          <RecentActivityTable items={metrics.recentActivity} />
-        </Stack>
-      )}
+      {(metrics) =>
+        metrics.scope === 'PLATFORM' ? (
+          <Stack spacing={2.5}>
+            <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
+            {metrics.occupancy ? (
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <SlotStatusDonutChart occupancy={metrics.occupancy} />
+                </Grid>
+              </Grid>
+            ) : null}
+            <RecentActivityTimeline />
+          </Stack>
+        ) : (
+          <TenantOperatorDashboardLayout
+            heroMetrics={buildTenantHeroKpis(metrics)}
+            lotUtilization={metrics.lotUtilization}
+            occupancy={metrics.occupancy}
+          />
+        )
+      }
     </OperatorDashboardShell>
   );
 }

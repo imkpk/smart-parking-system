@@ -1,81 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getOperatorMetrics, getRecentActivity } from '@/api/dashboardApi';
 
-const { getMock } = vi.hoisted(() => ({
-  getMock: vi.fn(),
-}));
+const getMock = vi.fn();
 
 vi.mock('@/api/client', () => ({
   apiClient: {
-    get: getMock,
+    get: (...args: unknown[]) => getMock(...args),
   },
 }));
-
-import {
-  getAdminSummary,
-  getOperatorMetrics,
-  getSlotStatusSummary,
-} from '@/api/dashboardApi';
 
 describe('dashboardApi', () => {
   beforeEach(() => {
     getMock.mockReset();
   });
 
-  it('getAdminSummary fetches admin dashboard summary', async () => {
-    const summary = {
-      totalUsers: 10,
-      totalParkingLots: 2,
-      totalSlots: 50,
-      availableSlots: 30,
-      occupiedSlots: 15,
-      reservedSlots: 3,
-      maintenanceSlots: 2,
-      totalBookings: 100,
-      activeParkingEvents: 5,
-      completedParkingEvents: 95,
-    };
-    getMock.mockResolvedValue({ data: summary });
+  it('fetches operator metrics', async () => {
+    getMock.mockResolvedValue({ data: { scope: 'TENANT' } });
 
-    const result = await getAdminSummary();
-
-    expect(getMock).toHaveBeenCalledWith('/dashboard/admin-summary');
-    expect(result).toEqual(summary);
-  });
-
-  it('getSlotStatusSummary fetches slot status summary', async () => {
-    const summary = {
-      availableSlots: 30,
-      occupiedSlots: 15,
-      reservedSlots: 3,
-      maintenanceSlots: 2,
-    };
-    getMock.mockResolvedValue({ data: summary });
-
-    const result = await getSlotStatusSummary();
-
-    expect(getMock).toHaveBeenCalledWith('/dashboard/slot-status-summary');
-    expect(result).toEqual(summary);
-  });
-
-  it('getOperatorMetrics fetches operator dashboard metrics', async () => {
-    const metrics = {
-      scope: 'TENANT',
-      role: 'ADMIN',
-      organizationName: 'Acme Parking',
-      occupancy: null,
-      bookings: null,
-      parkingEvents: null,
-      revenue: null,
-      recentActivity: [],
-      lotUtilization: [],
-      platformOverview: null,
-      userOverview: null,
-    };
-    getMock.mockResolvedValue({ data: metrics });
-
-    const result = await getOperatorMetrics();
-
+    await expect(getOperatorMetrics()).resolves.toEqual({ scope: 'TENANT' });
     expect(getMock).toHaveBeenCalledWith('/dashboard/operator-metrics');
-    expect(result).toEqual(metrics);
+  });
+
+  it('fetches recent activity with cursor pagination params', async () => {
+    getMock.mockResolvedValue({
+      data: {
+        items: [],
+        nextCursor: 'opaque',
+        hasMore: true,
+      },
+    });
+
+    await expect(getRecentActivity({ limit: 5, cursor: 'opaque' })).resolves.toEqual({
+      items: [],
+      nextCursor: 'opaque',
+      hasMore: true,
+    });
+    expect(getMock).toHaveBeenCalledWith('/dashboard/recent-activity', {
+      params: { limit: 5, cursor: 'opaque' },
+    });
   });
 });

@@ -49,3 +49,37 @@ export function formatRupees(amount: number | string | null | undefined) {
 
   return `₹${Number(amount).toFixed(2)}`;
 }
+
+export function formatRelativeTime(value: string | null | undefined) {
+  if (!value) {
+    return '-';
+  }
+
+  const timestamp = new Date(value).getTime();
+  const diffMs = Date.now() - timestamp;
+
+  if (Number.isNaN(timestamp)) {
+    return '-';
+  }
+
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diffMs < minute) {
+    return 'Just now';
+  }
+
+  if (diffMs < hour) {
+    const minutes = Math.floor(diffMs / minute);
+    return `${minutes} min ago`;
+  }
+
+  if (diffMs < day) {
+    const hours = Math.floor(diffMs / hour);
+    return `${hours} hr ago`;
+  }
+
+  const days = Math.floor(diffMs / day);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}

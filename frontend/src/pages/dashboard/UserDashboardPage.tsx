@@ -1,17 +1,16 @@
 import { Stack } from '@mui/material';
-import { DashboardMetricGrid } from '../../components/dashboard/DashboardMetricGrid';
+import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
-import { RecentActivityTable } from '../../components/dashboard/RecentActivityTable';
-import { buildUserOverviewMetrics } from '../../lib/operatorDashboardMetrics';
+import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
+import { buildUserHeroKpis } from '../../lib/operatorDashboardMetrics';
 
 export function UserDashboardPage() {
   return (
     <OperatorDashboardShell accessDeniedMessage="Access denied. Sign in to view your dashboard.">
       {(metrics) => (
-        <Stack spacing={3}>
-          <DashboardMetricGrid metrics={buildUserOverviewMetrics(metrics)} />
-
-          <RecentActivityTable items={metrics.recentActivity} />
+        <Stack spacing={2.5}>
+          <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />
+          <RecentActivityTimeline />
         </Stack>
       )}
     </OperatorDashboardShell>

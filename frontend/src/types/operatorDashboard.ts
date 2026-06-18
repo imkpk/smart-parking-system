@@ -41,11 +41,18 @@ export interface RecentActivityItem {
   parkingEventId: number;
   vehicleNumber: string;
   slotNumber: string;
+  floorName: string | null;
   parkingLotName: string;
   status: ParkingEventStatus;
   checkInTime: string;
   checkOutTime: string | null;
   activityType: ActivityType;
+}
+
+export interface RecentActivityPage {
+  items: RecentActivityItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 export interface LotUtilizationItem {

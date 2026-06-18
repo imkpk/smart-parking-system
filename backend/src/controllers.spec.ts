@@ -226,6 +226,7 @@ describe('Controllers', () => {
       getTodayBookings: jest.fn().mockResolvedValue([{ id: 1 }]),
       getSlotStatusSummary: jest.fn().mockResolvedValue({ availableSlots: 1 }),
       getOperatorMetrics: jest.fn().mockResolvedValue({ scope: 'TENANT' }),
+      getRecentActivity: jest.fn().mockResolvedValue({ items: [], nextCursor: null, hasMore: false }),
     };
     const controller = new DashboardController(dashboardService as never);
 
@@ -235,7 +236,11 @@ describe('Controllers', () => {
     await expect(controller.getTodayBookings(adminUser)).resolves.toEqual([{ id: 1 }]);
     await expect(controller.getSlotStatusSummary(securityUser)).resolves.toEqual({ availableSlots: 1 });
     await expect(controller.getOperatorMetrics(adminUser)).resolves.toEqual({ scope: 'TENANT' });
+    await expect(
+      controller.getRecentActivity(adminUser, { limit: 5 }),
+    ).resolves.toEqual({ items: [], nextCursor: null, hasMore: false });
     expect(dashboardService.getOperatorMetrics).toHaveBeenCalledWith(adminUser);
+    expect(dashboardService.getRecentActivity).toHaveBeenCalledWith(adminUser, { limit: 5 });
   });
 
   it('placeholder controllers can be constructed', () => {

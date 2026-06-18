@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus, Prisma, Role, SlotStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  ParkingEventStatus,
+  Prisma,
+  Role,
+  SlotStatus,
+} from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,7 +20,17 @@ import {
   decimalToNumber,
   mapRecentActivity,
 } from './operator-dashboard-metrics.builder';
+import {
+  RECENT_ACTIVITY_DEFAULT_LIMIT,
+  RECENT_ACTIVITY_MAX_LIMIT,
+  RecentActivityQueryDto,
+} from './dto/recent-activity-query.dto';
+import {
+  decodeRecentActivityCursor,
+  encodeRecentActivityCursor,
+} from './recent-activity-cursor';
 import { OperatorDashboardMetrics } from './types/operator-dashboard-metrics.type';
+import { RecentActivityPage } from './types/recent-activity-page.type';
 
 @Injectable()
 export class DashboardService {
@@ -173,6 +189,56 @@ export class DashboardService {
     return this.getSlotStatusCounts(currentUser);
   }
 
+  async getRecentActivity(
+    currentUser: SafeUser,
+    query: RecentActivityQueryDto,
+  ): Promise<RecentActivityPage> {
+    const limit = this.normalizeRecentActivityLimit(query.limit);
+    const cursor = query.cursor ? decodeRecentActivityCursor(query.cursor) : null;
+    const where = this.buildRecentActivityWhere(currentUser);
+    const cursorFilter = cursor
+      ? {
+          OR: [
+            { checkInTime: { lt: new Date(cursor.checkInTime) } },
+            {
+              checkInTime: new Date(cursor.checkInTime),
+              id: { lt: cursor.id },
+            },
+          ],
+        }
+      : {};
+
+    const events = await this.prisma.parkingEvent.findMany({
+      where: {
+        ...where,
+        ...cursorFilter,
+      },
+      orderBy: [{ checkInTime: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      include: {
+        vehicle: true,
+        slot: { include: { floor: true } },
+        parkingLot: true,
+      },
+    });
+
+    const hasMore = events.length > limit;
+    const pageEvents = hasMore ? events.slice(0, limit) : events;
+    const lastEvent = pageEvents.at(-1);
+
+    return {
+      items: mapRecentActivity(pageEvents),
+      nextCursor:
+        hasMore && lastEvent
+          ? encodeRecentActivityCursor({
+              checkInTime: lastEvent.checkInTime.toISOString(),
+              id: lastEvent.id,
+            })
+          : null,
+      hasMore,
+    };
+  }
+
   async getOperatorMetrics(currentUser: SafeUser): Promise<OperatorDashboardMetrics> {
     if (currentUser.role === Role.USER) {
       return this.getUserOperatorMetrics(currentUser);
@@ -221,7 +287,6 @@ export class DashboardService {
       revenueToday,
       revenueWeek,
       revenueMonth,
-      recentEvents,
       parkingLots,
     ] = await Promise.all([
       this.prisma.booking.count({ where: organizationWhere }),
@@ -251,12 +316,6 @@ export class DashboardService {
       this.sumCompletedFees({ ...organizationWhere, checkOutTime: todayRange }),
       this.sumCompletedFees({ ...organizationWhere, checkOutTime: weekRange }),
       this.sumCompletedFees({ ...organizationWhere, checkOutTime: monthRange }),
-      this.prisma.parkingEvent.findMany({
-        where: organizationWhere,
-        orderBy: { checkInTime: 'desc' },
-        take: 10,
-        include: { vehicle: true, slot: true, parkingLot: true },
-      }),
       this.prisma.parkingLot.findMany({
         where: { isActive: true, organizationId },
         select: { id: true, name: true },
@@ -302,7 +361,6 @@ export class DashboardService {
         checkOutsToday,
       ),
       revenue: buildRevenueSummary(revenueToday, revenueWeek, revenueMonth),
-      recentActivity: mapRecentActivity(recentEvents),
       lotUtilization,
     });
   }
@@ -325,8 +383,7 @@ export class DashboardService {
     });
     const todayRange = this.getTodayRange();
 
-    const [bookingsToday, activeEvents, checkInsToday, checkOutsToday, recentEvents] =
-      await Promise.all([
+    const [bookingsToday, activeEvents, checkInsToday, checkOutsToday] = await Promise.all([
         this.prisma.booking.count({ where: { ...organizationWhere, startTime: todayRange } }),
         this.prisma.parkingEvent.count({
           where: { ...organizationWhere, status: ParkingEventStatus.ACTIVE },
@@ -341,12 +398,6 @@ export class DashboardService {
             status: ParkingEventStatus.COMPLETED,
           },
         }),
-        this.prisma.parkingEvent.findMany({
-          where: organizationWhere,
-          orderBy: { checkInTime: 'desc' },
-          take: 10,
-          include: { vehicle: true, slot: true, parkingLot: true },
-        }),
       ]);
 
     return buildOperatorDashboardMetrics({
@@ -356,7 +407,6 @@ export class DashboardService {
       occupancy,
       bookings: buildBookingVolumeSummary(bookingsToday, bookingsToday, 0, []),
       parkingEvents: buildParkingEventSummary(activeEvents, 0, checkInsToday, checkOutsToday),
-      recentActivity: mapRecentActivity(recentEvents),
     });
   }
 
@@ -369,7 +419,7 @@ export class DashboardService {
     const userWhere = { userId: currentUser.id, organizationId };
     const now = new Date();
 
-    const [totalVehicles, upcomingBookings, activeParkingEvents, completedParkingEvents, recentEvents] =
+    const [totalVehicles, upcomingBookings, activeParkingEvents, completedParkingEvents] =
       await Promise.all([
         this.prisma.vehicle.count({ where: userWhere }),
         this.prisma.booking.count({
@@ -385,19 +435,12 @@ export class DashboardService {
         this.prisma.parkingEvent.count({
           where: { ...userWhere, status: ParkingEventStatus.COMPLETED },
         }),
-        this.prisma.parkingEvent.findMany({
-          where: userWhere,
-          orderBy: { checkInTime: 'desc' },
-          take: 8,
-          include: { vehicle: true, slot: true, parkingLot: true },
-        }),
       ]);
 
     return buildOperatorDashboardMetrics({
       scope: 'USER',
       role: currentUser.role,
       organizationName: organization?.name ?? null,
-      recentActivity: mapRecentActivity(recentEvents),
       userOverview: {
         totalVehicles,
         upcomingBookings,
@@ -551,6 +594,29 @@ export class DashboardService {
     }
 
     return counts;
+  }
+
+  private normalizeRecentActivityLimit(limit: number | undefined) {
+    if (limit == null || Number.isNaN(limit)) {
+      return RECENT_ACTIVITY_DEFAULT_LIMIT;
+    }
+
+    return Math.min(Math.max(Math.trunc(limit), 1), RECENT_ACTIVITY_MAX_LIMIT);
+  }
+
+  private buildRecentActivityWhere(currentUser: SafeUser): Prisma.ParkingEventWhereInput {
+    if (currentUser.role === Role.USER) {
+      return {
+        userId: currentUser.id,
+        organizationId: this.accessPolicy.getRequiredOrganizationId(currentUser),
+      };
+    }
+
+    if (currentUser.role === Role.SUPER_ADMIN && currentUser.organizationId == null) {
+      return {};
+    }
+
+    return this.accessPolicy.buildOrganizationWhere(currentUser);
   }
 
   private getTodayRange() {
