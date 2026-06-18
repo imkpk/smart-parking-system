@@ -12,7 +12,7 @@ Added `e2e-smoke` job to `.github/workflows/ci.yml`:
 - Backend: `prisma migrate deploy`, seed, `npm run start` on port 3000
 - Payment service: Maven package + `java -jar` on port 8081 (MOCK provider default)
 - Frontend: `npm run e2e:ci` (Vite + Cypress smoke suite)
-- Failure artifacts: Cypress screenshots + backend/payment logs
+- No CI artifacts uploaded (GitHub storage–friendly); failures logged in job output only
 
 ## Trigger conditions
 

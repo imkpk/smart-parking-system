@@ -263,28 +263,12 @@ jobs:
 
       - name: Install frontend and run Cypress smoke
         working-directory: frontend
+        env:
+          CYPRESS_SCREENSHOT_ON_RUN_FAILURE: 'false'
         run: |
           npm ci
           npx cypress verify
           npm run e2e:ci
-
-      - name: Upload Cypress screenshots on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-screenshots
-          path: frontend/cypress/screenshots
-          if-no-files-found: ignore
-
-      - name: Upload service logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-service-logs
-          path: |
-            backend-e2e.log
-            payment-e2e.log
-          if-no-files-found: ignore
 
   ci-summary:
     name: CI Summary

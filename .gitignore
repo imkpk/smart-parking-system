@@ -28,6 +28,9 @@ backend/dist/
 frontend/dist/
 frontend/coverage
 frontend/*.tsbuildinfo
+frontend/cypress/screenshots/
+frontend/cypress/videos/
+backend/*.tsbuildinfo
 payment-service/target/
 target/
 *.class

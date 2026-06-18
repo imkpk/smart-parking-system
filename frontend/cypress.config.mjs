@@ -7,7 +7,7 @@ export default defineConfig({
     supportFile: 'cypress/support/e2e.ts',
     defaultCommandTimeout: 10000,
     video: false,
-    screenshotOnRunFailure: true,
+    screenshotOnRunFailure: false,
     retries: {
       runMode: 1,
       openMode: 0,
