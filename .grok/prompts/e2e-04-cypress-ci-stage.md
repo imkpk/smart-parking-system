@@ -55,9 +55,11 @@ Add `e2e-smoke` job to `.github/workflows/ci.yml`:
 
 ### Run when
 
+> **Updated 2026-06-18:** Cypress smoke runs on **push only** (develop integration trunk). PRs use fast gates without Cypress. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
+
 ```text
-- push to main/develop/single-tenant
-- PR with frontend changes
+- push to main/develop/single-tenant (not on pull_request)
+- frontend or backend changes (path filter)
 - PR with backend changes
 - PR with workflow changes
 ```

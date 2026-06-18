@@ -40,11 +40,13 @@ Repository rules:
 * Always start each loop from fresh `develop`.
 * Read `MASTER_PROMPT.md` and `.grok/AGENTS.md` before every loop.
 * Keep each loop as a separate branch and PR.
-* Open PRs to `develop`.
-* Wait for CI after every PR.
-* Fix CI failures before merge.
-* Merge only if CI is green, PR is mergeable, and there are no unresolved blocking comments.
-* Pull latest `develop` after every merge before starting the next loop.
+* Open PRs to `develop` early.
+* Enable auto-merge when branch protection allows.
+* Do not idle-wait for CI — start the next loop branch while checks run.
+* Fix CI failures on open PRs (max 3 attempts per issue).
+* Merge when CI is green, PR is mergeable, and there are no unresolved blocking comments.
+* Fetch latest `develop` before opening dependent PRs; never leave stale PRs across phase boundaries.
+* Pull latest `develop` after every merge before starting work that depends on it.
 * Never merge `develop` into `single-tenant`.
 * Never modify `single-tenant`.
 * Do not change `payment-service`.
@@ -72,18 +74,20 @@ Technical rules:
 
 Autonomous loop protocol:
 
-1. Sync `develop`.
+1. Sync `develop` (`git fetch && git pull origin develop`).
 2. Create the branch for the current loop.
 3. Make only scoped changes.
-4. Run required local validation.
+4. Run fast local validation (`npm run build` + `npm run test:run` for touched services).
 5. Commit and push.
-6. Open PR to `develop`.
-7. Wait for CI.
-8. If CI fails, inspect logs, fix, push again.
-9. Repeat until CI is green.
-10. Merge PR if mergeable and green.
-11. Pull latest `develop`.
-12. Continue to next loop.
+6. Open PR to `develop` early.
+7. Enable auto-merge when possible (`gh pr merge <n> --auto --squash` or `--merge`).
+8. Start the next loop branch immediately — do not idle-wait for CI.
+9. Before opening a dependent PR, fetch latest `develop` and merge/rebase if needed.
+10. If CI fails on an open PR, inspect logs, fix, push again (max 3 attempts per issue).
+11. Merge stacked PRs in dependency order (base slice before dependent slice).
+12. Pull latest `develop` after a merge before starting work that depends on it.
+
+PR CI = fast gates (build + unit tests). Full coverage + Cypress = `develop` push after merge. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
 Stop only if:
 

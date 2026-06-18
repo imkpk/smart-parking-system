@@ -30,20 +30,21 @@ E2E 05 → Policy and Release Pack Docs
 ## Autonomous loop protocol
 
 ```text
-1. Sync develop.
+1. Sync develop (`git fetch && git pull origin develop`).
 2. Create branch for current prompt.
 3. Make only scoped changes.
-4. Run required local validation.
+4. Run fast local validation (`npm run build` + `npm run test:run` for touched services).
 5. Commit and push.
-6. Open PR to develop.
-7. Wait for CI.
-8. If CI fails, inspect logs, fix, push again (max 3 attempts per issue).
-9. Merge PR when CI is green and mergeable.
-10. Pull latest develop.
-11. Continue to next prompt.
+6. Open PR to develop early.
+7. Enable auto-merge when possible (`gh pr merge <n> --auto --squash` or `--merge`).
+8. Start the next prompt branch immediately — do not idle-wait for CI.
+9. Before opening a dependent PR, fetch latest develop and merge/rebase if needed.
+10. If CI fails on an open PR, inspect logs, fix, push again (max 3 attempts per issue).
+11. Merge stacked PRs in dependency order.
+12. Pull latest develop after a merge before starting dependent work.
 ```
 
-Do not continue to the next prompt until the current PR is merged.
+PR CI = fast gates (build + unit tests). Cypress smoke runs on `develop` push only. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
 ## Stop conditions
 
@@ -65,7 +66,8 @@ Stop and report only if:
 - No payment-service business logic changes
 - Frontend product behavior changes only for Cypress/testability
 - One concern per PR
-- Merge only when CI green, PR mergeable, no blocking review comments
+- Open PR early; enable auto-merge when possible; do not idle-wait for CI
+- Merge when CI green, PR mergeable, no blocking review comments
 ```
 
 ## Key artifacts
