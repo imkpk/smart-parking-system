@@ -14,6 +14,7 @@ import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
 import { Role } from '../../types/auth';
+import { authFormControlProps, authInputLabelProps, authTextFieldProps } from './authFieldProps';
 import { AuthPageShell } from './AuthPageShell';
 
 export function RegisterPage() {
@@ -57,12 +58,14 @@ export function RegisterPage() {
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField
+          {...authTextFieldProps}
           label="Name"
           onChange={(event) => setName(event.target.value)}
           required
           value={name}
         />
         <TextField
+          {...authTextFieldProps}
           autoComplete="email"
           label="Email"
           onChange={(event) => setEmail(event.target.value)}
@@ -71,11 +74,13 @@ export function RegisterPage() {
           value={email}
         />
         <TextField
+          {...authTextFieldProps}
           label="Phone"
           onChange={(event) => setPhone(event.target.value)}
           value={phone}
         />
         <TextField
+          {...authTextFieldProps}
           autoComplete="new-password"
           label="Password"
           onChange={(event) => setPassword(event.target.value)}
@@ -83,8 +88,10 @@ export function RegisterPage() {
           type="password"
           value={password}
         />
-        <FormControl>
-          <InputLabel id="role-label">Role</InputLabel>
+        <FormControl {...authFormControlProps}>
+          <InputLabel id="role-label" {...authInputLabelProps}>
+            Role
+          </InputLabel>
           <Select
             label="Role"
             labelId="role-label"
