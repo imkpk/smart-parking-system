@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.1  
+**Version:** 1.4.2  
 **Last updated:** 2026-06-18  
-**Current branch:** `feature/frontend-test-coverage-rtl-vitest`  
+**Current branch:** `fix/ci-path-based-jobs`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -566,7 +566,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-17 | 1.2.3 | Grok | PR #41 merged: post-merge docs cleanup (current branch develop, Phase 1a report Floor/Slot note). |
 | 2026-06-18 | 1.3.0 | Grok | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
 | 2026-06-18 | 1.4.0 | Grok | Phase 1b merged (PR #42): tenant scoping, Users API leak fix, enriched parking-events/bookings API (no slots fan-out). Next: Phase 1c tenant onboarding API. |
-| 2026-06-18 | 1.4.1 | Grok | Frontend Vitest + RTL test foundation on `feature/frontend-test-coverage-rtl-vitest`: shared test utils, login/route-guard/page regression tests, ~36% baseline coverage. PR pending. |
+| 2026-06-18 | 1.4.2 | Grok | CI path-based jobs on `fix/ci-path-based-jobs`: `dorny/paths-filter` change detection, conditional backend/frontend/payment jobs on PRs, full CI on push, `ci-summary` gate. PR pending. |
 
 ---
 
