@@ -6,7 +6,7 @@
 
 **Version:** 1.4.4  
 **Last updated:** 2026-06-18  
-**Current branch:** `ci/cypress-smoke-stage`  
+**Current branch:** `docs/e2e-policy-and-release-pack`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -251,8 +251,8 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 01 | Journey registry J1–J14 | ✅ Merged (PR #56) | .grok/e2e/journey-registry.md |
 | 02 | Cypress foundation (J1, J3, J14) | ✅ Merged (PR #57) | .grok/reports/cypress-e2e-foundation.md |
 | 03 | Core parking smoke (J4–J6, J8) | ✅ Merged (PR #58) | .grok/reports/cypress-core-parking-smoke.md |
-| 04 | CI smoke stage | 🔄 PR pending | .grok/reports/cypress-ci-smoke-stage.md |
-| 05 | Release policy + PR template | [ ] | .grok/reports/e2e-policy-and-release-pack.md |
+| 04 | CI smoke stage | ✅ Merged (PR #59) | .grok/reports/cypress-ci-smoke-stage.md |
+| 05 | Release policy + PR template | 🔄 PR pending | .grok/reports/e2e-policy-and-release-pack.md |
 
 **E2E control paths:**
 
@@ -271,10 +271,10 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-[ ] E2E rollout — Cypress smoke for sellable journeys (E2E 01–05)
-     Branch: docs/e2e-agent-playbook → feature/cypress-* → ci/cypress-smoke-stage
-     Report: .grok/reports/e2e-agent-playbook.md
-     Do NOT start Phase 1c until E2E rollout completes unless human redirects.
+[ ] E2E rollout — final summary PR pending (LOOP 00–05 merged)
+     Report: .grok/reports/e2e-rollout-final-summary.md
+     E2E CI: advisory (`e2e-smoke` continue-on-error)
+     Do NOT start Phase 1c until E2E final summary merges unless human redirects.
 
 [ ] Phase 1c — Tenant onboarding API (deferred until E2E rollout done)
      Branch: feature/phase-1c-tenant-onboarding-api (from develop)
@@ -610,7 +610,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.4 | Grok | E2E 01: journey registry J1–J14 and hybrid strategy report. PR #56 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. PR #57 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. PR #58 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). |
+| 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). PR #59 merged. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 05: release regression policy + PR template UI/E2E checklist. |
 
 ---
 
