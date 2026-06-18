@@ -5,12 +5,51 @@ on:
     branches: [main, develop]
   push:
     branches: [main, develop]
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      payment: ${{ steps.filter.outputs.payment }}
+      workflow: ${{ steps.filter.outputs.workflow }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            payment:
+              - 'payment-service/**'
+            workflow:
+              - '.github/workflows/**'
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+              - '.grok/**'
+
   backend:
     name: NestJS Backend
+    needs: changes
+    if: >
+      github.event_name == 'push' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,6 +79,11 @@ jobs:
 
   frontend:
     name: React Frontend
+    needs: changes
+    if: >
+      github.event_name == 'push' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,6 +110,11 @@ jobs:
 
   payment-service:
     name: Spring Boot Payment Service
+    needs: changes
+    if: >
+      github.event_name == 'push' ||
+      needs.changes.outputs.payment == 'true' ||
+      needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -83,3 +132,35 @@ jobs:
 
       - name: Build
         run: mvn -B clean package
+
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [changes, backend, frontend, payment-service]
+    if: always()
+    steps:
+      - name: Verify CI results
+        run: |
+          echo "Backend: ${{ needs.backend.result }}"
+          echo "Frontend: ${{ needs.frontend.result }}"
+          echo "Payment: ${{ needs.payment-service.result }}"
+
+          failed=0
+          if [ "${{ needs.backend.result }}" = "failure" ] || [ "${{ needs.backend.result }}" = "cancelled" ]; then
+            echo "Backend job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.frontend.result }}" = "failure" ] || [ "${{ needs.frontend.result }}" = "cancelled" ]; then
+            echo "Frontend job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.payment-service.result }}" = "failure" ] || [ "${{ needs.payment-service.result }}" = "cancelled" ]; then
+            echo "Payment service job failed or was cancelled"
+            failed=1
+          fi
+
+          if [ "$failed" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "CI passed (skipped service jobs are OK)"
