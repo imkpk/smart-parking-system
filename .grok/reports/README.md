@@ -54,6 +54,6 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-4-visual-slot-map-contract.md](./phase-4-visual-slot-map-contract.md) | Phase 4 visual slot map contract (LOOP 4A) | PR #86 ✅ |
 | [phase-4b-slot-map-api.md](./phase-4b-slot-map-api.md) | Phase 4B visual slot map API | PR #87 ✅ |
 | [phase-4c-visual-slot-map-ui.md](./phase-4c-visual-slot-map-ui.md) | Phase 4C visual slot map UI | PR #88 ✅ |
-| [phase-4-visual-slot-map-acceptance.md](./phase-4-visual-slot-map-acceptance.md) | Phase 4 visual slot map acceptance (FINAL LOOP) | `test/phase-4-visual-slot-map-acceptance` |
+| [phase-4-visual-slot-map-acceptance.md](./phase-4-visual-slot-map-acceptance.md) | Phase 4 visual slot map acceptance (FINAL LOOP) | PR #89 ✅ |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.
