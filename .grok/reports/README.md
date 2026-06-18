@@ -26,7 +26,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-1b-verification.md](./phase-1b-verification.md) | Phase 1b tenant scoping verification (LOOP 1B) | `verify/phase-1b-tenant-scoping` |
 | [phase-1c-tenant-onboarding-api.md](./phase-1c-tenant-onboarding-api.md) | Tenant onboarding API (Phase 1c) | PR #67 ✅ |
 | [phase-1d-frontend-tenant-context.md](./phase-1d-frontend-tenant-context.md) | Frontend tenant context in auth state (Phase 1d) | PR #68 ✅ |
-| [phase-1-tenant-isolation-acceptance.md](./phase-1-tenant-isolation-acceptance.md) | Phase 1 tenant isolation acceptance (FINAL LOOP) | `verify/phase-1-tenant-isolation-acceptance` |
+| [phase-1-tenant-isolation-acceptance.md](./phase-1-tenant-isolation-acceptance.md) | Phase 1 tenant isolation acceptance (FINAL LOOP) | PR #69 ✅ |
 | [frontend-ui-theme-design-system.md](./frontend-ui-theme-design-system.md) | Frontend theme, illustrations, design system | PR #44 ✅, PR #45 ✅ |
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
 | [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |
