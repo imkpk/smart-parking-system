@@ -174,6 +174,9 @@ describe('Controllers', () => {
   it('OrganizationsController delegates tenant onboarding', async () => {
     const organizationsService = {
       onboard: jest.fn().mockResolvedValue({ organization: { id: 1 }, tenantAdmin: { id: 2 } }),
+      getPublicBrandingBySlug: jest.fn().mockResolvedValue({ slug: 'default' }),
+      getCurrentBranding: jest.fn().mockResolvedValue({ slug: 'default' }),
+      updateCurrentBranding: jest.fn().mockResolvedValue({ slug: 'default' }),
     };
     const controller = new OrganizationsController(organizationsService as never);
     const dto = {
@@ -190,6 +193,11 @@ describe('Controllers', () => {
       tenantAdmin: { id: 2 },
     });
     expect(organizationsService.onboard).toHaveBeenCalledWith(superAdminUser, dto);
+    await expect(controller.getPublicBranding('default')).resolves.toEqual({ slug: 'default' });
+    await expect(controller.getCurrentBranding(adminUser)).resolves.toEqual({ slug: 'default' });
+    await expect(
+      controller.updateCurrentBranding(adminUser, { primaryColor: '#112233' }),
+    ).resolves.toEqual({ slug: 'default' });
   });
   it('ParkingEventsController delegates parking event operations', async () => {
     const parkingEventsService = {

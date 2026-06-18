@@ -75,6 +75,10 @@ model Organization {
   slug           String           @unique
   logoUrl        String?
   primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+  loginTitle     String?
+  supportEmail   String?
   plan           OrganizationPlan @default(STARTER)
   maxParkingLots Int              @default(5) @map("maxLots")
   maxUsers       Int              @default(50)
