@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#f6f8fb"/>
-  <path fill="#5d5d63" d="M136 176h256v48H136z"/>
-  <path fill="#dfe1e5" d="M184 224h272v72H184z"/>
-  <path fill="#c9c9cc" d="M392 224h16v72h-16z"/>
-  <path fill="#5d5d63" d="M152 296h32v176h-32zM392 296h32v176h-32z"/>
-  <path fill="#f7c2b3" d="M56 144 24 224v128h96l8-96-32-64V80z"/>
-  <path fill="#f7c2b3" d="M80 264c24-28 48-32 56-20 8 16-8 36-28 60-16 20-20 48-16 84l8 84H32V368c0-24-16-36-24-56l16-72 40-8z"/>
-  <rect x="64" y="64" width="168" height="280" rx="12" fill="#e6e6e8"/>
-  <path fill="#e6e6e8" d="M64 144 48 196v44l24 16 24-16V144z"/>
-  <rect x="96" y="96" width="104" height="200" fill="#2d8cff"/>
-  <circle cx="144" cy="168" r="24" fill="#ff9f16"/>
-  <path fill="#53a1f5" d="M264 344c0-18 14-32 32-32h80c18 0 32 14 32 32l16 48H248z"/>
-  <rect x="224" y="392" width="200" height="56" rx="16" fill="#ef3f55"/>
-  <circle cx="264" cy="408" r="16" fill="#ffd84f"/>
-  <circle cx="384" cy="408" r="16" fill="#ffd84f"/>
-  <rect x="240" y="448" width="40" height="40" rx="8" fill="#54545a"/>
-  <rect x="392" y="448" width="40" height="40" rx="8" fill="#54545a"/>
-  <path fill="#ff9f16" d="M336 16c-32 0-61 13-82 34l20 20c16-16 38-26 62-26s46 10 62 26l20-20c-21-21-50-34-82-34z"/>
-  <path fill="#ff9f16" d="M336 80c-20 0-38 8-52 22l20 20c8-8 19-14 32-14s24 6 32 14l20-20c-14-14-32-22-52-22z"/>
-  <path fill="#ff9f16" d="M336 144c-9 0-16 7-16 16s7 16 16 16 16-7 16-16-7-16-16-16z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Smart Parking">
+  <defs>
+    <linearGradient id="sp-bg" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1976D2" />
+      <stop offset="100%" stop-color="#0D47A1" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#sp-bg)" />
+  <rect
+    width="32"
+    height="32"
+    rx="8"
+    fill="none"
+    stroke="#42A5F5"
+    stroke-opacity="0.28"
+  />
+  <path
+    fill="#FFFFFF"
+    d="M10 8h6.4c3.4 0 5.6 1.8 5.6 4.8 0 2.5-1.4 4.2-3.7 4.7L22.8 24h-4.3l-4.2-6.4H13.6V24H10V8zm3.6 7.8h2.5c1.7 0 2.7-.9 2.7-2.4 0-1.5-1-2.4-2.7-2.4h-2.5v4.8z"
+  />
+  <circle cx="24.5" cy="7.5" r="2.25" fill="#F9A825" />
 </svg>
