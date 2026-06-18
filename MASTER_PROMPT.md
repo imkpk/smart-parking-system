@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.4  
+**Version:** 1.4.5  
 **Last updated:** 2026-06-18  
-**Current branch:** `docs/e2e-policy-and-release-pack`  
+**Current branch:** `docs/e2e-rollout-final-summary`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -243,7 +243,7 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 |------|--------|--------|
 | Vitest + RTL coverage foundation | ✅ Merged (PR #51) | .grok/reports/frontend-test-coverage-rtl-vitest.md |
 
-### E2E / Cypress rollout 🔄
+### E2E / Cypress rollout ✅
 
 | Loop | What | Status | Artifact |
 |------|------|--------|----------|
@@ -252,7 +252,8 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 02 | Cypress foundation (J1, J3, J14) | ✅ Merged (PR #57) | .grok/reports/cypress-e2e-foundation.md |
 | 03 | Core parking smoke (J4–J6, J8) | ✅ Merged (PR #58) | .grok/reports/cypress-core-parking-smoke.md |
 | 04 | CI smoke stage | ✅ Merged (PR #59) | .grok/reports/cypress-ci-smoke-stage.md |
-| 05 | Release policy + PR template | 🔄 PR pending | .grok/reports/e2e-policy-and-release-pack.md |
+| 05 | Release policy + PR template | ✅ Merged (PR #60) | .grok/reports/e2e-policy-and-release-pack.md |
+| Final | Rollout summary | 🔄 PR pending | .grok/reports/e2e-rollout-final-summary.md |
 
 **E2E control paths:**
 
@@ -271,10 +272,10 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-[ ] E2E rollout — final summary PR pending (LOOP 00–05 merged)
+[x] E2E rollout — LOOP 00–05 merged; final summary PR open
      Report: .grok/reports/e2e-rollout-final-summary.md
      E2E CI: advisory (`e2e-smoke` continue-on-error)
-     Do NOT start Phase 1c until E2E final summary merges unless human redirects.
+     Phase 1c may proceed after final summary merges.
 
 [ ] Phase 1c — Tenant onboarding API (deferred until E2E rollout done)
      Branch: feature/phase-1c-tenant-onboarding-api (from develop)
@@ -611,7 +612,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.4 | Grok | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. PR #57 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. PR #58 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). PR #59 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 05: release regression policy + PR template UI/E2E checklist. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 05: release regression policy + PR template UI/E2E checklist. PR #60 merged. |
+| 2026-06-18 | 1.4.5 | Grok | E2E rollout complete — final summary, 8 smoke specs, advisory CI stage. |
 
 ---
 

@@ -31,6 +31,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [cypress-e2e-foundation.md](./cypress-e2e-foundation.md) | Cypress smoke foundation J1/J3/J14 (LOOP 02) | PR #57 ✅ |
 | [cypress-core-parking-smoke.md](./cypress-core-parking-smoke.md) | Core parking lifecycle smoke J4/J5/J6/J8 + fan-out (LOOP 03) | PR #58 ✅ |
 | [cypress-ci-smoke-stage.md](./cypress-ci-smoke-stage.md) | Cypress E2E CI job (LOOP 04, advisory) | PR #59 ✅ |
-| [e2e-policy-and-release-pack.md](./e2e-policy-and-release-pack.md) | Release regression policy + PR template (LOOP 05) | `docs/e2e-policy-and-release-pack` (PR pending) |
+| [e2e-policy-and-release-pack.md](./e2e-policy-and-release-pack.md) | Release regression policy + PR template (LOOP 05) | PR #60 ✅ |
+| [e2e-rollout-final-summary.md](./e2e-rollout-final-summary.md) | Full E2E rollout summary (LOOP 00–05) | `docs/e2e-rollout-final-summary` (PR pending) |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.
