@@ -9,7 +9,7 @@ export function UserDashboardPage() {
   return (
     <OperatorDashboardShell accessDeniedMessage="Access denied. Sign in to view your dashboard.">
       {(metrics) => (
-        <Stack spacing={2.5}>
+        <Stack spacing={2}>
           <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />
           <Grid container spacing={2}>
             <Grid item xs={12}>

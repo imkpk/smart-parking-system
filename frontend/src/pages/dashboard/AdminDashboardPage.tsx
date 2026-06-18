@@ -15,7 +15,7 @@ export function AdminDashboardPage() {
     <OperatorDashboardShell accessDeniedMessage="Access denied. Admin role is required for this dashboard.">
       {(metrics) =>
         metrics.scope === 'PLATFORM' ? (
-          <Stack spacing={2.5}>
+          <Stack spacing={2}>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
             {metrics.occupancy ? (
               <DashboardSummaryColumns

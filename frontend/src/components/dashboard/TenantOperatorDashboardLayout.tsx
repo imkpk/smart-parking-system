@@ -22,7 +22,7 @@ export function TenantOperatorDashboardLayout({
   extraContent?: ReactNode;
 }) {
   return (
-    <Stack spacing={2.5} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
+    <Stack spacing={2} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
       <DashboardHeroKpiRow metrics={heroMetrics} />
 
       {occupancy ? (

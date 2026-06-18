@@ -5,24 +5,34 @@ export function PageHeader({
   title,
   description,
   action,
+  compact = false,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  compact?: boolean;
 }) {
   return (
     <Stack
       alignItems={{ xs: 'stretch', sm: 'center' }}
       direction={{ xs: 'column', sm: 'row' }}
       justifyContent="space-between"
-      spacing={2}
+      spacing={compact ? 1.5 : 2}
     >
       <Box sx={{ minWidth: 0 }}>
-        <Typography component="h1" variant="h5">
+        <Typography
+          component="h1"
+          sx={compact ? { lineHeight: 1.25, mb: 0 } : undefined}
+          variant="h5"
+        >
           {title}
         </Typography>
         {description ? (
-          <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
+          <Typography
+            color="text.secondary"
+            sx={{ lineHeight: 1.45, mt: compact ? 0.5 : 0.75 }}
+            variant="body2"
+          >
             {description}
           </Typography>
         ) : null}
