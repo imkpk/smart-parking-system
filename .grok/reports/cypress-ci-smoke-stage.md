@@ -36,6 +36,17 @@ When stable:
 1. Remove `continue-on-error: true` from `e2e-smoke`
 2. Add `e2e-smoke` failure to `ci-summary` gate logic
 
+## First CI run (PR #59)
+
+| Result | Detail |
+|--------|--------|
+| Job | Advisory — does not block merge |
+| Pass | 10/12 smoke tests |
+| Fail | `security-checkin.cy.ts`, `payment-initiation.cy.ts` — fast failure in `setupParkingSmokeData` vehicle POST (~400ms) |
+| Pass | J4, J6, fan-out, auth, vehicles |
+
+**Blocker hypothesis:** intermittent API setup under CI load (sequential specs creating many users/lots). Local `e2e:ci` passes 12/12. Tune retries or isolate smoke data setup before making job required.
+
 ## Local parity
 
 ```bash
