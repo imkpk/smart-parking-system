@@ -1,4 +1,5 @@
 import { AdminSummary, SlotStatusSummary } from '../types/dashboard';
+import { OperatorDashboardMetrics } from '../types/operatorDashboard';
 import { apiClient } from './client';
 
 export async function getAdminSummary() {
@@ -8,5 +9,10 @@ export async function getAdminSummary() {
 
 export async function getSlotStatusSummary() {
   const response = await apiClient.get<SlotStatusSummary>('/dashboard/slot-status-summary');
+  return response.data;
+}
+
+export async function getOperatorMetrics() {
+  const response = await apiClient.get<OperatorDashboardMetrics>('/dashboard/operator-metrics');
   return response.data;
 }
