@@ -70,9 +70,11 @@ jobs:
         run: npm run test:run
 
       - name: Test coverage
+        id: coverage
         run: npm run coverage
 
       - name: Upload frontend coverage artifact
+        if: steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
@@ -80,18 +82,15 @@ jobs:
           if-no-files-found: error
 
       - name: Frontend coverage summary
-        if: github.event_name == 'pull_request'
-        uses: irongut/CodeCoverageSummary@v1.3.0
+        if: steps.coverage.outcome == 'success'
+        run: node ../.github/scripts/frontend-coverage-summary.mjs
+
+      - name: Post frontend coverage PR comment
+        if: github.event_name == 'pull_request' && steps.coverage.outcome == 'success'
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          filename: frontend/coverage/lcov.info
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          thresholds: '60 80'
+          header: frontend-coverage
+          path: frontend/coverage/pr-coverage-comment.md
 
   payment-service:
     name: Spring Boot Payment Service
