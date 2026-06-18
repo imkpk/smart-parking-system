@@ -38,7 +38,7 @@ function ActivityTimelineItem({ item }: { item: RecentActivityItem }) {
     item.activityType === 'CHECK_OUT' ? item.checkOutTime ?? item.checkInTime : item.checkInTime;
 
   return (
-    <Stack direction="row" spacing={1.5} sx={{ width: '100%' }}>
+    <Stack direction="row" spacing={2} sx={{ py: 0.5, width: '100%' }}>
       <Box
         sx={{
           alignItems: 'center',
@@ -47,41 +47,49 @@ function ActivityTimelineItem({ item }: { item: RecentActivityItem }) {
           color: statusStyle.borderColor,
           display: 'flex',
           flexShrink: 0,
-          height: 36,
+          height: 40,
           justifyContent: 'center',
-          mt: 0.25,
-          width: 36,
+          mt: 0.5,
+          width: 40,
         }}
       >
         {item.activityType === 'CHECK_IN' ? (
-          <LoginIcon sx={{ fontSize: 18 }} />
+          <LoginIcon sx={{ fontSize: 20 }} />
         ) : (
-          <LogoutIcon sx={{ fontSize: 18 }} />
+          <LogoutIcon sx={{ fontSize: 20 }} />
         )}
       </Box>
 
-      <Stack flex={1} minWidth={0} spacing={0.5}>
-        <Stack alignItems="flex-start" direction="row" flexWrap="wrap" justifyContent="space-between" spacing={1}>
+      <Stack flex={1} minWidth={0} spacing={0.75}>
+        <Stack
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="space-between"
+          spacing={0.75}
+        >
           <Stack alignItems="center" direction="row" flexWrap="wrap" spacing={1}>
-            <Typography fontWeight={600} variant="body2">
+            <Typography fontWeight={600} variant="subtitle2">
               {formatActivityTypeLabel(item.activityType)}
             </Typography>
             <ParkingEventStatusChip status={item.status} />
           </Stack>
-          <Typography color="text.secondary" variant="caption">
+          <Typography color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }} variant="caption">
             {formatRelativeTime(timestamp)}
           </Typography>
         </Stack>
 
-        <Typography fontWeight={700} sx={{ wordBreak: 'break-word' }} variant="body2">
+        <Typography
+          sx={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em', wordBreak: 'break-word' }}
+          variant="subtitle1"
+        >
           {item.vehicleNumber}
         </Typography>
 
-        <Typography color="text.secondary" sx={{ wordBreak: 'break-word' }} variant="body2">
+        <Typography color="text.secondary" sx={{ lineHeight: 1.45, wordBreak: 'break-word' }} variant="body2">
           {formatActivityLocation(item)}
         </Typography>
 
-        <Typography color="text.secondary" variant="caption">
+        <Typography color="text.disabled" variant="caption">
           {formatDateTime(timestamp)}
         </Typography>
       </Stack>
@@ -245,7 +253,7 @@ export function RecentActivityTimeline({
               pr: 0.5,
             }}
           >
-            <Stack divider={<Box sx={{ borderBottom: 1, borderColor: 'divider', my: 1.5 }} />} spacing={1.5}>
+            <Stack divider={<Box sx={{ borderBottom: 1, borderColor: 'divider', my: 2 }} />} spacing={2}>
               {items.map((item) => (
                 <ActivityTimelineItem item={item} key={item.parkingEventId} />
               ))}

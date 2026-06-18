@@ -14,8 +14,8 @@ export function SlotStatusChartLegend({
       flexWrap="wrap"
       justifyContent="center"
       role="list"
-      spacing={1}
-      sx={{ maxWidth: '100%', px: 0.5, rowGap: 1 }}
+      spacing={1.25}
+      sx={{ maxWidth: '100%', px: 0.5, rowGap: 1.25 }}
       useFlexGap
     >
       {items.map((item) => (
@@ -28,18 +28,20 @@ export function SlotStatusChartLegend({
             alignItems: 'center',
             appearance: 'none',
             background: 'none',
-            border: 0,
-            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.5,
             color: 'text.primary',
             cursor: 'pointer',
             display: 'inline-flex',
             font: 'inherit',
-            gap: 0.75,
+            gap: 0.875,
             maxWidth: '100%',
-            px: 0.75,
-            py: 0.25,
+            px: 1,
+            py: 0.5,
             '&:hover': {
               bgcolor: 'action.hover',
+              borderColor: 'text.disabled',
             },
           }}
           type="button"
@@ -50,11 +52,11 @@ export function SlotStatusChartLegend({
               bgcolor: item.color,
               borderRadius: '50%',
               flexShrink: 0,
-              height: 10,
-              width: 10,
+              height: 12,
+              width: 12,
             }}
           />
-          <Typography component="span" sx={{ lineHeight: 1.2, textAlign: 'left' }} variant="caption">
+          <Typography component="span" fontWeight={500} sx={{ lineHeight: 1.3, textAlign: 'left' }} variant="body2">
             {item.label}
           </Typography>
         </Box>

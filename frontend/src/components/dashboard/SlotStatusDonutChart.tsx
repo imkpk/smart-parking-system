@@ -242,14 +242,9 @@ export function SlotStatusDonutChart({
           )}
 
           {hasData ? (
-            <Stack spacing={0.25}>
-              <Typography color="text.secondary" textAlign="center" variant="caption">
-                {occupancy.totalSlots} total slots across the lot
-              </Typography>
-              <Typography color="text.secondary" textAlign="center" variant="caption">
-                Click a segment to view matching slots
-              </Typography>
-            </Stack>
+            <Typography color="text.secondary" textAlign="center" variant="caption">
+              {occupancy.totalSlots} total slots · click a segment or legend item to filter
+            </Typography>
           ) : null}
         </Stack>
       </CardContent>

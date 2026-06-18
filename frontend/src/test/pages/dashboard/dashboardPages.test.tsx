@@ -69,8 +69,10 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByLabelText('29% utilized')).toBeInTheDocument();
     expect(screen.getByText('Utilized')).toBeInTheDocument();
     expect(screen.getByText('Active Sessions')).toBeInTheDocument();
+    expect(screen.getByText('Occupied and reserved slots')).toBeInTheDocument();
     expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
     expect(screen.getByText('Revenue Today')).toBeInTheDocument();
+    expect(screen.getByText('Collected parking fees')).toBeInTheDocument();
     expect(screen.getByText('Slot Status')).toBeInTheDocument();
     expect(screen.getByText('Lot Utilization')).toBeInTheDocument();
     await waitFor(() => {
