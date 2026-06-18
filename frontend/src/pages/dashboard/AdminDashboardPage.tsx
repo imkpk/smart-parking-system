@@ -20,7 +20,10 @@ export function AdminDashboardPage() {
             {metrics.occupancy ? (
               <Grid alignItems="flex-start" container spacing={2}>
                 <Grid item lg={6} md={6} xs={12}>
-                  <SlotStatusDonutChart occupancy={metrics.occupancy} />
+                  <SlotStatusDonutChart
+                    lotUtilization={metrics.lotUtilization}
+                    occupancy={metrics.occupancy}
+                  />
                 </Grid>
                 <Grid item lg={6} md={6} xs={12}>
                   <RecentActivityTimeline fillHeight />

@@ -57,6 +57,10 @@ export const router = createBrowserRouter([
                 path: 'security/dashboard',
                 element: <SecurityDashboardPage />,
               },
+              {
+                path: 'parking-lots/:id/slots',
+                element: <ParkingLotDetailsPage />,
+              },
             ],
           },
           {
