@@ -5,6 +5,11 @@ on:
     branches: [main, develop]
   push:
     branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -61,8 +66,28 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm run test
+      - name: Test with coverage
+        id: coverage
+        run: npm run coverage
+
+      - name: Upload frontend coverage artifact
+        if: steps.coverage.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          if-no-files-found: error
+
+      - name: Frontend coverage summary
+        if: steps.coverage.outcome == 'success'
+        run: node ../.github/scripts/frontend-coverage-summary.mjs
+
+      - name: Post frontend coverage PR comment
+        if: github.event_name == 'pull_request' && steps.coverage.outcome == 'success'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: frontend-coverage
+          path: frontend/coverage/pr-coverage-comment.md
 
   payment-service:
     name: Spring Boot Payment Service
