@@ -13,6 +13,12 @@ import { LotUtilizationItem } from '../../types/operatorDashboard';
 
 const TOP_LOT_COUNT = 5;
 
+const LOT_BAR_COLORS = ['primary', 'success', 'info', 'warning', 'secondary'] as const;
+
+function getLotBarColor(parkingLotId: number) {
+  return LOT_BAR_COLORS[parkingLotId % LOT_BAR_COLORS.length];
+}
+
 export function LotUtilizationCompactList({
   items,
   showViewAllLink = true,
@@ -74,6 +80,7 @@ export function LotUtilizationCompactList({
                   </Stack>
                   <LinearProgress
                     aria-label={`${lot.parkingLotName} utilization`}
+                    color={getLotBarColor(lot.parkingLotId)}
                     sx={{ borderRadius: 1, height: 8 }}
                     value={Math.min(lot.utilizationPercent, 100)}
                     variant="determinate"
