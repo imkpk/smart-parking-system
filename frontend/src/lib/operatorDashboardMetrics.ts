@@ -147,6 +147,75 @@ export function buildUserOverviewMetrics(metrics: OperatorDashboardMetrics): Das
   ];
 }
 
+export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): DashboardMetricItem[] {
+  const { occupancy, parkingEvents, revenue } = metrics;
+
+  if (!occupancy || !parkingEvents) {
+    return [];
+  }
+
+  const items: DashboardMetricItem[] = [
+    {
+      key: 'hero-utilization',
+      label: 'Utilization',
+      value: `${occupancy.utilizationPercent}%`,
+      accentColor: statusStyles.OCCUPIED.borderColor,
+      iconBgcolor: statusStyles.OCCUPIED.bgcolor,
+    },
+    {
+      key: 'hero-active-sessions',
+      label: 'Active Sessions',
+      value: parkingEvents.active,
+      accentColor: statusStyles.ACTIVE.borderColor,
+      iconBgcolor: statusStyles.ACTIVE.bgcolor,
+    },
+    {
+      key: 'hero-check-ins-today',
+      label: "Today's Check-ins",
+      value: parkingEvents.checkInsToday,
+    },
+  ];
+
+  if (revenue) {
+    items.push({
+      key: 'hero-revenue-today',
+      label: 'Revenue Today',
+      value: formatRupees(revenue.todayCollectedFees),
+      accentColor: statusStyles.SUCCESS.borderColor,
+      iconBgcolor: statusStyles.SUCCESS.bgcolor,
+    });
+  } else {
+    items.push({
+      key: 'hero-check-outs-today',
+      label: "Today's Check-outs",
+      value: parkingEvents.checkOutsToday,
+      accentColor: statusStyles.COMPLETED.borderColor,
+      iconBgcolor: statusStyles.COMPLETED.bgcolor,
+    });
+  }
+
+  return items;
+}
+
+export function buildPlatformHeroKpis(metrics: OperatorDashboardMetrics): DashboardMetricItem[] {
+  const overview = metrics.platformOverview;
+
+  if (!overview) {
+    return [];
+  }
+
+  return [
+    { key: 'organizations', label: 'Organizations', value: overview.totalOrganizations },
+    { key: 'users', label: 'Total Users', value: overview.totalUsers },
+    { key: 'lots', label: 'Parking Lots', value: overview.totalParkingLots },
+    { key: 'slots', label: 'Total Slots', value: overview.totalSlots },
+  ];
+}
+
+export function buildUserHeroKpis(metrics: OperatorDashboardMetrics): DashboardMetricItem[] {
+  return buildUserOverviewMetrics(metrics);
+}
+
 export function buildOccupancyMetrics(occupancy: OperatorDashboardMetrics['occupancy']): DashboardMetricItem[] {
   if (!occupancy) {
     return [];

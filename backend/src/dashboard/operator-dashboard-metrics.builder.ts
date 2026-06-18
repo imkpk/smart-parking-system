@@ -105,7 +105,7 @@ export function mapRecentActivity(
     checkInTime: Date;
     checkOutTime: Date | null;
     vehicle: { vehicleNumber: string };
-    slot: { slotNumber: string };
+    slot: { slotNumber: string; floor?: { name: string } | null };
     parkingLot: { name: string };
   }>,
 ): RecentActivityItem[] {
@@ -113,6 +113,7 @@ export function mapRecentActivity(
     parkingEventId: event.id,
     vehicleNumber: event.vehicle.vehicleNumber,
     slotNumber: event.slot.slotNumber,
+    floorName: event.slot.floor?.name ?? null,
     parkingLotName: event.parkingLot.name,
     status: event.status,
     checkInTime: event.checkInTime,

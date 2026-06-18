@@ -202,6 +202,17 @@ describe('ParkingLotDetailsPage', () => {
     expect(await screen.findByText('Floor deleted.')).toBeInTheDocument();
   });
 
+  it('applies slot status filter from dashboard donut query param', async () => {
+    vi.mocked(getSlots).mockResolvedValue([
+      mockSlot,
+      { ...mockSlot, id: 101, slotNumber: 'B-02', status: 'OCCUPIED' },
+    ]);
+
+    renderDetailsPage('/parking-lots/1/slots?status=AVAILABLE');
+    await screen.findByText('A-01');
+    expect(screen.queryByText('B-02')).not.toBeInTheDocument();
+  });
+
   it('navigates to slots tab and creates a slot', async () => {
     const user = userEvent.setup({ delay: null });
     renderDetailsPage('/parking-lots/1/slots');

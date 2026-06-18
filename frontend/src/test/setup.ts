@@ -31,3 +31,32 @@ class ResizeObserverMock {
 }
 
 global.ResizeObserver = ResizeObserverMock;
+
+class IntersectionObserverMock {
+  private readonly callback: IntersectionObserverCallback;
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+
+  observe = vi.fn((element: Element) => {
+    this.callback(
+      [
+        {
+          isIntersecting: true,
+          target: element,
+        } as IntersectionObserverEntry,
+      ],
+      this as unknown as IntersectionObserver,
+    );
+  });
+
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  takeRecords = vi.fn(() => []);
+  root = null;
+  rootMargin = '';
+  thresholds = [];
+}
+
+global.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;

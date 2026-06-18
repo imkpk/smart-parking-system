@@ -24,8 +24,14 @@ import Grid from '@mui/material/GridLegacy';
 import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
-import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  Link as RouterLink,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { getParkingLot } from '../../api/parkingLotsApi';
 import { createFloor, deleteFloor, getFloors, updateFloor } from '../../api/floorsApi';
 import {
@@ -55,6 +61,7 @@ import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
 import { filterFloors, filterSlots } from '../../lib/searchFilters';
+import { isSlotStatus } from '../../lib/slotStatusNavigation';
 import { statusStyles } from '../../lib/statusStyles';
 import { Floor, FloorPayload } from '../../types/floor';
 import {
@@ -153,6 +160,7 @@ export function ParkingLotDetailsPage() {
   const parkingLotId = Number(id);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const activeTab = getTabFromPath(location.pathname);
@@ -166,12 +174,23 @@ export function ParkingLotDetailsPage() {
   const [bulkFormOpen, setBulkFormOpen] = useState(false);
   const [bulkForm, setBulkForm] = useState<BulkSlotForm>(emptyBulkForm);
   const [slotFloorFilter, setSlotFloorFilter] = useState<number | 'ALL'>('ALL');
-  const [slotStatusFilter, setSlotStatusFilter] = useState<SlotStatus | 'ALL'>('ALL');
+  const [slotStatusFilter, setSlotStatusFilter] = useState<SlotStatus | 'ALL'>(() => {
+    const statusParam = searchParams.get('status');
+    return isSlotStatus(statusParam) ? statusParam : 'ALL';
+  });
   const [slotTypeFilter, setSlotTypeFilter] = useState<SlotType | 'ALL'>('ALL');
   const [slotSearch, setSlotSearch] = useState('');
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
   const [deleteSlotTarget, setDeleteSlotTarget] = useState<Slot | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+
+    if (isSlotStatus(statusParam)) {
+      setSlotStatusFilter(statusParam);
+    }
+  }, [searchParams]);
 
   const parkingLotQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId],

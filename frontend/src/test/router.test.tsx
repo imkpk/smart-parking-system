@@ -123,6 +123,16 @@ describe('router', () => {
     });
   });
 
+  it('resolves admin donut drill-down slots route', async () => {
+    await router.navigate('/parking-lots/1/slots?status=AVAILABLE');
+    renderAppRouter();
+
+    await waitFor(() => {
+      expect(screen.getByText('Parking Lot Details Page')).toBeInTheDocument();
+      expect(screen.queryByText(/you do not have access to this page/i)).not.toBeInTheDocument();
+    });
+  });
+
   it('resolves unknown routes to not found page', async () => {
     await router.navigate('/does-not-exist');
     renderAppRouter();

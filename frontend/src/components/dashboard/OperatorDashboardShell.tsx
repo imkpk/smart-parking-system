@@ -31,7 +31,7 @@ export function OperatorDashboardShell({
     : undefined;
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
       <PageHeader
         description={description}
         title={title}

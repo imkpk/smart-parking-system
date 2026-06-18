@@ -47,6 +47,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [ci-fast-pr-gates-and-agent-flow.md](./ci-fast-pr-gates-and-agent-flow.md) | Fast PR CI gates + agent delivery flow (pre–Phase 3) | PR #79 ✅ |
 | [phase-3a-operator-dashboard-api.md](./phase-3a-operator-dashboard-api.md) | Phase 3A operator dashboard metrics API | PR #80 ✅ |
 | [phase-3b-operator-dashboard-ui.md](./phase-3b-operator-dashboard-ui.md) | Phase 3B operator dashboard UI | PR #81 |
-| [phase-3-operator-dashboard-acceptance.md](./phase-3-operator-dashboard-acceptance.md) | Phase 3 operator dashboard acceptance | `test/phase-3-operator-dashboard-acceptance` |
+| [phase-3-operator-dashboard-acceptance.md](./phase-3-operator-dashboard-acceptance.md) | Phase 3 operator dashboard acceptance | PR #82 ✅ |
+| [phase-3d-dashboard-polish-charts-pagination.md](./phase-3d-dashboard-polish-charts-pagination.md) | Phase 3D dashboard polish — hero KPIs, donut chart, lot bars, cursor activity feed | `feature/phase-3d-dashboard-polish-charts-pagination` |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.

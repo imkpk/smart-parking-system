@@ -4,6 +4,7 @@ import {
   formatCurrency,
   formatDateTime,
   formatDuration,
+  formatPersonName,
   formatReceiptNo,
   formatRupees,
   formatSessionNo,
@@ -13,6 +14,13 @@ import {
 describe('formatters', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('title-cases person names for display', () => {
+    expect(formatPersonName('pratibha')).toBe('Pratibha');
+    expect(formatPersonName('pratibha kumar')).toBe('Pratibha Kumar');
+    expect(formatPersonName(' Admin User ')).toBe('Admin User');
+    expect(formatPersonName(null)).toBe('');
   });
 
   it('formats padded booking, receipt, and session numbers', () => {
