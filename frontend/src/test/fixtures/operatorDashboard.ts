@@ -1,0 +1,145 @@
+import { OperatorDashboardMetrics } from '@/types/operatorDashboard';
+
+export const tenantOperatorMetrics: OperatorDashboardMetrics = {
+  scope: 'TENANT',
+  role: 'ADMIN',
+  organizationName: 'Acme Parking',
+  occupancy: {
+    totalSlots: 120,
+    availableSlots: 80,
+    occupiedSlots: 30,
+    reservedSlots: 5,
+    maintenanceSlots: 5,
+    utilizationPercent: 29,
+  },
+  bookings: {
+    total: 45,
+    today: 6,
+    thisWeek: 18,
+    pending: 3,
+    confirmed: 38,
+    cancelled: 4,
+  },
+  parkingEvents: {
+    active: 8,
+    completed: 20,
+    checkInsToday: 5,
+    checkOutsToday: 4,
+  },
+  revenue: {
+    todayCollectedFees: 1200,
+    weekCollectedFees: 6400,
+    monthCollectedFees: 24000,
+    currency: 'INR',
+  },
+  recentActivity: [
+    {
+      parkingEventId: 1,
+      vehicleNumber: 'TS09EA1234',
+      slotNumber: 'A-01',
+      parkingLotName: 'Lot A',
+      status: 'ACTIVE',
+      checkInTime: '2026-06-18T08:00:00.000Z',
+      checkOutTime: null,
+      activityType: 'CHECK_IN',
+    },
+    {
+      parkingEventId: 2,
+      vehicleNumber: 'TS09EA5678',
+      slotNumber: 'B-02',
+      parkingLotName: 'Lot B',
+      status: 'COMPLETED',
+      checkInTime: '2026-06-18T06:00:00.000Z',
+      checkOutTime: '2026-06-18T10:00:00.000Z',
+      activityType: 'CHECK_OUT',
+    },
+  ],
+  lotUtilization: [
+    {
+      parkingLotId: 1,
+      parkingLotName: 'Lot A',
+      totalSlots: 60,
+      occupiedSlots: 20,
+      availableSlots: 40,
+      utilizationPercent: 33,
+    },
+  ],
+  platformOverview: null,
+  userOverview: null,
+};
+
+export const securityOperatorMetrics: OperatorDashboardMetrics = {
+  scope: 'TENANT',
+  role: 'SECURITY',
+  organizationName: 'Acme Parking',
+  occupancy: tenantOperatorMetrics.occupancy,
+  bookings: {
+    total: 6,
+    today: 6,
+    thisWeek: 0,
+    pending: 0,
+    confirmed: 0,
+    cancelled: 0,
+  },
+  parkingEvents: {
+    active: 8,
+    completed: 0,
+    checkInsToday: 5,
+    checkOutsToday: 4,
+  },
+  revenue: null,
+  recentActivity: tenantOperatorMetrics.recentActivity,
+  lotUtilization: [],
+  platformOverview: null,
+  userOverview: null,
+};
+
+export const userOperatorMetrics: OperatorDashboardMetrics = {
+  scope: 'USER',
+  role: 'USER',
+  organizationName: 'Acme Parking',
+  occupancy: null,
+  bookings: null,
+  parkingEvents: null,
+  revenue: null,
+  recentActivity: tenantOperatorMetrics.recentActivity.slice(0, 1),
+  lotUtilization: [],
+  platformOverview: null,
+  userOverview: {
+    totalVehicles: 2,
+    upcomingBookings: 1,
+    activeParkingEvents: 1,
+    completedParkingEvents: 4,
+  },
+};
+
+export const platformOperatorMetrics: OperatorDashboardMetrics = {
+  scope: 'PLATFORM',
+  role: 'SUPER_ADMIN',
+  organizationName: null,
+  occupancy: tenantOperatorMetrics.occupancy,
+  bookings: {
+    total: 200,
+    today: 12,
+    thisWeek: 0,
+    pending: 0,
+    confirmed: 0,
+    cancelled: 0,
+  },
+  parkingEvents: {
+    active: 30,
+    completed: 150,
+    checkInsToday: 0,
+    checkOutsToday: 0,
+  },
+  revenue: null,
+  recentActivity: [],
+  lotUtilization: [],
+  platformOverview: {
+    totalOrganizations: 5,
+    totalUsers: 120,
+    totalParkingLots: 15,
+    totalSlots: 500,
+  },
+  userOverview: null,
+};

@@ -1,125 +1,32 @@
-import { Alert, CircularProgress, Stack } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
+import { Stack } from '@mui/material';
+import { DashboardMetricGrid } from '../../components/dashboard/DashboardMetricGrid';
+import { LotUtilizationSection } from '../../components/dashboard/LotUtilizationSection';
+import { OccupancySummarySection } from '../../components/dashboard/OccupancySummarySection';
+import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
+import { RecentActivityTable } from '../../components/dashboard/RecentActivityTable';
 import {
-  CalendarMonth,
-  CheckCircle,
-  EventAvailable,
-  Garage,
-  Group,
-  LocalParking,
-  PendingActions,
-  ReportProblem,
-  TaskAlt,
-  TimeToLeave,
-} from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
-import { getAdminSummary, getSlotStatusSummary } from '../../api/dashboardApi';
-import { PageHeader } from '../../components/common/PageHeader';
-import { StatCard } from '../../components/common/StatCard';
-import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
-import { statusStyles } from '../../lib/statusStyles';
+  buildPlatformOverviewMetrics,
+  buildTenantAdminMetrics,
+} from '../../lib/operatorDashboardMetrics';
 
 export function AdminDashboardPage() {
-  const adminSummaryQuery = useQuery({
-    queryKey: ['dashboard', 'admin-summary'],
-    queryFn: getAdminSummary,
-  });
-  const slotStatusQuery = useQuery({
-    queryKey: ['dashboard', 'slot-status-summary'],
-    queryFn: getSlotStatusSummary,
-  });
-
-  const isLoading = adminSummaryQuery.isLoading || slotStatusQuery.isLoading;
-  const error = adminSummaryQuery.error ?? slotStatusQuery.error;
-  const summary = adminSummaryQuery.data;
-  const slotSummary = slotStatusQuery.data;
-
   return (
-    <Stack spacing={3}>
-      <PageHeader title="Dashboard" />
+    <OperatorDashboardShell accessDeniedMessage="Access denied. Admin role is required for this dashboard.">
+      {(metrics) => (
+        <Stack spacing={3}>
+          {metrics.scope === 'PLATFORM' ? (
+            <DashboardMetricGrid metrics={buildPlatformOverviewMetrics(metrics)} />
+          ) : null}
 
-      {isLoading ? (
-        <Stack alignItems="center" py={8}>
-          <CircularProgress />
+          {metrics.occupancy ? <OccupancySummarySection occupancy={metrics.occupancy} /> : null}
+
+          <DashboardMetricGrid metrics={buildTenantAdminMetrics(metrics)} />
+
+          {metrics.scope === 'TENANT' ? <LotUtilizationSection items={metrics.lotUtilization} /> : null}
+
+          <RecentActivityTable items={metrics.recentActivity} />
         </Stack>
-      ) : null}
-
-      {error ? (
-        <Alert severity={isForbiddenError(error) ? 'warning' : 'error'}>
-          {isForbiddenError(error)
-            ? 'Access denied. Admin role is required for this dashboard.'
-            : getApiErrorMessage(error, 'Could not load dashboard summary.')}
-        </Alert>
-      ) : null}
-
-      {summary ? (
-        <>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard icon={<Group />} label="Total Users" value={summary.totalUsers} />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard icon={<Garage />} label="Parking Lots" value={summary.totalParkingLots} />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard icon={<LocalParking />} label="Total Slots" value={summary.totalSlots} />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              accentColor={statusStyles.AVAILABLE.borderColor}
-              icon={<CheckCircle />}
-              iconBgcolor={statusStyles.AVAILABLE.bgcolor}
-              label="Available Slots"
-              value={slotSummary?.availableSlots ?? summary.availableSlots}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              accentColor={statusStyles.OCCUPIED.borderColor}
-              icon={<TimeToLeave />}
-              iconBgcolor={statusStyles.OCCUPIED.bgcolor}
-              label="Occupied Slots"
-              value={slotSummary?.occupiedSlots ?? summary.occupiedSlots}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              accentColor={statusStyles.RESERVED.borderColor}
-              icon={<PendingActions />}
-              iconBgcolor={statusStyles.RESERVED.bgcolor}
-              label="Reserved Slots"
-              value={slotSummary?.reservedSlots ?? summary.reservedSlots}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              accentColor={statusStyles.MAINTENANCE.borderColor}
-              icon={<ReportProblem />}
-              iconBgcolor={statusStyles.MAINTENANCE.bgcolor}
-              label="Maintenance Slots"
-              value={slotSummary?.maintenanceSlots ?? summary.maintenanceSlots}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard icon={<CalendarMonth />} label="Total Bookings" value={summary.totalBookings} />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              icon={<EventAvailable />}
-              label="Active Parking Events"
-              value={summary.activeParkingEvents}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              icon={<TaskAlt />}
-              label="Completed Parking Events"
-              value={summary.completedParkingEvents}
-            />
-          </Grid>
-        </Grid>
-        </>
-      ) : null}
-    </Stack>
+      )}
+    </OperatorDashboardShell>
   );
 }

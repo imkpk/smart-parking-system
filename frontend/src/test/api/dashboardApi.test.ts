@@ -10,7 +10,11 @@ vi.mock('@/api/client', () => ({
   },
 }));
 
-import { getAdminSummary, getSlotStatusSummary } from '@/api/dashboardApi';
+import {
+  getAdminSummary,
+  getOperatorMetrics,
+  getSlotStatusSummary,
+} from '@/api/dashboardApi';
 
 describe('dashboardApi', () => {
   beforeEach(() => {
@@ -51,5 +55,27 @@ describe('dashboardApi', () => {
 
     expect(getMock).toHaveBeenCalledWith('/dashboard/slot-status-summary');
     expect(result).toEqual(summary);
+  });
+
+  it('getOperatorMetrics fetches operator dashboard metrics', async () => {
+    const metrics = {
+      scope: 'TENANT',
+      role: 'ADMIN',
+      organizationName: 'Acme Parking',
+      occupancy: null,
+      bookings: null,
+      parkingEvents: null,
+      revenue: null,
+      recentActivity: [],
+      lotUtilization: [],
+      platformOverview: null,
+      userOverview: null,
+    };
+    getMock.mockResolvedValue({ data: metrics });
+
+    const result = await getOperatorMetrics();
+
+    expect(getMock).toHaveBeenCalledWith('/dashboard/operator-metrics');
+    expect(result).toEqual(metrics);
   });
 });
