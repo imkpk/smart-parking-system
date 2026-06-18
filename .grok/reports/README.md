@@ -29,6 +29,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [e2e-agent-playbook.md](./e2e-agent-playbook.md) | Cypress/E2E agent playbook and prompt pack (LOOP 00) | PR #55 ✅ |
 | [e2e-strategy-hybrid-model.md](./e2e-strategy-hybrid-model.md) | Cypress hybrid strategy + journey registry (LOOP 01) | PR #56 ✅ |
 | [cypress-e2e-foundation.md](./cypress-e2e-foundation.md) | Cypress smoke foundation J1/J3/J14 (LOOP 02) | PR #57 ✅ |
-| [cypress-core-parking-smoke.md](./cypress-core-parking-smoke.md) | Core parking lifecycle smoke J4/J5/J6/J8 + fan-out (LOOP 03) | `feature/cypress-core-parking-smoke` (PR pending) |
+| [cypress-core-parking-smoke.md](./cypress-core-parking-smoke.md) | Core parking lifecycle smoke J4/J5/J6/J8 + fan-out (LOOP 03) | PR #58 ✅ |
+| [cypress-ci-smoke-stage.md](./cypress-ci-smoke-stage.md) | Cypress E2E CI job (LOOP 04, advisory) | `ci/cypress-smoke-stage` (PR pending) |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.

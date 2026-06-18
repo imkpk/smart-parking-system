@@ -6,7 +6,7 @@
 
 **Version:** 1.4.4  
 **Last updated:** 2026-06-18  
-**Current branch:** `feature/cypress-core-parking-smoke`  
+**Current branch:** `ci/cypress-smoke-stage`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -250,8 +250,8 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 00 | Agent playbook + prompt pack | ✅ Merged (PR #55) | .grok/reports/e2e-agent-playbook.md |
 | 01 | Journey registry J1–J14 | ✅ Merged (PR #56) | .grok/e2e/journey-registry.md |
 | 02 | Cypress foundation (J1, J3, J14) | ✅ Merged (PR #57) | .grok/reports/cypress-e2e-foundation.md |
-| 03 | Core parking smoke (J4–J6, J8) | 🔄 PR pending | .grok/reports/cypress-core-parking-smoke.md |
-| 04 | CI smoke stage | [ ] | .github/workflows/ci.yml |
+| 03 | Core parking smoke (J4–J6, J8) | ✅ Merged (PR #58) | .grok/reports/cypress-core-parking-smoke.md |
+| 04 | CI smoke stage | 🔄 PR pending | .grok/reports/cypress-ci-smoke-stage.md |
 | 05 | Release policy + PR template | [ ] | .grok/reports/e2e-policy-and-release-pack.md |
 
 **E2E control paths:**
@@ -609,7 +609,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.4 | Grok | Added E2E/Cypress agent playbook and prompt pack. Future UI/user-flow PRs must update Cypress smoke or document why not. PR #55 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 01: journey registry J1–J14 and hybrid strategy report. PR #56 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. PR #57 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. PR #58 merged. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). |
 
 ---
 
