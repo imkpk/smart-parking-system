@@ -1,8 +1,8 @@
-import { render, renderHook, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { ThemeModeToggle } from '@/components/common/ThemeModeToggle';
-import { renderWithProviders } from '@/test/test-utils';
+import { expectContextHookToThrow, renderWithProviders } from '@/test/test-utils';
 import { ThemeModeProvider, useThemeMode } from '@/providers/ThemeModeProvider';
 import { TestThemeShell } from '@/test/TestThemeShell';
 
@@ -10,7 +10,8 @@ const STORAGE_KEY = 'smart-parking-color-mode';
 
 describe('ThemeModeProvider', () => {
   it('throws when useThemeMode is used outside the provider', () => {
-    expect(() => renderHook(() => useThemeMode())).toThrow(
+    expectContextHookToThrow(
+      useThemeMode,
       'useThemeMode must be used within ThemeModeProvider',
     );
   });

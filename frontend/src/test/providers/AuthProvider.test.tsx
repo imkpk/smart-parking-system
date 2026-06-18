@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentUser, login, register } from '@/api/authApi';
@@ -8,6 +8,7 @@ import {
   createMockOrganization,
   createMockUser,
   createTestQueryClient,
+  expectContextHookToThrow,
 } from '@/test/test-utils';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 
@@ -33,9 +34,7 @@ describe('AuthProvider', () => {
   });
 
   it('throws when useAuth is used outside the provider', () => {
-    expect(() => renderHook(() => useAuth())).toThrow(
-      'useAuth must be used within AuthProvider',
-    );
+    expectContextHookToThrow(useAuth, 'useAuth must be used within AuthProvider');
   });
 
   it('logs in and persists the authenticated user', async () => {
