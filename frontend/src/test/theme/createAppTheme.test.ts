@@ -24,10 +24,12 @@ describe('createAppTheme', () => {
     const theme = createAppTheme('light', {
       primary: '#AA0000',
       secondary: '#00AA00',
+      accent: '#0000AA',
       name: 'Tenant Parking',
     });
 
     expect(theme.palette.primary.main).toBe('#AA0000');
     expect(theme.palette.secondary.main).toBe('#00AA00');
+    expect(theme.palette.info.main).toBe('#0000AA');
   });
 });
