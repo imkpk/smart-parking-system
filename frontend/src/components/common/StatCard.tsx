@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 export function StatCard({
   label,
   value,
+  helperText,
   icon,
   accentColor = 'primary.main',
   compact = false,
@@ -11,6 +12,7 @@ export function StatCard({
 }: {
   label: string;
   value: number | string;
+  helperText?: string;
   icon?: ReactNode;
   accentColor?: string;
   compact?: boolean;
@@ -45,16 +47,21 @@ export function StatCard({
         }}
       >
         <Stack direction="row" justifyContent="space-between" spacing={2}>
-          <Stack spacing={compact ? 0.5 : 1}>
-            <Typography color="text.secondary" fontWeight={600} variant="body2">
+          <Stack flex={1} minWidth={0} spacing={compact ? 0.75 : 1}>
+            <Typography
+              color="text.secondary"
+              fontWeight={600}
+              sx={{ letterSpacing: '0.02em', textTransform: 'uppercase' }}
+              variant="caption"
+            >
               {label}
             </Typography>
             <Typography
               sx={{
                 fontSize: compact
-                  ? { xs: '1.25rem', sm: '1.375rem' }
-                  : { xs: '1.375rem', sm: '1.5rem' },
-                fontWeight: 600,
+                  ? { xs: '1.35rem', sm: '1.5rem' }
+                  : { xs: '1.5rem', sm: '1.625rem' },
+                fontWeight: 700,
                 letterSpacing: '-0.02em',
                 lineHeight: 1.1,
               }}
@@ -62,17 +69,23 @@ export function StatCard({
             >
               {value}
             </Typography>
+            {helperText ? (
+              <Typography color="text.secondary" sx={{ lineHeight: 1.35 }} variant="caption">
+                {helperText}
+              </Typography>
+            ) : null}
           </Stack>
           {icon ? (
             <Stack
               alignItems="center"
+              flexShrink={0}
               justifyContent="center"
               sx={{
                 bgcolor: iconBgcolor,
-                borderRadius: 1.5,
+                borderRadius: 2,
                 color: accentColor,
-                height: compact ? 36 : 44,
-                width: compact ? 36 : 44,
+                height: compact ? 40 : 48,
+                width: compact ? 40 : 48,
               }}
             >
               {icon}

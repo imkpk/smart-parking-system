@@ -1,4 +1,5 @@
 import Grid from '@mui/material/GridLegacy';
+import { getHeroKpiIcon } from '../../lib/dashboardHeroKpiConfig';
 import { DashboardMetricItem } from '../../lib/operatorDashboardMetrics';
 import { StatCard } from '../common/StatCard';
 
@@ -12,9 +13,11 @@ export function DashboardHeroKpiRow({ metrics }: { metrics: DashboardMetricItem[
       {metrics.slice(0, 4).map((metric) => (
         <Grid item key={metric.key} lg={3} md={6} xs={12}>
           <StatCard
-            accentColor={metric.accentColor}
+            accentColor={metric.accentColor ?? 'primary.main'}
             compact
-            iconBgcolor={metric.iconBgcolor}
+            helperText={metric.helperText}
+            icon={getHeroKpiIcon(metric.key)}
+            iconBgcolor={metric.iconBgcolor ?? 'rgba(31, 111, 235, 0.1)'}
             label={metric.label}
             value={metric.value}
           />
