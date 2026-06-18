@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.10.0
+**Version:** 1.11.0
 **Last updated:** 2026-06-19  
-**Current branch:** `feature/phase-4c-visual-slot-map-ui`
+**Current branch:** `test/phase-4-visual-slot-map-acceptance`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 4 LOOP 4C — frontend visual slot map UI (feature/phase-4c-visual-slot-map-ui).
-4A–4B merged (PRs #86–#87). Next: 4D acceptance.
+Phase 4 LOOP 4D — visual slot map acceptance (test/phase-4-visual-slot-map-acceptance).
+4A–4C merged (PRs #86–#88). Final acceptance PR pending merge.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -359,17 +359,19 @@ Execute in this order unless the human redirects:
 
 **Exit criteria:** Admin opens dashboard and understands lot health in 5 seconds. ✅ Met (3D polish: summary layout above the fold).
 
-### Phase 4 — Visual slot map (sales differentiator) — IN PROGRESS
+### Phase 4 — Visual slot map (sales differentiator) ✅
 
 ```text
 [x] 4A: visual slot map contract — PR #86 ✅
 [x] 4B: tenant-scoped GET /parking-lots/:id/slot-map API — PR #87 ✅
-[x] 4C: Visual slot map UI (/parking-lots/:id/slot-map) — PR pending
-[ ] 4D: acceptance tests + demo polish
-[ ] Logical grid layout (no x/y coordinates)
-[ ] Floor/status/type filters + legend
-[ ] Slot detail drawer with safe booking/event links
+[x] 4C: Visual slot map UI (/parking-lots/:id/slot-map) — PR #88 ✅
+[x] 4D: acceptance tests + Cypress J15 smoke — PR pending
+[x] Logical grid layout (no x/y coordinates)
+[x] Floor/status/type filters + legend
+[x] Slot detail drawer with safe booking/event links
 ```
+
+**Exit criteria:** Tenant admin/admin/security can open visual map; USER gets safe availability view; tenant isolation preserved. ✅ Met.
 
 ### Phase 5 — Mobile security gate
 
@@ -659,7 +661,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.9.3 | Grok | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse, 220px expanded width, dashboard spacing polish, view-all outlined buttons, favicon. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
 | 2026-06-19 | 1.10.0 | Grok | Phase 4 LOOP 4A: visual slot map contract — API shape, role rules, logical grid layout, frontend route/component plan, acceptance criteria. Report: `.grok/reports/phase-4-visual-slot-map-contract.md`. |
 | 2026-06-19 | 1.10.1 | Grok | Phase 4 LOOP 4B: visual slot map API — `GET /parking-lots/:id/slot-map`, role-safe occupancy, filters, legend, tests. Report: `.grok/reports/phase-4b-slot-map-api.md`. |
-| 2026-06-19 | 1.10.2 | Grok | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. |
+| 2026-06-19 | 1.10.2 | Grok | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. PR #88 ✅. |
+| 2026-06-19 | 1.11.0 | Grok | Phase 4 complete: visual slot map acceptance — backend/frontend acceptance tests, Cypress J15 smoke, tenant isolation and role-safe occupancy verified. Report: `.grok/reports/phase-4-visual-slot-map-acceptance.md`. |
 
 ---
 
