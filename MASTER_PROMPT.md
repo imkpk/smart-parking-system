@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.5  
+**Version:** 1.4.6  
 **Last updated:** 2026-06-18  
-**Current branch:** `docs/e2e-rollout-final-summary`  
+**Current branch:** `develop`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -614,6 +614,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). PR #59 merged. |
 | 2026-06-18 | 1.4.4 | Grok | E2E 05: release regression policy + PR template UI/E2E checklist. PR #60 merged. |
 | 2026-06-18 | 1.4.5 | Grok | E2E rollout complete — final summary, 8 smoke specs, advisory CI stage. |
+| 2026-06-18 | 1.4.6 | Grok | CI storage hygiene: removed E2E upload-artifact steps, disabled Cypress screenshots in CI, gitignored cypress screenshots/videos. Pruned stale remote/local branches. |
 
 ---
 
