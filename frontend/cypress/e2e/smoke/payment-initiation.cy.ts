@@ -9,17 +9,23 @@ describe('J8 — payment initiation (stubbed)', { retries: { runMode: 0 } }, () 
           url: `${Cypress.env('apiBaseUrl')}/parking-events/check-out`,
           headers: { Authorization: `Bearer ${data.security.token}` },
           body: { parkingEventId: data.parkingEventId },
-        });
+        })
+          .its('status')
+          .should('eq', 201);
 
         cy.intercept('GET', '**/api/payments/user/**').as('userPayments');
+        cy.intercept('GET', '**/api/bookings/my**').as('myBookings');
+        cy.intercept('GET', '**/api/vehicles/my**').as('myVehicles');
 
         cy.loginWithUser(data.user);
         cy.visit('/payments');
 
         cy.wait('@userPayments');
+        cy.wait('@myBookings');
+        cy.wait('@myVehicles');
         cy.get('[role="grid"]').should('be.visible');
-        cy.get('[role="row"]').contains(data.vehiclePlate).should('be.visible');
-        cy.get('[role="row"]').contains(/PAY-|INR/).should('be.visible');
+        cy.contains('[role="row"]', /PAY-|INR/).should('be.visible');
+        cy.contains('[role="row"]', data.vehiclePlate).should('be.visible');
       });
   });
 });

@@ -64,10 +64,24 @@ function registerUser(role: E2ERole): Cypress.Chainable<RegisteredUser> {
     }));
 }
 
+function seedAuthToken(token: string, role: E2ERole) {
+  cy.visit('/');
+  cy.window().its('localStorage').invoke('setItem', TOKEN_KEY, token);
+  cy.visit(roleHomePath(role));
+  cy.url().should('include', roleHomePath(role));
+}
+
 function loginViaUi(user: Pick<RegisteredUser, 'email' | 'password' | 'role'>) {
   cy.visit('/login');
-  cy.get('input[type="email"]').clear().type(user.email);
-  cy.get('input[type="password"]').clear().type(user.password);
+  cy.contains('button', 'Sign in').should('be.visible');
+
+  // MUI controlled fields re-render on clear — re-query between commands.
+  cy.get('input[type="email"]').should('be.visible').clear();
+  cy.get('input[type="email"]').type(user.email);
+
+  cy.get('input[type="password"]').should('be.visible').clear();
+  cy.get('input[type="password"]').type(user.password);
+
   cy.contains('button', 'Sign in').click();
   cy.url().should('include', roleHomePath(user.role));
 }
@@ -101,7 +115,12 @@ Cypress.Commands.add('uniqueEmail', () => {
 
 Cypress.Commands.add('registerViaApi', (role: E2ERole = 'USER') => registerUser(role));
 
-Cypress.Commands.add('loginWithUser', (user: Pick<RegisteredUser, 'email' | 'password' | 'role'>) => {
+Cypress.Commands.add('loginWithUser', (user: RegisteredUser) => {
+  if (user.token) {
+    seedAuthToken(user.token, user.role);
+    return;
+  }
+
   loginViaUi(user);
 });
 
@@ -112,7 +131,7 @@ Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
     sessionId,
     () => {
       registerUser(role).then((user) => {
-        loginViaUi(user);
+        seedAuthToken(user.token, user.role);
       });
     },
     {
@@ -120,7 +139,12 @@ Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
         cy.window().then((win) => {
           const token = win.localStorage.getItem(TOKEN_KEY);
           expect(token, 'auth token present').to.be.a('string').and.not.be.empty;
-        });
+          return cy.request({
+            url: `${apiBaseUrl()}/auth/me`,
+            headers: authHeaders(token),
+            failOnStatusCode: false,
+          });
+        }).its('status').should('eq', 200);
       },
     },
   );
@@ -262,7 +286,7 @@ declare global {
       uniquePlate(): Chainable<string>;
       uniqueEmail(): Chainable<string>;
       registerViaApi(role?: E2ERole): Chainable<RegisteredUser>;
-      loginWithUser(user: Pick<RegisteredUser, 'email' | 'password' | 'role'>): Chainable<void>;
+      loginWithUser(user: RegisteredUser): Chainable<void>;
       loginAs(role?: E2ERole): Chainable<void>;
       logout(): Chainable<void>;
       setupParkingSmokeData(): Chainable<ParkingSmokeData>;

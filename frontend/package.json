@@ -12,7 +12,10 @@
     "coverage": "vitest run --coverage",
     "e2e:open": "cypress open",
     "e2e:smoke": "cypress run --spec \"cypress/e2e/smoke/**/*.cy.ts\"",
-    "e2e:ci": "start-server-and-test dev http://localhost:5173 e2e:smoke"
+    "e2e:ci": "start-server-and-test dev http://localhost:5173 e2e:smoke",
+    "e2e:local": "pwsh -NoProfile -File ../scripts/run-e2e-local.ps1",
+    "e2e:local:open": "pwsh -NoProfile -File ../scripts/run-e2e-local.ps1 -Mode open",
+    "e2e:local:stack": "pwsh -NoProfile -File ../scripts/run-e2e-local.ps1 -Mode stack"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
