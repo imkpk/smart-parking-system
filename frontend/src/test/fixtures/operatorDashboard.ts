@@ -113,6 +113,24 @@ export const userOperatorMetrics: OperatorDashboardMetrics = {
   },
 };
 
+export function createTenantOperatorMetrics(
+  overrides: Partial<OperatorDashboardMetrics> = {},
+): OperatorDashboardMetrics {
+  return {
+    ...tenantOperatorMetrics,
+    ...overrides,
+  };
+}
+
+export function createUserOperatorMetrics(
+  overrides: Partial<OperatorDashboardMetrics> = {},
+): OperatorDashboardMetrics {
+  return {
+    ...userOperatorMetrics,
+    ...overrides,
+  };
+}
+
 export const platformOperatorMetrics: OperatorDashboardMetrics = {
   scope: 'PLATFORM',
   role: 'SUPER_ADMIN',

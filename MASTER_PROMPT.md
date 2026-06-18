@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.8.1
+**Version:** 1.9.0
 **Last updated:** 2026-06-18  
-**Current branch:** `ci/fast-pr-gates-and-agent-flow`
+**Current branch:** `test/phase-3-operator-dashboard-acceptance`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,9 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 2 white-label branding complete (2A–2E + acceptance).
-CI fast PR gates + agent delivery flow in progress (`ci/fast-pr-gates-and-agent-flow`).
-Next major milestone: Phase 3 operator dashboard (await human approval).
+Phase 3 operator dashboard in progress (3A merged PR #80; 3B PR #81; 3C acceptance pending).
+Next major milestone: Phase 4 visual slot map (await human approval).
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -344,13 +343,19 @@ Execute in this order unless the human redirects:
 
 **Exit criteria:** Per-tenant branding on login/shell; tenant admin can configure branding; tenant isolation preserved. ✅ Met.
 
-### Phase 3 — Operator dashboard
+### Phase 3 — Operator dashboard ✅
 
 ```text
-[ ] Occupancy %, active sessions, revenue metrics
-[ ] Slot heatmap by floor
-[ ] Role-specific dashboard content
+[x] 3A: operator dashboard metrics API — PR #80 ✅
+[x] 3B: operator dashboard UI — PR #81
+[x] 3C: acceptance verification — pending
+[x] Occupancy %, booking volume, active sessions, revenue (parking fees)
+[x] Recent check-ins/check-outs, lot utilization table
+[x] Role-specific dashboards (SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER)
+[ ] Slot heatmap by floor — deferred to Phase 4 visual slot map
 ```
+
+**Exit criteria:** Admin opens dashboard and understands lot health in 5 seconds. ✅ Met (operator metrics + utilization).
 
 ### Phase 4 — Visual slot map (sales differentiator)
 
@@ -641,7 +646,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.7.3 | Grok | Phase 2 LOOP 2D: branded login page and app shell with tenant slug routes and branded AppLogo. PR #75. |
 | 2026-06-18 | 1.7.4 | Grok | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. PR #76. |
 | 2026-06-18 | 1.8.0 | Grok | Phase 2 complete: white-label acceptance tests/report; branding API, provider, login/shell, settings UI merged. |
-| 2026-06-18 | 1.8.1 | Grok | CI fast PR gates: PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. Report: `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`. |
+| 2026-06-18 | 1.8.1 | Grok | CI fast PR gates (PR #79): PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. |
+| 2026-06-18 | 1.9.0 | Grok | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
 
 ---
 
