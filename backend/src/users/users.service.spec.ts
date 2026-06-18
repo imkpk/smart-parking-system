@@ -239,6 +239,36 @@ describe('UsersService', () => {
     });
   });
 
+  it('returns active user with organization summary when relation exists', async () => {
+    prisma.user.findFirst.mockResolvedValue({
+      ...userRecord,
+      organization: {
+        id: userRecord.organizationId,
+        name: 'Default Organization',
+        slug: 'default',
+      },
+    });
+
+    const result = await service.findActiveById(userRecord.id);
+
+    expect(result).toEqual({
+      id: userRecord.id,
+      organizationId: userRecord.organizationId,
+      organization: {
+        id: userRecord.organizationId,
+        name: 'Default Organization',
+        slug: 'default',
+      },
+      name: userRecord.name,
+      email: userRecord.email,
+      phone: userRecord.phone,
+      role: userRecord.role,
+      isActive: userRecord.isActive,
+      createdAt: userRecord.createdAt,
+      updatedAt: userRecord.updatedAt,
+    });
+  });
+
   it('returns only active user by id', async () => {
     prisma.user.findFirst.mockResolvedValue(userRecord);
 

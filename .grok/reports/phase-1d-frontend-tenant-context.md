@@ -1,6 +1,6 @@
 # Phase 1d - Frontend Tenant Context
 
-**Status:** Implemented locally; PR pending
+**Status:** Merged (PR #68)
 **Branch:** `feature/phase-1d-frontend-tenant-context`
 **Scope:** Frontend auth tenant context, minimal backend auth response enrichment, tests, and reports
 

@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.5.1
+**Version:** 1.6.0
 **Last updated:** 2026-06-18  
-**Current branch:** `feature/phase-1d-frontend-tenant-context`
+**Current branch:** `verify/phase-1-tenant-isolation-acceptance`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -230,7 +230,7 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | Inter font + unDraw illustrations | frontend/src/assets/illustrations/ |
 | Illustration + EmptyState components | frontend/src/components/common/ |
 
-### Phase 1 — Multi-tenancy 🔄
+### Phase 1 — Multi-tenancy ✅
 
 | Phase | What | Status | Report |
 |-------|------|--------|--------|
@@ -239,6 +239,8 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
 | 1b verification | Backend tenant scoping audit | ✅ Merged (PR #66) | .grok/reports/phase-1b-verification.md |
 | 1c | Tenant onboarding API | ✅ Merged (PR #67) | .grok/reports/phase-1c-tenant-onboarding-api.md |
+| 1d | Frontend tenant context in auth state | ✅ Merged (PR #68) | .grok/reports/phase-1d-frontend-tenant-context.md |
+| Acceptance | Tenant isolation acceptance verification | 🔄 PR pending | .grok/reports/phase-1-tenant-isolation-acceptance.md |
 
 ### Frontend testing foundation ✅
 
@@ -275,11 +277,10 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-[ ] Phase 1d — Frontend tenant context in AuthProvider; PR pending
-     Branch: feature/phase-1d-frontend-tenant-context
-     Scope: organizationId + organization summary in auth state; SUPER_ADMIN/TENANT_ADMIN route handling
-     Report: .grok/reports/phase-1d-frontend-tenant-context.md
-     After merge: Phase 1 tenant isolation acceptance verification
+[ ] Phase 1 acceptance — tenant isolation verification; PR pending
+     Branch: verify/phase-1-tenant-isolation-acceptance
+     Report: .grok/reports/phase-1-tenant-isolation-acceptance.md
+     After merge: Phase 2 white-label (await human approval)
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -299,7 +300,8 @@ Execute in this order unless the human redirects:
 [x] Phase 1a: organization schema (PR #40 ✅)
 [x] Phase 1b: backend tenant scoping (PR #42 ✅)
 [x] Phase 1c: tenant onboarding API (PR #67 ✅)
-[ ] Phase 1d: frontend tenant context in AuthProvider (PR pending)
+[x] Phase 1d: frontend tenant context in AuthProvider (PR #68 ✅)
+[ ] Phase 1 acceptance: tenant isolation verification (PR pending)
 [ ] Frontend RTL/Vitest foundation — PR pending (feature/frontend-test-coverage-rtl-vitest)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
@@ -313,11 +315,12 @@ Execute in this order unless the human redirects:
 [x] JWT claims: organizationId
 [x] Service-level query scoping + cross-tenant write protection (Phase 1b)
 [x] Tenant onboarding API (Phase 1c)
-[ ] Frontend: tenant context in AuthProvider (Phase 1d)
+[x] Frontend: tenant context in AuthProvider (Phase 1d)
 [x] Migration: assign existing seed data to default org
+[x] Tenant isolation acceptance verification
 ```
 
-**Exit criteria:** Two organizations in DB see completely separate data.
+**Exit criteria:** Two organizations in DB see completely separate data. ✅ Met.
 
 ### Phase 2 — White-label
 
@@ -379,9 +382,7 @@ Full roadmap: `docs/project-plan/03-roadmap.md`
 
 | Gap | Phase | Impact if skipped |
 |-----|-------|-------------------|
-| No Organization / tenant model | 1 | Cannot sell to multiple customers |
-| No organizationId on data | 1 | No data isolation — SaaS blocker |
-| No SUPER_ADMIN / TENANT_ADMIN | 1 | No platform or tenant management |
+| Payment-service tenant linkage | Future | Payment DB remains separate today |
 | Single global branding | 2 | Weak sales — looks like one app |
 | Table-only slot view | 4 | Loses to competitors in demos |
 | Desktop-first security UI | 5 | Guards cannot operate at gate |
@@ -617,7 +618,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.8 | Codex | LOOP 1A Phase 1a verification: audited Organization schema, tenant columns, default-org seed, migration backfill, and tenant-aware unique constraints. Report added at `.grok/reports/phase-1a-verification.md`. |
 | 2026-06-18 | 1.4.9 | Codex | LOOP 1B Phase 1b verification: audited JWT organization claims, access policy helpers, service-level tenant scoping, cross-tenant tests, dashboard filters, and booking/event display enrichment. Report added at `.grok/reports/phase-1b-verification.md`. |
 | 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added SUPER_ADMIN-only `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
-| 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support SUPER_ADMIN/TENANT_ADMIN; backend auth responses enriched with optional organization summary. |
+| 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support SUPER_ADMIN/TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
+| 2026-06-18 | 1.6.0 | Grok | Phase 1 tenant isolation acceptance: added acceptance tests/report; Phase 1a–1d marked complete. |
 
 ---
 
