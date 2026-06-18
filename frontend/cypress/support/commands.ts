@@ -42,6 +42,10 @@ function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
+function uniqueE2ePlate(): string {
+  return `E2E${Date.now()}${Math.random().toString(36).slice(2, 8)}${Cypress._.random(1000, 9999)}`;
+}
+
 function registerUser(role: E2ERole): Cypress.Chainable<RegisteredUser> {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const email = `e2e-${stamp}@example.com`;
@@ -64,10 +68,24 @@ function registerUser(role: E2ERole): Cypress.Chainable<RegisteredUser> {
     }));
 }
 
+function seedAuthToken(token: string, role: E2ERole) {
+  cy.visit('/');
+  cy.window().its('localStorage').invoke('setItem', TOKEN_KEY, token);
+  cy.visit(roleHomePath(role));
+  cy.url().should('include', roleHomePath(role));
+}
+
 function loginViaUi(user: Pick<RegisteredUser, 'email' | 'password' | 'role'>) {
   cy.visit('/login');
-  cy.get('input[type="email"]').clear().type(user.email);
-  cy.get('input[type="password"]').clear().type(user.password);
+  cy.contains('button', 'Sign in').should('be.visible');
+
+  // MUI controlled fields re-render on clear — re-query between commands.
+  cy.get('input[type="email"]').should('be.visible').clear();
+  cy.get('input[type="email"]').type(user.email);
+
+  cy.get('input[type="password"]').should('be.visible').clear();
+  cy.get('input[type="password"]').type(user.password);
+
   cy.contains('button', 'Sign in').click();
   cy.url().should('include', roleHomePath(user.role));
 }
@@ -89,10 +107,7 @@ function pickMuiOptionInDialog(optionText: string | RegExp, comboboxIndex = 0) {
   cy.get('[role="option"]').contains(optionText).click();
 }
 
-Cypress.Commands.add('uniquePlate', () => {
-  const stamp = `${Date.now()}${Math.floor(Math.random() * 100000)}`;
-  return cy.wrap(`E2E${stamp}`.slice(0, 12));
-});
+Cypress.Commands.add('uniquePlate', () => cy.wrap(uniqueE2ePlate()));
 
 Cypress.Commands.add('uniqueEmail', () => {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -101,7 +116,12 @@ Cypress.Commands.add('uniqueEmail', () => {
 
 Cypress.Commands.add('registerViaApi', (role: E2ERole = 'USER') => registerUser(role));
 
-Cypress.Commands.add('loginWithUser', (user: Pick<RegisteredUser, 'email' | 'password' | 'role'>) => {
+Cypress.Commands.add('loginWithUser', (user: RegisteredUser) => {
+  if (user.token) {
+    seedAuthToken(user.token, user.role);
+    return;
+  }
+
   loginViaUi(user);
 });
 
@@ -112,7 +132,7 @@ Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
     sessionId,
     () => {
       registerUser(role).then((user) => {
-        loginViaUi(user);
+        seedAuthToken(user.token, user.role);
       });
     },
     {
@@ -120,7 +140,12 @@ Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
         cy.window().then((win) => {
           const token = win.localStorage.getItem(TOKEN_KEY);
           expect(token, 'auth token present').to.be.a('string').and.not.be.empty;
-        });
+          return cy.request({
+            url: `${apiBaseUrl()}/auth/me`,
+            headers: authHeaders(token as string),
+            failOnStatusCode: false,
+          });
+        }).its('status').should('eq', 200);
       },
     },
   );
@@ -176,7 +201,7 @@ Cypress.Commands.add('setupParkingSmokeData', () => {
     })
     .then((registeredUser) => {
       user = registeredUser;
-      vehiclePlate = `E2E${stamp}${Math.floor(Math.random() * 100000)}`.slice(0, 12);
+      vehiclePlate = uniqueE2ePlate();
       return cy.request({
         method: 'POST',
         url: `${apiBaseUrl()}/vehicles`,
@@ -262,7 +287,7 @@ declare global {
       uniquePlate(): Chainable<string>;
       uniqueEmail(): Chainable<string>;
       registerViaApi(role?: E2ERole): Chainable<RegisteredUser>;
-      loginWithUser(user: Pick<RegisteredUser, 'email' | 'password' | 'role'>): Chainable<void>;
+      loginWithUser(user: RegisteredUser): Chainable<void>;
       loginAs(role?: E2ERole): Chainable<void>;
       logout(): Chainable<void>;
       setupParkingSmokeData(): Chainable<ParkingSmokeData>;
