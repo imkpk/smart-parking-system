@@ -42,6 +42,10 @@ function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
+function uniqueE2ePlate(): string {
+  return `E2E${Date.now()}${Math.random().toString(36).slice(2, 8)}${Cypress._.random(1000, 9999)}`;
+}
+
 function registerUser(role: E2ERole): Cypress.Chainable<RegisteredUser> {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const email = `e2e-${stamp}@example.com`;
@@ -103,10 +107,7 @@ function pickMuiOptionInDialog(optionText: string | RegExp, comboboxIndex = 0) {
   cy.get('[role="option"]').contains(optionText).click();
 }
 
-Cypress.Commands.add('uniquePlate', () => {
-  const stamp = `${Date.now()}${Math.floor(Math.random() * 100000)}`;
-  return cy.wrap(`E2E${stamp}`.slice(0, 12));
-});
+Cypress.Commands.add('uniquePlate', () => cy.wrap(uniqueE2ePlate()));
 
 Cypress.Commands.add('uniqueEmail', () => {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -141,7 +142,7 @@ Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
           expect(token, 'auth token present').to.be.a('string').and.not.be.empty;
           return cy.request({
             url: `${apiBaseUrl()}/auth/me`,
-            headers: authHeaders(token),
+            headers: authHeaders(token as string),
             failOnStatusCode: false,
           });
         }).its('status').should('eq', 200);
@@ -200,7 +201,7 @@ Cypress.Commands.add('setupParkingSmokeData', () => {
     })
     .then((registeredUser) => {
       user = registeredUser;
-      vehiclePlate = `E2E${stamp}${Math.floor(Math.random() * 100000)}`.slice(0, 12);
+      vehiclePlate = uniqueE2ePlate();
       return cy.request({
         method: 'POST',
         url: `${apiBaseUrl()}/vehicles`,

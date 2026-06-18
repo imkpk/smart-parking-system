@@ -14,7 +14,8 @@ describe('J3 — register vehicle', { retries: { runMode: 0 } }, () => {
 
       cy.get('[role="dialog"]').filter(':visible').within(() => {
         cy.contains('Add Vehicle').should('be.visible');
-        cy.get('input[type="text"]').eq(0).clear().type(plate);
+        cy.get('input[type="text"]').eq(0).clear();
+        cy.get('input[type="text"]').eq(0).type(plate);
         cy.get('input[type="text"]').eq(1).type('E2E Motors');
         cy.get('input[type="text"]').eq(2).type('Smoke');
         cy.get('input[type="text"]').eq(3).type('Blue');
