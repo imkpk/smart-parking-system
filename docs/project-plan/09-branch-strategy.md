@@ -232,16 +232,35 @@ main ──► hotfix/payment-critical-bug ──► PR → main (tag v1.0.1)
 
 Current CI (`.github/workflows/ci.yml`) runs on:
 
-- PR → `develop` or `main`
-- Push → `develop` or `main`
+- PR → `develop`, `main`, or `single-tenant`
+- Push → `develop`, `main`, or `single-tenant`
 
-**Every PR must pass before merge:**
+Path filtering skips untouched services. Report: `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
-| Job | Service |
-|-----|---------|
-| NestJS Backend | `backend` build + prisma generate |
-| React Frontend | `frontend` build |
-| Spring Boot Payment Service | `mvn clean package` |
+**PR fast gate (required before merge):**
+
+| Job | Commands |
+|-----|----------|
+| NestJS Backend | `npm run build`, `npm run test:run` |
+| React Frontend | `npm run build`, `npm run test:run` |
+| Spring Boot Payment Service | `mvn -B clean package` |
+| Cypress E2E Smoke | **Skipped on PR** |
+
+**Push to `develop` (full integration trunk):**
+
+| Job | Commands |
+|-----|----------|
+| NestJS Backend | `npm run build`, `npm run test:cov` |
+| React Frontend | `npm run build`, `npm run coverage` |
+| Cypress E2E Smoke | Full stack + `npm run e2e:ci` (advisory) |
+
+**Agent delivery flow:**
+
+```text
+Open PR early → enable auto-merge → start next branch without idle-wait
+Fetch develop before dependent PRs → never leave stale PRs across phases
+Merge stacked PRs in dependency order
+```
 
 **Future (recommended):**
 

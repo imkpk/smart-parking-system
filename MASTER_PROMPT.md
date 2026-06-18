@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.8.0
+**Version:** 1.8.1
 **Last updated:** 2026-06-18  
-**Current branch:** `verify/phase-2-whitelabel-acceptance`
+**Current branch:** `ci/fast-pr-gates-and-agent-flow`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -104,6 +104,16 @@ main          = future stable release branch
 ```
 
 CI runs on PRs and pushes to `main`, `develop`, and `single-tenant`. Hotfixes for the legacy product branch from `single-tenant` only. Report: `.grok/reports/single-tenant-branch-preservation.md`.
+
+**CI gates (fast PR + full trunk):**
+
+```text
+PR (fast):     build + test:run per touched service; skip Cypress
+develop push:  build + coverage + Cypress smoke (advisory) on relevant paths
+Docs-only PRs: path filter skips service jobs when safe
+Agent flow:    open PR early, enable auto-merge, continue next branch without idle-wait
+Report:        .grok/reports/ci-fast-pr-gates-and-agent-flow.md
+```
 
 ### Tech stack (fixed — do not replace)
 
@@ -278,6 +288,7 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 
 ```text
 Phase 2 white-label branding complete (2A–2E + acceptance).
+CI fast PR gates + agent delivery flow in progress (`ci/fast-pr-gates-and-agent-flow`).
 Next major milestone: Phase 3 operator dashboard (await human approval).
 ```
 
@@ -492,15 +503,17 @@ Keep payment DB separate. NestJS calls payment service at checkout — do not me
 ## 15. Verification checklist (before claiming done)
 
 ```bash
-# Frontend (always if frontend touched)
-cd frontend && npm run build
+# Fast local gate (before opening PR)
+cd frontend && npm run build && npm run test:run   # if frontend touched
+cd backend && npm run build && npm run test:run  # if backend touched
+cd payment-service && mvn clean package          # if payment-service touched
 
-# Backend (if backend touched)
-cd backend && npm run build && npm run test:cov
-
-# Payment service (if payment-service touched)
-cd payment-service && mvn clean package
+# Full trunk validation (optional locally; runs on develop push in CI)
+cd backend && npm run test:cov
+cd frontend && npm run coverage
 ```
+
+**Agent PR flow:** open PR early → enable auto-merge → start next branch without idle-wait. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
 **Report format after every task:**
 
@@ -628,6 +641,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.7.3 | Grok | Phase 2 LOOP 2D: branded login page and app shell with tenant slug routes and branded AppLogo. PR #75. |
 | 2026-06-18 | 1.7.4 | Grok | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. PR #76. |
 | 2026-06-18 | 1.8.0 | Grok | Phase 2 complete: white-label acceptance tests/report; branding API, provider, login/shell, settings UI merged. |
+| 2026-06-18 | 1.8.1 | Grok | CI fast PR gates: PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. Report: `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`. |
 
 ---
 

@@ -20,27 +20,30 @@ Repository rules:
 * Do not change payment-service business logic.
 * Do not change frontend product behavior except Cypress/testability work required by the prompt.
 * Keep each PR focused.
-* Merge PRs only when CI is green, PR is mergeable, and there are no unresolved blocking review comments.
-* If merge permissions are unavailable, stop and report the PR link, CI status, and exact next action.
+* Enable auto-merge on every PR when branch protection allows.
+* Do not idle-wait for CI after opening a PR — start the next safe branch while checks run.
+* Merge PRs when CI is green, PR is mergeable, and there are no unresolved blocking review comments (auto-merge handles this when enabled).
+* If merge permissions or auto-merge are unavailable, report the PR link, CI status, and exact next action — continue only when safe.
+* Never leave stale PRs open across phase boundaries.
 
 Autonomous loop protocol:
 
 ```text
-1. Sync develop.
+1. Sync develop (`git fetch && git pull origin develop`).
 2. Create branch for current prompt.
 3. Make only scoped changes.
-4. Run required local validation.
+4. Run fast local validation (`npm run build` + `npm run test:run` for touched services).
 5. Commit and push.
-6. Open PR to develop.
-7. Wait for CI.
-8. If CI fails, inspect logs, fix, push again.
-9. Repeat until CI is green.
-10. Merge PR if mergeable and green.
-11. Pull latest develop.
-12. Continue to next prompt.
+6. Open PR to develop early.
+7. Enable auto-merge when possible (`gh pr merge <n> --auto --squash` or `--merge`).
+8. Start the next prompt branch immediately — do not idle-wait for CI.
+9. Before opening a dependent PR, fetch latest develop and merge/rebase if needed.
+10. If CI fails on an open PR, inspect logs, fix, push again (max 3 attempts per issue).
+11. Merge stacked PRs in dependency order (base slice before dependent slice).
+12. Pull latest develop after a merge before starting work that depends on it.
 ```
 
-Do not continue to the next prompt until the current PR is merged.
+PR CI runs fast gates (build + unit tests). Full coverage and Cypress smoke run on `develop` push after merge. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
 ============================================================
 LOOP 00 — Create E2E agent playbook and prompt pack

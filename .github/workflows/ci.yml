@@ -78,7 +78,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
+      - name: Test (fast PR gate)
+        if: github.event_name == 'pull_request'
+        run: npm run test:run
+
+      - name: Test with coverage (integration trunk)
+        if: github.event_name == 'push'
         run: npm run test:cov
 
   frontend:
@@ -109,28 +114,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test with coverage
+      - name: Test (fast PR gate)
+        if: github.event_name == 'pull_request'
+        run: npm run test:run
+
+      - name: Test with coverage (integration trunk)
+        if: github.event_name == 'push'
         id: coverage
         run: npm run coverage
 
-      # - name: Upload frontend coverage artifact
-      #   if: steps.coverage.outcome == 'success'
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: frontend-coverage
-      #     path: frontend/coverage/
-      #     if-no-files-found: error
-
       - name: Frontend coverage summary
-        if: steps.coverage.outcome == 'success'
+        if: github.event_name == 'push' && steps.coverage.outcome == 'success'
         run: node ../.github/scripts/frontend-coverage-summary.mjs
-
-      - name: Post frontend coverage PR comment
-        if: github.event_name == 'pull_request' && steps.coverage.outcome == 'success'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: frontend-coverage
-          path: frontend/coverage/pr-coverage-comment.md
 
   payment-service:
     name: Spring Boot Payment Service
@@ -161,10 +156,12 @@ jobs:
     name: Cypress E2E Smoke
     needs: changes
     if: >
-      github.event_name == 'push' ||
-      needs.changes.outputs.frontend == 'true' ||
-      needs.changes.outputs.backend == 'true' ||
-      needs.changes.outputs.workflow == 'true'
+      github.event_name == 'push' &&
+      (
+        needs.changes.outputs.frontend == 'true' ||
+        needs.changes.outputs.backend == 'true' ||
+        needs.changes.outputs.workflow == 'true'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
@@ -278,10 +275,17 @@ jobs:
     steps:
       - name: Verify CI results
         run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Gate mode: fast PR checks (build + unit tests; no Cypress)"
+          else
+            echo "Gate mode: full integration trunk checks (coverage + Cypress smoke on relevant paths)"
+          fi
           echo "Backend: ${{ needs.backend.result }}"
           echo "Frontend: ${{ needs.frontend.result }}"
           echo "Payment: ${{ needs.payment-service.result }}"
-          echo "E2E Smoke (advisory): ${{ needs.e2e-smoke.result }}"
+          echo "E2E Smoke (advisory on push only): ${{ needs.e2e-smoke.result }}"
 
           failed=0
           if [ "${{ needs.backend.result }}" = "failure" ] || [ "${{ needs.backend.result }}" = "cancelled" ]; then
