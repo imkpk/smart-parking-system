@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.9.1
-**Last updated:** 2026-06-18  
-**Current branch:** `feature/phase-3d-dashboard-polish-charts-pagination`
+**Version:** 1.9.2
+**Last updated:** 2026-06-19  
+**Current branch:** `fix/phase-3e-dashboard-demo-polish`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 3D dashboard polish in progress (hero KPIs, slot donut, compact lot bars, cursor activity feed).
-Phase 3 core complete (PRs #80–#82). Next major milestone: Phase 4 visual slot map (await human approval).
+Phase 3E dashboard demo polish — PR pending (KPI icons, donut center label, activity spacing, E2E lot cleanup).
+Phase 3 core + 3D merged (PRs #80–#83). Next major milestone: Phase 4 visual slot map (await human approval).
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -349,7 +349,8 @@ Execute in this order unless the human redirects:
 [x] 3A: operator dashboard metrics API — PR #80 ✅
 [x] 3B: operator dashboard UI — PR #81 ✅
 [x] 3C: acceptance verification — PR #82 ✅
-[x] 3D: dashboard polish — hero KPIs, slot donut, compact lot bars, cursor activity feed — PR pending
+[x] 3D: dashboard polish — hero KPIs, slot donut, compact lot bars, cursor activity feed — PR #83 ✅
+[x] 3E: demo polish — KPI icons/helper text, donut center label, activity spacing, demo seed E2E cleanup — PR pending
 [x] Occupancy %, booking volume, active sessions, revenue (parking fees)
 [x] Recent activity cursor API + timeline feed (separate from operator-metrics)
 [x] Role-specific dashboards (SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER)
@@ -650,6 +651,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.8.1 | Grok | CI fast PR gates (PR #79): PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. |
 | 2026-06-18 | 1.9.0 | Grok | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
 | 2026-06-18 | 1.9.1 | Grok | Phase 3D dashboard polish: cursor recent-activity API, hero KPI row, slot donut chart, compact lot utilization, activity timeline + Load more. |
+| 2026-06-19 | 1.9.2 | Grok | Phase 3D merged (PR #83). Phase 3E demo polish: KPI icons/helper text, donut center label, tighter chart, activity spacing, demo-seed Hyderabad lot names + E2E artifact cleanup. |
 
 ---
 

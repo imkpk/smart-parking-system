@@ -6,6 +6,7 @@ export type DashboardMetricItem = {
   key: string;
   label: string;
   value: number | string;
+  helperText?: string;
   accentColor?: string;
   iconBgcolor?: string;
 };
@@ -159,6 +160,7 @@ export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): Dashboar
       key: 'hero-utilization',
       label: 'Utilization',
       value: `${occupancy.utilizationPercent}%`,
+      helperText: 'Occupied and reserved slots',
       accentColor: statusStyles.OCCUPIED.borderColor,
       iconBgcolor: statusStyles.OCCUPIED.bgcolor,
     },
@@ -166,6 +168,7 @@ export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): Dashboar
       key: 'hero-active-sessions',
       label: 'Active Sessions',
       value: parkingEvents.active,
+      helperText: 'Vehicles currently parked',
       accentColor: statusStyles.ACTIVE.borderColor,
       iconBgcolor: statusStyles.ACTIVE.bgcolor,
     },
@@ -173,6 +176,7 @@ export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): Dashboar
       key: 'hero-check-ins-today',
       label: "Today's Check-ins",
       value: parkingEvents.checkInsToday,
+      helperText: 'Since midnight',
     },
   ];
 
@@ -181,6 +185,7 @@ export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): Dashboar
       key: 'hero-revenue-today',
       label: 'Revenue Today',
       value: formatRupees(revenue.todayCollectedFees),
+      helperText: 'Collected parking fees',
       accentColor: statusStyles.SUCCESS.borderColor,
       iconBgcolor: statusStyles.SUCCESS.bgcolor,
     });
@@ -189,6 +194,7 @@ export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): Dashboar
       key: 'hero-check-outs-today',
       label: "Today's Check-outs",
       value: parkingEvents.checkOutsToday,
+      helperText: 'Completed sessions today',
       accentColor: statusStyles.COMPLETED.borderColor,
       iconBgcolor: statusStyles.COMPLETED.bgcolor,
     });
@@ -205,10 +211,30 @@ export function buildPlatformHeroKpis(metrics: OperatorDashboardMetrics): Dashbo
   }
 
   return [
-    { key: 'organizations', label: 'Organizations', value: overview.totalOrganizations },
-    { key: 'users', label: 'Total Users', value: overview.totalUsers },
-    { key: 'lots', label: 'Parking Lots', value: overview.totalParkingLots },
-    { key: 'slots', label: 'Total Slots', value: overview.totalSlots },
+    {
+      key: 'organizations',
+      label: 'Organizations',
+      value: overview.totalOrganizations,
+      helperText: 'Active tenants on platform',
+    },
+    {
+      key: 'users',
+      label: 'Total Users',
+      value: overview.totalUsers,
+      helperText: 'Across all organizations',
+    },
+    {
+      key: 'lots',
+      label: 'Parking Lots',
+      value: overview.totalParkingLots,
+      helperText: 'Managed parking sites',
+    },
+    {
+      key: 'slots',
+      label: 'Total Slots',
+      value: overview.totalSlots,
+      helperText: 'Inventory across platform',
+    },
   ];
 }
 

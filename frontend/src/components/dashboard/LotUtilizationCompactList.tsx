@@ -59,13 +59,22 @@ function AnimatedLotRow({
   });
 
   return (
-    <Box component="li" sx={{ display: 'block', listStyle: 'none' }}>
-      <Stack spacing={0.75}>
+    <Box
+      component="li"
+      sx={{
+        borderRadius: 1.5,
+        display: 'block',
+        listStyle: 'none',
+        px: 0.5,
+        py: 0.75,
+      }}
+    >
+      <Stack spacing={1}>
         <Stack alignItems="baseline" direction="row" justifyContent="space-between" spacing={1.5}>
           <Typography sx={lotNameTypographySx} variant="subtitle2">
             {`${index + 1}. ${lot.parkingLotName}`}
           </Typography>
-          <Typography color="text.secondary" sx={lotMetricsTypographySx} variant="caption">
+          <Typography color="text.secondary" sx={lotMetricsTypographySx} variant="body2">
             {lot.occupiedSlots}/{lot.totalSlots} · {animatedPercent}%
           </Typography>
         </Stack>
@@ -178,7 +187,7 @@ export function LotUtilizationCompactList({
                 aria-label="Top parking lot utilization"
                 component="ol"
                 key={animationKey}
-                spacing={1.75}
+                spacing={2}
                 sx={{ display: isActive ? 'flex' : 'none', m: 0, p: 0 }}
               >
                 {rankedLots.map((lot, index) => (
