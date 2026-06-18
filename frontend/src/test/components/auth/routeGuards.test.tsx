@@ -133,6 +133,41 @@ describe('RoleRoute', () => {
     expect(screen.getByText('Parking Lots')).toBeInTheDocument();
   });
 
+  it('blocks admin users from tenant branding settings route', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'TENANT_ADMIN']} />}>
+          <Route path="/admin/branding" element={<div>Branding Settings</div>} />
+        </Route>
+      </Routes>,
+      { route: '/admin/branding' },
+    );
+
+    expect(screen.getByText(/you do not have access to this page/i)).toBeInTheDocument();
+    expect(screen.queryByText('Branding Settings')).not.toBeInTheDocument();
+  });
+
+  it('allows tenant admin users to access branding settings route', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'TENANT_ADMIN' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'TENANT_ADMIN']} />}>
+          <Route path="/admin/branding" element={<div>Branding Settings</div>} />
+        </Route>
+      </Routes>,
+      { route: '/admin/branding' },
+    );
+
+    expect(screen.getByText('Branding Settings')).toBeInTheDocument();
+  });
+
   it('allows users with the required role', () => {
     vi.mocked(useAuth).mockReturnValue(
       createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),

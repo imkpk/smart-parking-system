@@ -26,6 +26,7 @@ import {
   Logout,
   Menu,
   MenuOpen,
+  Palette,
   Security,
   SensorOccupied,
   SvgIconComponent,
@@ -48,6 +49,7 @@ interface NavItem {
   icon: SvgIconComponent;
   matchPrefix?: boolean;
   roles: Role[];
+  requiresOrganization?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -68,6 +70,13 @@ const navItems: NavItem[] = [
     to: '/user/dashboard',
     icon: Dashboard,
     roles: ['USER'],
+  },
+  {
+    label: 'Branding',
+    to: '/admin/branding',
+    icon: Palette,
+    roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
+    requiresOrganization: true,
   },
   {
     label: 'Parking Lots',
@@ -126,9 +135,17 @@ export function AppLayout() {
       : collapsedDrawerWidth;
   const shouldShowExpandedDrawer = isMobile || isSidebarOpen;
 
-  const visibleNavItems = navItems.filter((item) =>
-    user ? item.roles.includes(user.role) : false,
-  );
+  const visibleNavItems = navItems.filter((item) => {
+    if (!user || !item.roles.includes(user.role)) {
+      return false;
+    }
+
+    if (item.requiresOrganization && user.organizationId == null) {
+      return false;
+    }
+
+    return true;
+  });
 
   const handleLogout = () => {
     logout();

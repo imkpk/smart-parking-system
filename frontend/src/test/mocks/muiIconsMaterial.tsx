@@ -30,6 +30,7 @@ export const Logout = MockMuiIcon;
 export const Menu = MockMuiIcon;
 export const MenuOpen = MockMuiIcon;
 export const OpenInNew = MockMuiIcon;
+export const Palette = MockMuiIcon;
 export const Payments = MockMuiIcon;
 export const PendingActions = MockMuiIcon;
 export const ReceiptLong = MockMuiIcon;
