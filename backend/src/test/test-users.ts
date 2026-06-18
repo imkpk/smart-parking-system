@@ -105,3 +105,27 @@ export const superAdminUser: SafeUser = {
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
+
+export const tenantAdminUser: SafeUser = {
+  id: 4,
+  organizationId: DEFAULT_ORGANIZATION_ID,
+  name: 'Tenant Admin',
+  email: 'tenant.admin@example.com',
+  phone: '+910000000004',
+  role: Role.TENANT_ADMIN,
+  isActive: true,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+};
+
+export const tenantAdminUserOrg2: SafeUser = {
+  id: 14,
+  organizationId: OTHER_ORGANIZATION_ID,
+  name: 'Org2 Tenant Admin',
+  email: 'tenant-admin-org2@example.com',
+  phone: '+910000000014',
+  role: Role.TENANT_ADMIN,
+  isActive: true,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+};
