@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.8  
+**Version:** 1.4.9  
 **Last updated:** 2026-06-18  
-**Current branch:** `verify/phase-1a-organization-schema`  
+**Current branch:** `verify/phase-1b-tenant-scoping`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -235,8 +235,9 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | Phase | What | Status | Report |
 |-------|------|--------|--------|
 | 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
-| 1a verification | Organization schema foundation audit | 🔄 PR pending | .grok/reports/phase-1a-verification.md |
+| 1a verification | Organization schema foundation audit | ✅ Merged (PR #65) | .grok/reports/phase-1a-verification.md |
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
+| 1b verification | Backend tenant scoping audit | 🔄 PR pending | .grok/reports/phase-1b-verification.md |
 
 ### Frontend testing foundation ✅
 
@@ -618,6 +619,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.6 | Grok | CI storage hygiene: removed E2E upload-artifact steps, disabled Cypress screenshots in CI, gitignored cypress screenshots/videos. Pruned stale remote/local branches. |
 | 2026-06-18 | 1.4.7 | Grok | Local E2E runner script (`scripts/run-e2e-local.ps1`), Cypress smoke stability fixes (login token seeding, DataGrid/dialog selectors), npm `e2e:local*` scripts. |
 | 2026-06-18 | 1.4.8 | Codex | LOOP 1A Phase 1a verification: audited Organization schema, tenant columns, default-org seed, migration backfill, and tenant-aware unique constraints. Report added at `.grok/reports/phase-1a-verification.md`. |
+| 2026-06-18 | 1.4.9 | Codex | LOOP 1B Phase 1b verification: audited JWT organization claims, access policy helpers, service-level tenant scoping, cross-tenant tests, dashboard filters, and booking/event display enrichment. Report added at `.grok/reports/phase-1b-verification.md`. |
 
 ---
 
@@ -638,3 +640,4 @@ Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ---
 
 *Build the best. Ship the best. Document every step.*
+
