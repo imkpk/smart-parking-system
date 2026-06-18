@@ -26,21 +26,22 @@ export function TenantOperatorDashboardLayout({
       <DashboardHeroKpiRow metrics={heroMetrics} />
 
       {occupancy ? (
-        <Grid container spacing={2}>
-          <Grid item lg={showLotUtilization ? 5 : 12} md={showLotUtilization ? 5 : 12} xs={12}>
-            <SlotStatusDonutChart occupancy={occupancy} />
+        <Grid alignItems="stretch" container spacing={2}>
+          <Grid item lg={showLotUtilization ? 7 : 6} md={showLotUtilization ? 7 : 6} xs={12}>
+            <Stack spacing={2} sx={{ height: '100%' }}>
+              <SlotStatusDonutChart occupancy={occupancy} />
+              {showLotUtilization ? <LotUtilizationCompactList items={lotUtilization} /> : null}
+            </Stack>
           </Grid>
-          {showLotUtilization ? (
-            <Grid item lg={7} md={7} xs={12}>
-              <LotUtilizationCompactList items={lotUtilization} />
-            </Grid>
-          ) : null}
+          <Grid item lg={showLotUtilization ? 5 : 6} md={showLotUtilization ? 5 : 6} xs={12}>
+            <RecentActivityTimeline fillHeight />
+          </Grid>
         </Grid>
-      ) : null}
+      ) : (
+        <RecentActivityTimeline />
+      )}
 
       {extraContent}
-
-      <RecentActivityTimeline />
     </Stack>
   );
 }

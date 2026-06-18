@@ -18,13 +18,17 @@ export function AdminDashboardPage() {
           <Stack spacing={2.5}>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
             {metrics.occupancy ? (
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
+              <Grid alignItems="stretch" container spacing={2}>
+                <Grid item lg={6} md={6} xs={12}>
                   <SlotStatusDonutChart occupancy={metrics.occupancy} />
                 </Grid>
+                <Grid item lg={6} md={6} xs={12}>
+                  <RecentActivityTimeline fillHeight />
+                </Grid>
               </Grid>
-            ) : null}
-            <RecentActivityTimeline />
+            ) : (
+              <RecentActivityTimeline />
+            )}
           </Stack>
         ) : (
           <TenantOperatorDashboardLayout

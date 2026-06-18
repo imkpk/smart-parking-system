@@ -30,13 +30,15 @@ describe('dashboardApi', () => {
       },
     });
 
-    await expect(getRecentActivity({ limit: 5, cursor: 'opaque' })).resolves.toEqual({
+    await expect(
+      getRecentActivity({ limit: 5, cursor: 'opaque', q: 'Lot A' }),
+    ).resolves.toEqual({
       items: [],
       nextCursor: 'opaque',
       hasMore: true,
     });
     expect(getMock).toHaveBeenCalledWith('/dashboard/recent-activity', {
-      params: { limit: 5, cursor: 'opaque' },
+      params: { limit: 5, cursor: 'opaque', q: 'Lot A' },
     });
   });
 });

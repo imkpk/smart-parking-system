@@ -1,3 +1,4 @@
+import Grid from '@mui/material/GridLegacy';
 import { Stack } from '@mui/material';
 import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
@@ -10,7 +11,11 @@ export function UserDashboardPage() {
       {(metrics) => (
         <Stack spacing={2.5}>
           <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />
-          <RecentActivityTimeline />
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <RecentActivityTimeline />
+            </Grid>
+          </Grid>
         </Stack>
       )}
     </OperatorDashboardShell>

@@ -195,7 +195,9 @@ export class DashboardService {
   ): Promise<RecentActivityPage> {
     const limit = this.normalizeRecentActivityLimit(query.limit);
     const cursor = query.cursor ? decodeRecentActivityCursor(query.cursor) : null;
+    const searchTerm = this.normalizeRecentActivitySearch(query.q);
     const where = this.buildRecentActivityWhere(currentUser);
+    const searchFilter = this.buildRecentActivitySearchFilter(searchTerm);
     const cursorFilter = cursor
       ? {
           OR: [
@@ -211,6 +213,7 @@ export class DashboardService {
     const events = await this.prisma.parkingEvent.findMany({
       where: {
         ...where,
+        ...searchFilter,
         ...cursorFilter,
       },
       orderBy: [{ checkInTime: 'desc' }, { id: 'desc' }],
@@ -602,6 +605,37 @@ export class DashboardService {
     }
 
     return Math.min(Math.max(Math.trunc(limit), 1), RECENT_ACTIVITY_MAX_LIMIT);
+  }
+
+  private normalizeRecentActivitySearch(search: string | undefined) {
+    if (!search) {
+      return null;
+    }
+
+    const trimmed = search.trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    return trimmed.slice(0, 80);
+  }
+
+  private buildRecentActivitySearchFilter(
+    searchTerm: string | null,
+  ): Prisma.ParkingEventWhereInput {
+    if (!searchTerm) {
+      return {};
+    }
+
+    return {
+      OR: [
+        { vehicle: { vehicleNumber: { contains: searchTerm } } },
+        { parkingLot: { name: { contains: searchTerm } } },
+        { slot: { slotNumber: { contains: searchTerm } } },
+        { slot: { floor: { name: { contains: searchTerm } } } },
+      ],
+    };
   }
 
   private buildRecentActivityWhere(currentUser: SafeUser): Prisma.ParkingEventWhereInput {

@@ -36,24 +36,6 @@ const recentActivityPage = {
   hasMore: true,
 };
 
-const recentActivityPage2 = {
-  items: [
-    {
-      parkingEventId: 3,
-      vehicleNumber: 'TS09EA9999',
-      slotNumber: 'C-03',
-      floorName: 'Level 2',
-      parkingLotName: 'Lot C',
-      status: 'COMPLETED' as const,
-      checkInTime: '2026-06-18T04:00:00.000Z',
-      checkOutTime: '2026-06-18T05:00:00.000Z',
-      activityType: 'CHECK_OUT' as const,
-    },
-  ],
-  nextCursor: null,
-  hasMore: false,
-};
-
 describe('AdminDashboardPage', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
@@ -100,11 +82,13 @@ describe('AdminDashboardPage', () => {
     });
   });
 
-  it('appends the next activity page when Load more is clicked', async () => {
+  it('searches recent activity by vehicle, lot, floor, or slot', async () => {
     const user = userEvent.setup();
-    vi.mocked(getRecentActivity)
-      .mockResolvedValueOnce(recentActivityPage)
-      .mockResolvedValueOnce(recentActivityPage2);
+    vi.mocked(getRecentActivity).mockResolvedValue({
+      items: [tenantOperatorMetrics.recentActivity[0]],
+      nextCursor: null,
+      hasMore: false,
+    });
 
     renderWithProviders(<AdminDashboardPage />);
 
@@ -112,16 +96,27 @@ describe('AdminDashboardPage', () => {
       expect(screen.getByText('TS09EA1234')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: /load more/i }));
+    await user.type(screen.getByLabelText(/search activity/i), 'TS09EA1234');
 
     await waitFor(() => {
-      expect(screen.getByText('TS09EA9999')).toBeInTheDocument();
+      expect(getRecentActivity).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 10,
+          q: 'TS09EA1234',
+        }),
+      );
+    });
+  });
+
+  it('renders a scrollable recent activity panel instead of load more button', async () => {
+    renderWithProviders(<AdminDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('TS09EA1234')).toBeInTheDocument();
     });
 
-    expect(getRecentActivity).toHaveBeenLastCalledWith({
-      limit: 5,
-      cursor: 'cursor-page-2',
-    });
+    expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/search activity/i)).toBeInTheDocument();
   });
 
   it('renders platform hero KPIs and slot status without tenant lot list', async () => {

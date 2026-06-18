@@ -176,6 +176,29 @@ describe('Phase 3D dashboard polish acceptance', () => {
     );
   });
 
+  it('filters recent activity by vehicle, lot, floor, or slot search term', async () => {
+    const prisma = {
+      parkingEvent: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = createService(prisma);
+
+    await service.getRecentActivity(adminUser, { limit: 5, q: 'TS09EA1234' });
+
+    expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          organizationId: DEFAULT_ORGANIZATION_ID,
+          OR: [
+            { vehicle: { vehicleNumber: { contains: 'TS09EA1234' } } },
+            { parkingLot: { name: { contains: 'TS09EA1234' } } },
+            { slot: { slotNumber: { contains: 'TS09EA1234' } } },
+            { slot: { floor: { name: { contains: 'TS09EA1234' } } } },
+          ],
+        }),
+      }),
+    );
+  });
+
   it('allows platform super admin to read cross-tenant recent activity', async () => {
     const prisma = {
       parkingEvent: { findMany: jest.fn().mockResolvedValue([]) },

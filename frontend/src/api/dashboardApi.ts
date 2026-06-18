@@ -5,6 +5,7 @@ import { apiClient } from './client';
 export type RecentActivityQuery = {
   limit?: number;
   cursor?: string;
+  q?: string;
 };
 
 export async function getAdminSummary() {
