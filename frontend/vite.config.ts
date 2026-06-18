@@ -2,27 +2,33 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import type { Alias } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-const muiIconMock = path.resolve(projectRoot, 'src/test/mocks/muiIcon.tsx');
-const muiIconsMaterialMock = path.resolve(projectRoot, 'src/test/mocks/muiIconsMaterial.tsx');
+const srcRoot = path.resolve(projectRoot, 'src');
+const muiIconMock = path.resolve(srcRoot, 'test/mocks/muiIcon.tsx');
+const muiIconsMaterialMock = path.resolve(srcRoot, 'test/mocks/muiIconsMaterial.tsx');
+
+const resolveAliases: Alias[] = [{ find: '@', replacement: srcRoot }];
+
+if (process.env.VITEST) {
+  resolveAliases.push(
+    {
+      find: /^@mui\/icons-material\/(.*)$/,
+      replacement: muiIconMock,
+    },
+    {
+      find: '@mui/icons-material',
+      replacement: muiIconsMaterialMock,
+    },
+  );
+}
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: process.env.VITEST
-      ? [
-          {
-            find: /^@mui\/icons-material\/(.*)$/,
-            replacement: muiIconMock,
-          },
-          {
-            find: '@mui/icons-material',
-            replacement: muiIconsMaterialMock,
-          },
-        ]
-      : [],
+    alias: resolveAliases,
   },
   server: {
     port: 5173,
@@ -30,6 +36,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    include: ['src/test/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     testTimeout: 20000,
     fileParallelism: false,
@@ -52,7 +59,6 @@ export default defineConfig({
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
-        'src/**/*.test.{ts,tsx}',
         'src/test/**',
         'src/types/**',
         'src/vite-env.d.ts',
