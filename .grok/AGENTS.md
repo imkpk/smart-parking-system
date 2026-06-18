@@ -596,9 +596,67 @@ Do not add new features while fixing cleanup issues.
 Do not ignore build errors.
 ```
 
+## Cypress / E2E Agent Rules
+
+Cypress E2E is for sellable user journeys, not every component.
+
+Use this rule:
+
+```text
+New sellable user journey      → add/update Cypress smoke
+Changed sellable user journey  → update Cypress smoke
+Visible UI regression          → add regression smoke if it affects a real flow
+Style-only/internal change     → Cypress not required unless usability is affected
+```
+
+Smoke tests live in:
+
+```text
+frontend/cypress/e2e/smoke/
+```
+
+Future full regression tests may live in a separate protected repo:
+
+```text
+smart-parking-e2e
+```
+
+Do not create the separate repo until the human explicitly asks.
+
+Definition of done for user-facing UI:
+
+```text
+1. Vitest/RTL covers changed UI logic.
+2. Cypress smoke exists or is updated for changed sellable journey.
+3. Journey registry is updated.
+4. Smoke passes locally or in CI depending rollout phase.
+```
+
+Do not make Cypress flaky:
+
+```text
+- Prefer accessible selectors.
+- Use data-testid only where MUI/DataGrid is painful.
+- Do not use arbitrary cy.wait(5000).
+- Use seeded/API-created data, not manual local DB state.
+- Use timestamp-based unique values.
+- Do not test real Razorpay in PR CI.
+- Stub Razorpay only where needed.
+- Keep smoke happy-path only.
+- Put edge cases in Vitest/backend tests.
+```
+
+Never merge an E2E PR with failing CI.
+Never silently delete failing smoke coverage.
+Flaky smoke = P0 quality issue; quarantine max 48 hours with a ticket.
+
+E2E prompt pack: `.grok/prompts/e2e-*.md`  
+Journey registry: `.grok/e2e/journey-registry.md` (created in E2E 01)
+
 ## Current Priority
 
 ```text
+E2E rollout (E2E 01–05) — Cypress smoke for sellable journeys
 Shared DataGrid
 Shared StatusChip
 Shared ConfirmDialog

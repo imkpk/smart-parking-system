@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.3  
+**Version:** 1.4.4  
 **Last updated:** 2026-06-18  
-**Current branch:** `fix/add-single-tenant-branch-to-ci`  
+**Current branch:** `docs/e2e-agent-playbook`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -237,18 +237,46 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
 
-### Frontend testing foundation 🔄
+### Frontend testing foundation ✅
 
 | Item | Status | Report |
 |------|--------|--------|
-| Vitest + RTL coverage foundation | 🔄 PR pending | .grok/reports/frontend-test-coverage-rtl-vitest.md |
+| Vitest + RTL coverage foundation | ✅ Merged (PR #51) | .grok/reports/frontend-test-coverage-rtl-vitest.md |
+
+### E2E / Cypress rollout 🔄
+
+| Loop | What | Status | Artifact |
+|------|------|--------|----------|
+| 00 | Agent playbook + prompt pack | 🔄 PR pending | .grok/reports/e2e-agent-playbook.md |
+| 01 | Journey registry J1–J14 | [ ] | .grok/e2e/journey-registry.md |
+| 02 | Cypress foundation (J1, J3, J14) | [ ] | frontend/cypress/ |
+| 03 | Core parking smoke (J4–J6, J8) | [ ] | frontend/cypress/e2e/smoke/ |
+| 04 | CI smoke stage | [ ] | .github/workflows/ci.yml |
+| 05 | Release policy + PR template | [ ] | .grok/reports/e2e-policy-and-release-pack.md |
+
+**E2E control paths:**
+
+```text
+.grok/e2e/journey-registry.md       — sellable journey IDs (E2E 01)
+.grok/prompts/e2e-*.md              — executable agent prompts
+frontend/cypress/e2e/smoke/         — PR-gate smoke specs (E2E 02+)
+.grok/reports/e2e-agent-playbook.md — rollout playbook (LOOP 00)
+.grok/prompts/loop-engineering-prompt.md — full autonomous loop driver
+```
+
+Future UI/user-flow PRs must update Cypress smoke or document why not (PR template checklist in E2E 05).
 
 ---
 
 ## 8. In progress (current sprint)
 
 ```text
-[ ] Phase 1c — Tenant onboarding API (next)
+[ ] E2E rollout — Cypress smoke for sellable journeys (E2E 01–05)
+     Branch: docs/e2e-agent-playbook → feature/cypress-* → ci/cypress-smoke-stage
+     Report: .grok/reports/e2e-agent-playbook.md
+     Do NOT start Phase 1c until E2E rollout completes unless human redirects.
+
+[ ] Phase 1c — Tenant onboarding API (deferred until E2E rollout done)
      Branch: feature/phase-1c-tenant-onboarding-api (from develop)
      Scope: SUPER_ADMIN tenant onboarding endpoints; org creation; initial TENANT_ADMIN user
      Report: TBD — .grok/reports/phase-1c-tenant-onboarding-api.md
@@ -577,7 +605,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.3.0 | Grok | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
 | 2026-06-18 | 1.4.0 | Grok | Phase 1b merged (PR #42): tenant scoping, Users API leak fix, enriched parking-events/bookings API (no slots fan-out). Next: Phase 1c tenant onboarding API. |
 | 2026-06-18 | 1.4.2 | Grok | CI path-based jobs on `fix/ci-path-based-jobs`: `dorny/paths-filter` change detection, conditional backend/frontend/payment jobs on PRs, full CI on push, `ci-summary` gate. PR #52 merged. |
-| 2026-06-18 | 1.4.3 | Grok | Created `single-tenant` branch from `main`; added to CI triggers; documented preservation/hotfix policy and ruleset checklist. Never merge `develop` into `single-tenant`. PR pending. |
+| 2026-06-18 | 1.4.3 | Grok | Created `single-tenant` branch from `main`; added to CI triggers; documented preservation/hotfix policy and ruleset checklist. Never merge `develop` into `single-tenant`. PR #53 merged. |
+| 2026-06-18 | 1.4.4 | Grok | Added E2E/Cypress agent playbook and prompt pack. Future UI/user-flow PRs must update Cypress smoke or document why not. |
 
 ---
 
@@ -590,7 +619,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: Phase 1c (tenant onboarding API). Branch: feature/phase-1c-tenant-onboarding-api from develop.
+Current focus: E2E rollout (E2E 01–05). Branch: docs/e2e-agent-playbook → feature/cypress-* from develop.
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
