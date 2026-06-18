@@ -24,6 +24,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-1b-tenant-scoping-backend.md](./phase-1b-tenant-scoping-backend.md) | Backend tenant scoping | PR #42 ✅ |
 | [frontend-ui-theme-design-system.md](./frontend-ui-theme-design-system.md) | Frontend theme, illustrations, design system | PR #44 ✅, PR #45 ✅ |
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
-| [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | `fix/ci-path-based-jobs` (PR #52 pending) |
+| [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |
+| [single-tenant-branch-preservation.md](./single-tenant-branch-preservation.md) | `single-tenant` branch from `main`, CI triggers, protection checklist | `fix/add-single-tenant-branch-to-ci` (PR pending) |
 
 Prompts live in [`.grok/prompts/`](../prompts/).
