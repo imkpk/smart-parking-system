@@ -18,6 +18,7 @@ Final polish on the Phase 3 operator dashboard for client/investor demos — pre
 | Slot Status donut | Center label (`29%` + `Utilized`), tighter chart dimensions, pill-style legend, single footer hint |
 | Lot Utilization | Row padding, `body2` metrics, spacing between ranked bars (top 5 unchanged) |
 | Recent Activity | Larger icon badges, `subtitle1` vehicle plates, clearer location hierarchy, looser dividers |
+| Card header actions | `View all lots` / `View all activity` as compact outlined MUI buttons with arrow icon |
 
 ### Demo data hygiene
 
@@ -84,6 +85,7 @@ cd backend && npm run build && npm run test:run    # 289 tests
 - `frontend/src/components/dashboard/donutChartConfig.ts`
 - `frontend/src/components/dashboard/LotUtilizationCompactList.tsx`
 - `frontend/src/components/dashboard/RecentActivityTimeline.tsx`
+- `frontend/src/components/dashboard/ViewAllActionButton.tsx`
 - `frontend/src/lib/dashboardHeroKpiConfig.tsx`
 - `frontend/src/lib/operatorDashboardMetrics.ts`
 - `frontend/src/test/pages/dashboard/dashboardPages.test.tsx`
