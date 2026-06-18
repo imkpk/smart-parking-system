@@ -6,10 +6,11 @@ import { BookingsController } from './bookings/bookings.controller';
 import { AssignmentsController } from './assignments/assignments.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { FloorsController } from './floors/floors.controller';
+import { OrganizationsController } from './organizations/organizations.controller';
 import { ParkingEventsController } from './parking-events/parking-events.controller';
 import { ParkingLotsController } from './parking-lots/parking-lots.controller';
 import { SlotsController } from './slots/slots.controller';
-import { adminUser, normalUser, securityUser } from './test/test-users';
+import { adminUser, normalUser, securityUser, superAdminUser } from './test/test-users';
 import { UsersController } from './users/users.controller';
 import { VehiclesController } from './vehicles/vehicles.controller';
 
@@ -169,6 +170,27 @@ describe('Controllers', () => {
     await expect(controller.cancel(1, normalUser)).resolves.toEqual({ id: 1, status: 'CANCELLED' });
   });
 
+
+  it('OrganizationsController delegates tenant onboarding', async () => {
+    const organizationsService = {
+      onboard: jest.fn().mockResolvedValue({ organization: { id: 1 }, tenantAdmin: { id: 2 } }),
+    };
+    const controller = new OrganizationsController(organizationsService as never);
+    const dto = {
+      organization: { name: 'Metro Mall', slug: 'metro-mall' },
+      tenantAdmin: {
+        name: 'Mall Admin',
+        email: 'mall.admin@example.com',
+        password: 'password123',
+      },
+    };
+
+    await expect(controller.onboard(superAdminUser, dto)).resolves.toEqual({
+      organization: { id: 1 },
+      tenantAdmin: { id: 2 },
+    });
+    expect(organizationsService.onboard).toHaveBeenCalledWith(superAdminUser, dto);
+  });
   it('ParkingEventsController delegates parking event operations', async () => {
     const parkingEventsService = {
       checkIn: jest.fn().mockResolvedValue({ id: 1 }),

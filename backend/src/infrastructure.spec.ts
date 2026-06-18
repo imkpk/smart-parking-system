@@ -9,6 +9,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { AssignmentsService } from './assignments/assignments.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { AccessPolicyService } from './common/access-policy.service';
 import { CurrentUser } from './common/decorators/current-user.decorator';
@@ -25,7 +26,7 @@ import { PaymentClientModule } from './integrations/payment-service/payment-clie
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { SlotsModule } from './slots/slots.module';
-import { normalUser } from './test/test-users';
+import { adminUser, normalUser, securityUser, superAdminUser } from './test/test-users';
 import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 
@@ -50,6 +51,7 @@ describe('Infrastructure', () => {
     expect(BookingsModule).toBeDefined();
     expect(DashboardModule).toBeDefined();
     expect(FloorsModule).toBeDefined();
+    expect(OrganizationsModule).toBeDefined();
     expect(ParkingEventsModule).toBeDefined();
     expect(ParkingLotsModule).toBeDefined();
     expect(PaymentClientModule).toBeDefined();
@@ -145,6 +147,19 @@ describe('Infrastructure', () => {
     expect(guard.canActivate(mockContext())).toBe(false);
   });
 
+
+  it('allows only SUPER_ADMIN for super-admin routes', () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue([Role.SUPER_ADMIN]),
+    } as unknown as Reflector;
+    const guard = new RolesGuard(reflector);
+
+    expect(guard.canActivate(mockContext({ role: superAdminUser.role }))).toBe(true);
+    expect(guard.canActivate(mockContext({ role: adminUser.role }))).toBe(false);
+    expect(guard.canActivate(mockContext({ role: securityUser.role }))).toBe(false);
+    expect(guard.canActivate(mockContext({ role: normalUser.role }))).toBe(false);
+    expect(guard.canActivate(mockContext())).toBe(false);
+  });
   it('constructs JwtAuthGuard', () => {
     expect(new JwtAuthGuard()).toBeInstanceOf(JwtAuthGuard);
   });

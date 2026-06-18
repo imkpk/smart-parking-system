@@ -94,3 +94,14 @@ export const securityUserOrg2: SafeUser = {
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
+export const superAdminUser: SafeUser = {
+  id: 99,
+  organizationId: null,
+  name: 'Platform Super Admin',
+  email: 'super-admin@example.com',
+  phone: '+910000000099',
+  role: Role.SUPER_ADMIN,
+  isActive: true,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+};

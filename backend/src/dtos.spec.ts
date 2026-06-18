@@ -17,6 +17,7 @@ import { CreateBookingDto } from './bookings/dto/create-booking.dto';
 import { CreateFloorDto } from './floors/dto/create-floor.dto';
 import { UpdateFloorDto } from './floors/dto/update-floor.dto';
 import { CheckInDto } from './parking-events/dto/check-in.dto';
+import { OnboardOrganizationDto } from './organizations/dto/onboard-organization.dto';
 import { CheckOutDto } from './parking-events/dto/check-out.dto';
 import { CreateParkingLotDto } from './parking-lots/dto/create-parking-lot.dto';
 import { UpdateParkingLotDto } from './parking-lots/dto/update-parking-lot.dto';
@@ -104,6 +105,38 @@ describe('DTO validation', () => {
     expect(deleteSlots.ids).toEqual([1, 2]);
   });
 
+
+  it('validates tenant onboarding DTOs', async () => {
+    await expectValid(OnboardOrganizationDto, {
+      organization: { name: 'Metro Mall', slug: 'metro-mall' },
+      tenantAdmin: {
+        name: 'Mall Admin',
+        email: 'mall.admin@example.com',
+        password: 'password123',
+        phone: '+919999999999',
+      },
+    });
+    await expectValid(OnboardOrganizationDto, {
+      organization: { name: 'Metro Mall' },
+      tenantAdmin: {
+        name: 'Mall Admin',
+        email: 'mall.admin@example.com',
+        password: 'password123',
+      },
+    });
+    await expectInvalid(OnboardOrganizationDto, {
+      organization: { name: 'M', slug: 'Bad Slug' },
+      tenantAdmin: {
+        name: 'A',
+        email: 'bad-email',
+        password: '123',
+      },
+    });
+    await expectInvalid(OnboardOrganizationDto, {
+      organization: { name: 'Metro Mall' },
+      tenantAdmin: undefined,
+    } as unknown as Partial<OnboardOrganizationDto>);
+  });
   it('validates vehicle, booking, and parking event DTOs', async () => {
     await expectValid(CreateVehicleDto, {
       vehicleNumber: 'TS09EA1234',
