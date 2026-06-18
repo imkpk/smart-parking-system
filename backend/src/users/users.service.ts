@@ -77,15 +77,28 @@ export class UsersService {
         id,
         isActive: true,
       },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
     });
 
-    return user ? this.toSafeUser(user) : null;
+    return user ? this.toSafeUser(user, user.organization) : null;
   }
 
-  toSafeUser(user: User): SafeUser {
+  toSafeUser(
+    user: User,
+    organization?: { id: number; name: string; slug: string } | null,
+  ): SafeUser {
     return {
       id: user.id,
       organizationId: user.organizationId,
+      organization: organization ?? null,
       name: user.name,
       email: user.email,
       phone: user.phone,

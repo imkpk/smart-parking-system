@@ -1,7 +1,20 @@
-export type Role = 'ADMIN' | 'SECURITY' | 'USER';
+export type Role =
+  | 'SUPER_ADMIN'
+  | 'TENANT_ADMIN'
+  | 'ADMIN'
+  | 'SECURITY'
+  | 'USER';
+
+export interface OrganizationSummary {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 export interface User {
   id: number;
+  organizationId: number | null;
+  organization?: OrganizationSummary | null;
   name: string;
   email: string;
   phone: string | null;

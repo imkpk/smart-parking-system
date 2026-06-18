@@ -18,7 +18,7 @@ describe('AuthService', () => {
     findByEmail: jest.Mock;
     findByPhone: jest.Mock;
     create: jest.Mock;
-    toSafeUser: jest.Mock;
+    findActiveById: jest.Mock;
   };
 
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       findByPhone: jest.fn(),
       create: jest.fn(),
-      toSafeUser: jest.fn(),
+      findActiveById: jest.fn(),
     };
     service = new AuthService(jwtService as never, usersService as never);
     jest.mocked(bcrypt.hash).mockReset();
@@ -39,6 +39,7 @@ describe('AuthService', () => {
     usersService.findByPhone.mockResolvedValue(null);
     jest.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never);
     usersService.create.mockResolvedValue(normalUser);
+    usersService.findActiveById.mockResolvedValue(normalUser);
 
     const result = await service.register({
       name: normalUser.name,
@@ -68,7 +69,7 @@ describe('AuthService', () => {
 
   it('includes organizationId in JWT payload on login', async () => {
     usersService.findByEmail.mockResolvedValue(userRecord);
-    usersService.toSafeUser.mockReturnValue(normalUser);
+    usersService.findActiveById.mockResolvedValue(normalUser);
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     await service.login({
@@ -116,7 +117,7 @@ describe('AuthService', () => {
 
   it('logs in with a valid password', async () => {
     usersService.findByEmail.mockResolvedValue(userRecord);
-    usersService.toSafeUser.mockReturnValue(normalUser);
+    usersService.findActiveById.mockResolvedValue(normalUser);
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     const result = await service.login({
@@ -125,13 +126,14 @@ describe('AuthService', () => {
     });
 
     expect(usersService.findByEmail).toHaveBeenCalledWith(normalUser.email);
+    expect(usersService.findActiveById).toHaveBeenCalledWith(normalUser.id);
     expect(bcrypt.compare).toHaveBeenCalledWith('password123', userRecord.passwordHash);
     expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
   });
 
   it('logs in existing ADMIN in the default organization without tenant input', async () => {
     usersService.findByEmail.mockResolvedValue(adminUserRecord);
-    usersService.toSafeUser.mockReturnValue(adminUser);
+    usersService.findActiveById.mockResolvedValue(adminUser);
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     const result = await service.login({
@@ -175,10 +177,37 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('rejects login when active user lookup fails after password validation', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+    usersService.findActiveById.mockResolvedValue(null);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    await expect(
+      service.login({ email: normalUser.email, password: 'password123' }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects registration when created user cannot be loaded as active', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.findByPhone.mockResolvedValue(null);
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never);
+    usersService.create.mockResolvedValue(normalUser);
+    usersService.findActiveById.mockResolvedValue(null);
+
+    await expect(
+      service.register({
+        name: normalUser.name,
+        email: normalUser.email,
+        password: 'password123',
+        role: normalUser.role,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
   it('includes null organizationId in JWT when user has no organization', async () => {
     const userWithoutOrg = { ...userRecord, organizationId: null };
     usersService.findByEmail.mockResolvedValue(userWithoutOrg);
-    usersService.toSafeUser.mockReturnValue({ ...normalUser, organizationId: null });
+    usersService.findActiveById.mockResolvedValue({ ...normalUser, organizationId: null });
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     await service.login({

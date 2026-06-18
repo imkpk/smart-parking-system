@@ -1,7 +1,7 @@
 import { Role } from '../types/auth';
 
 export function getRoleHomePath(role: Role) {
-  if (role === 'ADMIN') {
+  if (role === 'SUPER_ADMIN' || role === 'TENANT_ADMIN' || role === 'ADMIN') {
     return '/admin/dashboard';
   }
 

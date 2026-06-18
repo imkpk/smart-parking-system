@@ -13,13 +13,16 @@ import { tokenStorage } from '../lib/tokenStorage';
 import {
   AuthResponse,
   LoginPayload,
+  OrganizationSummary,
   RegisterPayload,
   User,
 } from '../types/auth';
 
-interface AuthContextValue {
+export interface AuthContextValue {
   user: User | null;
   token: string | null;
+  organizationId: number | null;
+  organization: OrganizationSummary | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<AuthResponse>;
@@ -73,23 +76,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [logout]);
 
+  const user = currentUserQuery.data ?? null;
+  const organizationId = user?.organizationId ?? null;
+  const organization = user?.organization ?? null;
+
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: currentUserQuery.data ?? null,
+      user,
       token,
-      isAuthenticated: Boolean(token && currentUserQuery.data),
+      organizationId,
+      organization,
+      isAuthenticated: Boolean(token && user),
       isLoading: Boolean(token && currentUserQuery.isLoading),
       login: loginMutation.mutateAsync,
       register: registerMutation.mutateAsync,
       logout,
     }),
     [
-      currentUserQuery.data,
       currentUserQuery.isLoading,
       loginMutation.mutateAsync,
       logout,
+      organization,
+      organizationId,
       registerMutation.mutateAsync,
       token,
+      user,
     ],
   );
 

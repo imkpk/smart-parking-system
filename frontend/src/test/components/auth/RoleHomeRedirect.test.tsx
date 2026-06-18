@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
-import { createMockUser, renderWithProviders } from '@/test/test-utils';
+import { createMockAuthValue, createMockUser, renderWithProviders } from '@/test/test-utils';
 import { RoleHomeRedirect } from '@/components/auth/RoleHomeRedirect';
 
 vi.mock('@/providers/AuthProvider', () => ({
@@ -11,15 +11,7 @@ vi.mock('@/providers/AuthProvider', () => ({
 
 describe('RoleHomeRedirect', () => {
   beforeEach(() => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(createMockAuthValue({ user: null, token: null, isAuthenticated: false }));
   });
 
   it('redirects unauthenticated users to login', () => {
@@ -34,16 +26,44 @@ describe('RoleHomeRedirect', () => {
     expect(screen.getByText('Login Page')).toBeInTheDocument();
   });
 
+  it('redirects tenant admin users to the admin dashboard', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'TENANT_ADMIN' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<RoleHomeRedirect />} />
+        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+      </Routes>,
+      { route: '/' },
+    );
+
+    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
+  });
+
+  it('redirects super admin users to the admin dashboard', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({
+        user: createMockUser({ role: 'SUPER_ADMIN', organizationId: null, organization: null }),
+      }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<RoleHomeRedirect />} />
+        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+      </Routes>,
+      { route: '/' },
+    );
+
+    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
+  });
+
   it('redirects admin users to the admin dashboard', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'ADMIN' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),
+    );
 
     renderWithProviders(
       <Routes>
@@ -57,15 +77,9 @@ describe('RoleHomeRedirect', () => {
   });
 
   it('redirects security users to the security dashboard', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'SECURITY' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'SECURITY' }) }),
+    );
 
     renderWithProviders(
       <Routes>
@@ -79,15 +93,9 @@ describe('RoleHomeRedirect', () => {
   });
 
   it('redirects regular users to the user dashboard', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'USER' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'USER' }) }),
+    );
 
     renderWithProviders(
       <Routes>

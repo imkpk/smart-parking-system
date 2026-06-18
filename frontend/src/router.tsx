@@ -37,7 +37,7 @@ export const router = createBrowserRouter([
             element: <RoleHomeRedirect />,
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN']} />,
+            element: <RoleRoute allowedRoles={['SUPER_ADMIN', 'TENANT_ADMIN', 'ADMIN']} />,
             children: [
               {
                 path: 'admin/dashboard',
@@ -64,7 +64,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN']} />,
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN']} />,
             children: [
               {
                 path: 'parking-lots',
@@ -85,7 +85,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN', 'USER']} />,
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'USER']} />,
             children: [
               {
                 path: 'vehicles',
@@ -94,7 +94,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN', 'SECURITY', 'USER']} />,
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY', 'USER']} />,
             children: [
               {
                 path: 'bookings',
@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN', 'SECURITY', 'USER']} />,
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY', 'USER']} />,
             children: [
               {
                 path: 'payments',

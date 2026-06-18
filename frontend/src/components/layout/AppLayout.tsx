@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
     label: 'Admin Dashboard',
     to: '/admin/dashboard',
     icon: Analytics,
-    roles: ['ADMIN'],
+    roles: ['SUPER_ADMIN', 'TENANT_ADMIN', 'ADMIN'],
   },
   {
     label: 'Security Dashboard',
@@ -73,31 +73,31 @@ const navItems: NavItem[] = [
     to: '/parking-lots',
     icon: LocalParking,
     matchPrefix: true,
-    roles: ['ADMIN'],
+    roles: ['TENANT_ADMIN', 'ADMIN'],
   },
   {
     label: 'Vehicles',
     to: '/vehicles',
     icon: DirectionsCar,
-    roles: ['ADMIN', 'USER'],
+    roles: ['TENANT_ADMIN', 'ADMIN', 'USER'],
   },
   {
     label: 'Bookings',
     to: '/bookings',
     icon: CalendarMonth,
-    roles: ['ADMIN', 'SECURITY', 'USER'],
+    roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY', 'USER'],
   },
   {
     label: 'Parking Events',
     to: '/parking-events',
     icon: SensorOccupied,
-    roles: ['ADMIN', 'SECURITY', 'USER'],
+    roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY', 'USER'],
   },
   {
     label: 'Payments',
     to: '/payments',
     icon: AccountBalanceWallet,
-    roles: ['ADMIN', 'SECURITY', 'USER'],
+    roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY', 'USER'],
   },
 ];
 

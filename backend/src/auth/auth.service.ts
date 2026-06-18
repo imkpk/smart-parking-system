@@ -36,7 +36,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
+    const createdUser = await this.usersService.create({
       name: registerDto.name,
       email: registerDto.email,
       phone: registerDto.phone,
@@ -44,6 +44,11 @@ export class AuthService {
       role: registerDto.role,
       organization: { connect: { id: DEFAULT_ORGANIZATION_ID } },
     });
+    const user = await this.usersService.findActiveById(createdUser.id);
+
+    if (!user) {
+      throw new UnauthorizedException('User account is inactive');
+    }
 
     return {
       user,
@@ -69,7 +74,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const user = this.usersService.toSafeUser(userWithPassword);
+    const user = await this.usersService.findActiveById(userWithPassword.id);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
     return {
       user,

@@ -7,6 +7,8 @@ describe('formatRole', () => {
   });
 
   it('formats known roles', () => {
+    expect(formatRole('SUPER_ADMIN')).toBe('Super Admin');
+    expect(formatRole('TENANT_ADMIN')).toBe('Tenant Admin');
     expect(formatRole('ADMIN')).toBe('Admin');
     expect(formatRole('SECURITY')).toBe('Security');
     expect(formatRole('USER')).toBe('User');

@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
-import { createMockUser, renderWithProviders } from '@/test/test-utils';
+import { createMockAuthValue, createMockUser, renderWithProviders } from '@/test/test-utils';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 
@@ -12,15 +12,9 @@ vi.mock('@/providers/AuthProvider', () => ({
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: null, token: null, isAuthenticated: false }),
+    );
   });
 
   it('redirects unauthenticated users away from protected content', () => {
@@ -39,15 +33,14 @@ describe('ProtectedRoute', () => {
   });
 
   it('shows loading spinner while auth state is loading', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: true,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: true,
+      }),
+    );
 
     renderWithProviders(
       <Routes>
@@ -64,15 +57,9 @@ describe('ProtectedRoute', () => {
   });
 
   it('allows authenticated users to access protected content', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'USER' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'USER' }) }),
+    );
 
     renderWithProviders(
       <Routes>
@@ -91,15 +78,9 @@ describe('ProtectedRoute', () => {
 
 describe('RoleRoute', () => {
   beforeEach(() => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'USER' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'USER' }) }),
+    );
   });
 
   it('blocks users without the required role', () => {
@@ -117,15 +98,9 @@ describe('RoleRoute', () => {
   });
 
   it('shows login prompt when user is null', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: null, token: 'token', isAuthenticated: true }),
+    );
 
     renderWithProviders(
       <Routes>
@@ -141,16 +116,27 @@ describe('RoleRoute', () => {
     expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
   });
 
+  it('allows tenant admin users with tenant admin access', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'TENANT_ADMIN' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN']} />}>
+          <Route path="/parking-lots" element={<div>Parking Lots</div>} />
+        </Route>
+      </Routes>,
+      { route: '/parking-lots' },
+    );
+
+    expect(screen.getByText('Parking Lots')).toBeInTheDocument();
+  });
+
   it('allows users with the required role', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: createMockUser({ role: 'ADMIN' }),
-      token: 'token',
-      isAuthenticated: true,
-      isLoading: false,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),
+    );
 
     renderWithProviders(
       <Routes>
