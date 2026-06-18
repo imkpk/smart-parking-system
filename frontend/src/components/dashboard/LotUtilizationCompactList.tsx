@@ -3,13 +3,11 @@ import {
   Card,
   CardContent,
   Fade,
-  Link,
   Stack,
   Typography,
 } from '@mui/material';
 import { MouseEvent } from 'react';
 import { SxProps, Theme } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { EmptyState } from '../common/EmptyState';
 import { LotUtilizationItem } from '../../types/operatorDashboard';
@@ -18,6 +16,7 @@ import {
   useAnimatedNumber,
 } from './AnimatedUtilizationBar';
 import { UtilizationBarsRevealSkeleton } from './ChartRevealSkeleton';
+import { ViewAllActionButton } from './ViewAllActionButton';
 
 export const TOP_LOT_COUNT = 5;
 
@@ -159,15 +158,7 @@ export function LotUtilizationCompactList({
               Lot Utilization
             </Typography>
             {showViewAllLink && items.length > rankedLots.length ? (
-              <Link
-                component={RouterLink}
-                sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}
-                to="/parking-lots"
-                underline="hover"
-                variant="body2"
-              >
-                View all lots
-              </Link>
+              <ViewAllActionButton to="/parking-lots">View all lots</ViewAllActionButton>
             ) : null}
           </Stack>
 

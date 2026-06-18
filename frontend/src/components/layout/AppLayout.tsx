@@ -42,7 +42,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { Role } from '../../types/auth';
 
-const drawerWidth = 260;
+const drawerWidth = 220;
 const collapsedDrawerWidth = 80;
 
 interface NavItem {

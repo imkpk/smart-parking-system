@@ -79,10 +79,9 @@ describe('AdminDashboardPage', () => {
     });
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /view all activity/i })).toHaveAttribute(
-      'href',
-      '/parking-events',
-    );
+    const viewAllActivity = screen.getByRole('link', { name: /view all activity/i });
+    expect(viewAllActivity).toHaveAttribute('href', '/parking-events');
+    expect(viewAllActivity).toHaveClass('MuiButton-outlined');
 
     await waitFor(() => {
       expect(screen.getByText('TS09EA1234')).toBeInTheDocument();
@@ -126,7 +125,9 @@ describe('AdminDashboardPage', () => {
 
     expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/search activity/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /view all activity/i })).toBeInTheDocument();
+    const viewAllActivity = screen.getByRole('link', { name: /view all activity/i });
+    expect(viewAllActivity).toBeInTheDocument();
+    expect(viewAllActivity).toHaveClass('MuiButton-outlined');
   });
 
   it('renders platform hero KPIs and slot status without tenant lot list', async () => {

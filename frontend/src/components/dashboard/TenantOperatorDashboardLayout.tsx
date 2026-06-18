@@ -1,5 +1,4 @@
-import { Stack } from '@mui/material';
-import { ReactNode } from 'react';
+import { Fragment, ReactNode } from 'react';
 import { DashboardHeroKpiRow } from './DashboardHeroKpiRow';
 import { DashboardSummaryColumns } from './DashboardSummaryColumns';
 import { LotUtilizationCompactList } from './LotUtilizationCompactList';
@@ -22,7 +21,7 @@ export function TenantOperatorDashboardLayout({
   extraContent?: ReactNode;
 }) {
   return (
-    <Stack spacing={2} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
+    <Fragment>
       <DashboardHeroKpiRow metrics={heroMetrics} />
 
       {occupancy ? (
@@ -43,6 +42,6 @@ export function TenantOperatorDashboardLayout({
       )}
 
       {extraContent}
-    </Stack>
+    </Fragment>
   );
 }

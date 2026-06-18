@@ -1,4 +1,4 @@
-import { Stack } from '@mui/material';
+import { Fragment } from 'react';
 import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
 import { DashboardSummaryColumns } from '../../components/dashboard/DashboardSummaryColumns';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
@@ -15,7 +15,7 @@ export function AdminDashboardPage() {
     <OperatorDashboardShell accessDeniedMessage="Access denied. Admin role is required for this dashboard.">
       {(metrics) =>
         metrics.scope === 'PLATFORM' ? (
-          <Stack spacing={2}>
+          <Fragment>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
             {metrics.occupancy ? (
               <DashboardSummaryColumns
@@ -33,7 +33,7 @@ export function AdminDashboardPage() {
             ) : (
               <RecentActivityTimeline />
             )}
-          </Stack>
+          </Fragment>
         ) : (
           <TenantOperatorDashboardLayout
             heroMetrics={buildTenantHeroKpis(metrics)}
