@@ -44,4 +44,10 @@ export class DashboardController {
   getSlotStatusSummary(@CurrentUser() currentUser: SafeUser) {
     return this.dashboardService.getSlotStatusSummary(currentUser);
   }
+
+  @Get('operator-metrics')
+  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY, Role.USER)
+  getOperatorMetrics(@CurrentUser() currentUser: SafeUser) {
+    return this.dashboardService.getOperatorMetrics(currentUser);
+  }
 }
