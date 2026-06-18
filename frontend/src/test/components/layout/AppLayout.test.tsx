@@ -19,6 +19,17 @@ vi.mock('@/providers/AuthProvider', () => ({
   useAuth: vi.fn(),
 }));
 
+vi.mock('@/providers/TenantBrandingProvider', () => ({
+  useTenantBranding: vi.fn(() => ({
+    branding: { name: 'Smart Parking', loginTitle: 'Sign in' },
+    isLoading: false,
+    error: null,
+    tenantSlug: null,
+    setTenantSlug: vi.fn(),
+    refreshBranding: vi.fn(),
+  })),
+}));
+
 import { AppLayout } from '@/components/layout/AppLayout';
 
 function renderAppLayout(route: string) {
@@ -68,9 +79,26 @@ describe('AppLayout', () => {
 
     expect(screen.queryByRole('link', { name: /security dashboard/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /user dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^branding$/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /logout/i }));
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders branding navigation for tenant admin', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'TENANT_ADMIN', name: 'Tenant Admin' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout,
+    });
+
+    renderAppLayout('/admin/dashboard');
+
+    expect(screen.getByRole('link', { name: /^branding$/i })).toBeInTheDocument();
   });
 
   it('renders security navigation items', () => {

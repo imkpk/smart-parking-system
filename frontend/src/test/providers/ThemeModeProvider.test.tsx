@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ThemeModeToggle } from '@/components/common/ThemeModeToggle';
 import { renderWithProviders } from '@/test/test-utils';
 import { ThemeModeProvider, useThemeMode } from '@/providers/ThemeModeProvider';
+import { TestThemeShell } from '@/test/TestThemeShell';
 
 const STORAGE_KEY = 'smart-parking-color-mode';
 
@@ -37,7 +38,9 @@ describe('ThemeModeProvider', () => {
 
     render(
       <ThemeModeProvider>
-        <ModeConsumer />
+        <TestThemeShell>
+          <ModeConsumer />
+        </TestThemeShell>
       </ThemeModeProvider>,
     );
 

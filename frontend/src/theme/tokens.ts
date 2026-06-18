@@ -140,13 +140,18 @@ export type ThemeModeTokens = (typeof parkingTokens)['light'];
 export type ThemeBrandOverrides = Partial<{
   primary: string;
   secondary: string;
+  accent: string;
   name: string;
 }>;
 
 export function resolveThemeTokens(mode: PaletteMode, brandOverrides?: ThemeBrandOverrides) {
   const base = mode === 'light' ? parkingTokens.light : parkingTokens.dark;
 
-  if (!brandOverrides?.primary && !brandOverrides?.secondary) {
+  if (
+    !brandOverrides?.primary &&
+    !brandOverrides?.secondary &&
+    !brandOverrides?.accent
+  ) {
     return { ...base, brandName: brandOverrides?.name ?? brand.name };
   }
 
@@ -160,5 +165,6 @@ export function resolveThemeTokens(mode: PaletteMode, brandOverrides?: ThemeBran
         }
       : {}),
     ...(brandOverrides?.secondary ? { secondary: brandOverrides.secondary } : {}),
+    ...(brandOverrides?.accent ? { info: brandOverrides.accent } : {}),
   };
 }

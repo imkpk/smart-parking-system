@@ -1,8 +1,12 @@
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import { ReactNode } from 'react';
 import type { IllustrationName } from '../../assets/illustrations';
 import { Illustration } from '../../components/common/Illustration';
 import { ThemeModeToggle } from '../../components/common/ThemeModeToggle';
+import { AppLogo } from '../../components/common/AppLogo';
+import { DEFAULT_LOGIN_TITLE } from '../../constants/defaultBranding';
+import { useTenantBranding } from '../../providers/TenantBrandingProvider';
+import { brand } from '../../theme/tokens';
 
 export function AuthPageShell({
   title,
@@ -15,6 +19,13 @@ export function AuthPageShell({
   illustration?: IllustrationName;
   children: ReactNode;
 }) {
+  const { branding, error, isLoading } = useTenantBranding();
+  const pageTitle =
+    branding.loginTitle && branding.loginTitle !== DEFAULT_LOGIN_TITLE
+      ? branding.loginTitle
+      : title;
+  const pageSubtitle = subtitle ?? brand.tagline;
+
   return (
     <Box
       sx={{
@@ -49,6 +60,9 @@ export function AuthPageShell({
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2 }}
         >
           <Illustration maxWidth={300} name={illustration} />
+          <Typography color="text.secondary" textAlign="center" variant="body2">
+            {branding.name}
+          </Typography>
         </Stack>
 
         <Paper
@@ -61,17 +75,24 @@ export function AuthPageShell({
           }}
         >
           <Stack spacing={3}>
-            <Box>
-              <Typography component="h1" variant="h5">
-                {title}
-              </Typography>
-              {subtitle ? (
-                <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
-                  {subtitle}
+            <Stack alignItems="flex-start" spacing={1.5}>
+              <AppLogo logoUrl={branding.logoUrl} name={branding.name} />
+              <Box>
+                <Typography component="h1" variant="h5">
+                  {isLoading ? title : pageTitle}
                 </Typography>
-              ) : null}
-            </Box>
+                <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
+                  {pageSubtitle}
+                </Typography>
+              </Box>
+            </Stack>
+            {error ? <Alert severity="warning">{error}</Alert> : null}
             {children}
+            {branding.supportEmail ? (
+              <Typography color="text.secondary" variant="caption">
+                Need help? Contact {branding.supportEmail}
+              </Typography>
+            ) : null}
           </Stack>
         </Paper>
       </Box>

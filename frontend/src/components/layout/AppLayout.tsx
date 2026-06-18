@@ -26,6 +26,7 @@ import {
   Logout,
   Menu,
   MenuOpen,
+  Palette,
   Security,
   SensorOccupied,
   SvgIconComponent,
@@ -36,6 +37,7 @@ import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
 import { formatRole } from '../../lib/formatRole';
 import { useAuth } from '../../providers/AuthProvider';
+import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 260;
@@ -47,6 +49,7 @@ interface NavItem {
   icon: SvgIconComponent;
   matchPrefix?: boolean;
   roles: Role[];
+  requiresOrganization?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -67,6 +70,13 @@ const navItems: NavItem[] = [
     to: '/user/dashboard',
     icon: Dashboard,
     roles: ['USER'],
+  },
+  {
+    label: 'Branding',
+    to: '/admin/branding',
+    icon: Palette,
+    roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
+    requiresOrganization: true,
   },
   {
     label: 'Parking Lots',
@@ -111,6 +121,7 @@ function isNavItemActive(pathname: string, item: NavItem) {
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  const { branding } = useTenantBranding();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -124,9 +135,17 @@ export function AppLayout() {
       : collapsedDrawerWidth;
   const shouldShowExpandedDrawer = isMobile || isSidebarOpen;
 
-  const visibleNavItems = navItems.filter((item) =>
-    user ? item.roles.includes(user.role) : false,
-  );
+  const visibleNavItems = navItems.filter((item) => {
+    if (!user || !item.roles.includes(user.role)) {
+      return false;
+    }
+
+    if (item.requiresOrganization && user.organizationId == null) {
+      return false;
+    }
+
+    return true;
+  });
 
   const handleLogout = () => {
     logout();
@@ -167,7 +186,7 @@ export function AppLayout() {
             sx={{ minWidth: 0, width: '100%' }}
           >
             <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
-              <AppLogo showText />
+              <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText />
             </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
@@ -184,7 +203,7 @@ export function AppLayout() {
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
-            <AppLogo showText={false} />
+            <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText={false} />
             {!isMobile ? (
               <Tooltip title="Expand sidebar">
                 <IconButton

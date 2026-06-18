@@ -4,6 +4,7 @@ import { render, screen, type RenderOptions, within } from '@testing-library/rea
 import { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom';
 import { ThemeModeProvider } from '../providers/ThemeModeProvider';
+import { TestThemeShell } from './TestThemeShell';
 import type { OrganizationSummary, User } from '../types/auth';
 import type { AuthContextValue } from '../providers/AuthProvider';
 
@@ -40,9 +41,11 @@ export function renderWithProviders(
     return (
       <QueryClientProvider client={queryClient}>
         <ThemeModeProvider>
-          <MemoryRouter initialEntries={[route]} {...routerProps}>
-            {children}
-          </MemoryRouter>
+          <TestThemeShell>
+            <MemoryRouter initialEntries={[route]} {...routerProps}>
+              {children}
+            </MemoryRouter>
+          </TestThemeShell>
         </ThemeModeProvider>
       </QueryClientProvider>
     );

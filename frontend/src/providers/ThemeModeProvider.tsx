@@ -1,4 +1,4 @@
-import { CssBaseline, PaletteMode, ThemeProvider } from '@mui/material';
+import { PaletteMode } from '@mui/material';
 import {
   createContext,
   ReactNode,
@@ -8,7 +8,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { createAppTheme } from '../theme';
 
 const STORAGE_KEY = 'smart-parking-color-mode';
 
@@ -40,8 +39,6 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
     setMode((current) => (current === 'light' ? 'dark' : 'light'));
   }, []);
 
-  const theme = useMemo(() => createAppTheme(mode), [mode]);
-
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, mode);
     document.documentElement.style.colorScheme = mode;
@@ -56,14 +53,7 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
     [mode, toggleMode],
   );
 
-  return (
-    <ThemeModeContext.Provider value={value}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline enableColorScheme />
-        {children}
-      </ThemeProvider>
-    </ThemeModeContext.Provider>
-  );
+  return <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>;
 }
 
 export function useThemeMode() {
