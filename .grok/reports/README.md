@@ -52,6 +52,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-3e-dashboard-demo-polish.md](./phase-3e-dashboard-demo-polish.md) | Phase 3E dashboard demo polish — KPI icons, donut center label, activity spacing, E2E lot cleanup | merged into `fix/app-shell-sidebar-collapse-behavior` |
 | [app-shell-sidebar-collapse-behavior.md](./app-shell-sidebar-collapse-behavior.md) | App shell sidebar — collapsed by default, 2 min auto-close on desktop | PR #85 ✅ |
 | [phase-4-visual-slot-map-contract.md](./phase-4-visual-slot-map-contract.md) | Phase 4 visual slot map contract (LOOP 4A) | PR #86 ✅ |
-| [phase-4b-slot-map-api.md](./phase-4b-slot-map-api.md) | Phase 4B visual slot map API | `feature/phase-4b-slot-map-api` |
+| [phase-4b-slot-map-api.md](./phase-4b-slot-map-api.md) | Phase 4B visual slot map API | PR #87 ✅ |
+| [phase-4c-visual-slot-map-ui.md](./phase-4c-visual-slot-map-ui.md) | Phase 4C visual slot map UI | `feature/phase-4c-visual-slot-map-ui` |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.

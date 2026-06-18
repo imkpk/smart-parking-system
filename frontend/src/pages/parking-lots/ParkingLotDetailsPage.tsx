@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
-import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
+import { Add, Delete, Edit, Layers, LocalParking, Map as MapIcon, ViewModule } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
@@ -483,9 +483,21 @@ export function ParkingLotDetailsPage() {
       <PageHeader
         title={parkingLotQuery.data?.name ?? 'Parking Lot'}
         action={
-          <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
-            Back
-          </HeaderActionButton>
+          <ActionButtonGroup>
+            {parkingLotId ? (
+              <HeaderActionButton
+                component={RouterLink}
+                startIcon={<MapIcon />}
+                to={`/parking-lots/${parkingLotId}/slot-map`}
+                variant="outlined"
+              >
+                Visual map
+              </HeaderActionButton>
+            ) : null}
+            <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
+              Back
+            </HeaderActionButton>
+          </ActionButtonGroup>
         }
       />
 
