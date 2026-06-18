@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { expect, vi } from 'vitest';
 import { render, screen, type RenderOptions, within } from '@testing-library/react';
-import { ReactElement, ReactNode } from 'react';
+import { Component, ReactElement, ReactNode } from 'react';
 import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom';
 import { ThemeModeProvider } from '../providers/ThemeModeProvider';
 import { TestThemeShell } from './TestThemeShell';
@@ -128,6 +128,46 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     organizationId,
     organization,
   };
+}
+
+export function expectContextHookToThrow(
+  useHook: () => unknown,
+  expectedMessage: string,
+) {
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  class ErrorCatcher extends Component<
+    { children: ReactNode },
+    { message: string | null }
+  > {
+    state = { message: null as string | null };
+
+    static getDerivedStateFromError(error: Error) {
+      return { message: error.message };
+    }
+
+    render() {
+      if (this.state.message) {
+        return <span data-testid="hook-error">{this.state.message}</span>;
+      }
+
+      return this.props.children;
+    }
+  }
+
+  function Probe() {
+    useHook();
+    return null;
+  }
+
+  render(
+    <ErrorCatcher>
+      <Probe />
+    </ErrorCatcher>,
+  );
+
+  expect(screen.getByTestId('hook-error')).toHaveTextContent(expectedMessage);
+  consoleError.mockRestore();
 }
 
 export function createMockAuthValue(

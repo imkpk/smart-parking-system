@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentBranding, getPublicBranding } from '@/api/organizationsApi';
@@ -13,7 +13,11 @@ import {
   useTenantBranding,
 } from '@/providers/TenantBrandingProvider';
 import { ThemeModeProvider } from '@/providers/ThemeModeProvider';
-import { createMockUser, createTestQueryClient } from '@/test/test-utils';
+import {
+  createMockUser,
+  createTestQueryClient,
+  expectContextHookToThrow,
+} from '@/test/test-utils';
 
 vi.mock('@/api/organizationsApi', () => ({
   getPublicBranding: vi.fn(),
@@ -51,7 +55,8 @@ describe('TenantBrandingProvider', () => {
   });
 
   it('throws when useTenantBranding is used outside the provider', () => {
-    expect(() => renderHook(() => useTenantBranding())).toThrow(
+    expectContextHookToThrow(
+      useTenantBranding,
       'useTenantBranding must be used within TenantBrandingProvider',
     );
   });
