@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FloorsModule } from './floors/floors.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -30,6 +31,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     FloorsModule,
     SlotsModule,
     AssignmentsModule,
+    OrganizationsModule,
     ParkingEventsModule,
     DashboardModule,
   ],

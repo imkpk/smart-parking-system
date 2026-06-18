@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.4.9  
+**Version:** 1.5.0
 **Last updated:** 2026-06-18  
-**Current branch:** `verify/phase-1b-tenant-scoping`  
+**Current branch:** `feature/phase-1c-tenant-onboarding-api`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -237,7 +237,7 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
 | 1a verification | Organization schema foundation audit | ✅ Merged (PR #65) | .grok/reports/phase-1a-verification.md |
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
-| 1b verification | Backend tenant scoping audit | 🔄 PR pending | .grok/reports/phase-1b-verification.md |
+| 1b verification | Backend tenant scoping audit | ✅ Merged (PR #66) | .grok/reports/phase-1b-verification.md |
 
 ### Frontend testing foundation ✅
 
@@ -279,11 +279,11 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
      E2E CI: advisory (`e2e-smoke` continue-on-error)
      Phase 1c may proceed after final summary merges.
 
-[ ] Phase 1c — Tenant onboarding API (deferred until E2E rollout done)
-     Branch: feature/phase-1c-tenant-onboarding-api (from develop)
+[x] Phase 1c — Tenant onboarding API implemented; PR pending
+     Branch: feature/phase-1c-tenant-onboarding-api
      Scope: SUPER_ADMIN tenant onboarding endpoints; org creation; initial TENANT_ADMIN user
-     Report: TBD — .grok/reports/phase-1c-tenant-onboarding-api.md
-     After 1c: Phase 1d frontend tenant context in AuthProvider
+     Report: .grok/reports/phase-1c-tenant-onboarding-api.md
+     After merge: Phase 1d frontend tenant context in AuthProvider
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -302,7 +302,7 @@ Execute in this order unless the human redirects:
 [ ] End-to-end test: book → check-in → check-out → Razorpay pay → webhook → receipt
 [x] Phase 1a: organization schema (PR #40 ✅)
 [x] Phase 1b: backend tenant scoping (PR #42 ✅)
-[ ] Phase 1c: tenant onboarding API (NEXT)
+[x] Phase 1c: tenant onboarding API (PR pending)
 [ ] Phase 1d: frontend tenant context in AuthProvider
 [ ] Frontend RTL/Vitest foundation — PR pending (feature/frontend-test-coverage-rtl-vitest)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
@@ -316,7 +316,7 @@ Execute in this order unless the human redirects:
 [x] Expand Role enum: SUPER_ADMIN, TENANT_ADMIN
 [x] JWT claims: organizationId
 [x] Service-level query scoping + cross-tenant write protection (Phase 1b)
-[ ] Tenant onboarding API (Phase 1c)
+[x] Tenant onboarding API (Phase 1c)
 [ ] Frontend: tenant context in AuthProvider (Phase 1d)
 [x] Migration: assign existing seed data to default org
 ```
@@ -620,6 +620,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.7 | Grok | Local E2E runner script (`scripts/run-e2e-local.ps1`), Cypress smoke stability fixes (login token seeding, DataGrid/dialog selectors), npm `e2e:local*` scripts. |
 | 2026-06-18 | 1.4.8 | Codex | LOOP 1A Phase 1a verification: audited Organization schema, tenant columns, default-org seed, migration backfill, and tenant-aware unique constraints. Report added at `.grok/reports/phase-1a-verification.md`. |
 | 2026-06-18 | 1.4.9 | Codex | LOOP 1B Phase 1b verification: audited JWT organization claims, access policy helpers, service-level tenant scoping, cross-tenant tests, dashboard filters, and booking/event display enrichment. Report added at `.grok/reports/phase-1b-verification.md`. |
+| 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added SUPER_ADMIN-only `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
 
 ---
 
@@ -640,4 +641,3 @@ Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ---
 
 *Build the best. Ship the best. Document every step.*
-
