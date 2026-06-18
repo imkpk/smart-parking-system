@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.9.1
-**Last updated:** 2026-06-18  
-**Current branch:** `feature/phase-3d-dashboard-polish-charts-pagination`
+**Version:** 1.9.3
+**Last updated:** 2026-06-19  
+**Current branch:** `fix/app-shell-sidebar-collapse-behavior`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 3D dashboard polish in progress (hero KPIs, slot donut, compact lot bars, cursor activity feed).
-Phase 3 core complete (PRs #80–#82). Next major milestone: Phase 4 visual slot map (await human approval).
+App shell sidebar collapse — PR pending (collapsed by default, 2 min desktop auto-close).
+Phase 3 core + 3D merged (PRs #80–#83). Next major milestone: Phase 4 visual slot map (await human approval).
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -650,6 +650,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.8.1 | Grok | CI fast PR gates (PR #79): PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. |
 | 2026-06-18 | 1.9.0 | Grok | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
 | 2026-06-18 | 1.9.1 | Grok | Phase 3D dashboard polish: cursor recent-activity API, hero KPI row, slot donut chart, compact lot utilization, activity timeline + Load more. |
+| 2026-06-19 | 1.9.3 | Grok | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse with interaction reset, mobile drawer unchanged. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
 
 ---
 

@@ -31,8 +31,9 @@ import {
   SensorOccupied,
   SvgIconComponent,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useSidebarAutoCollapse } from '../../hooks/useSidebarAutoCollapse';
 import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
 import { formatPersonName } from '../../lib/formatters';
@@ -127,8 +128,18 @@ export function AppLayout() {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  const collapseDesktopSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+  }, []);
+
+  const { sidebarInteractionProps } = useSidebarAutoCollapse({
+    enabled: !isMobile,
+    isExpanded: isSidebarOpen,
+    onCollapse: collapseDesktopSidebar,
+  });
   const activeDrawerWidth = isMobile
     ? 0
     : isSidebarOpen
@@ -387,7 +398,12 @@ export function AppLayout() {
           },
         }}
       >
-        {drawerContent}
+        <Box
+          {...sidebarInteractionProps}
+          sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+        >
+          {drawerContent}
+        </Box>
       </Drawer>
 
       <Box
