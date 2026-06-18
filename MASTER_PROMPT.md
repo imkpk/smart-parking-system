@@ -6,7 +6,7 @@
 
 **Version:** 1.4.4  
 **Last updated:** 2026-06-18  
-**Current branch:** `docs/e2e-strategy-and-journey-registry`  
+**Current branch:** `feature/cypress-e2e-foundation`  
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -248,8 +248,8 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | Loop | What | Status | Artifact |
 |------|------|--------|----------|
 | 00 | Agent playbook + prompt pack | ✅ Merged (PR #55) | .grok/reports/e2e-agent-playbook.md |
-| 01 | Journey registry J1–J14 | 🔄 PR pending | .grok/e2e/journey-registry.md |
-| 02 | Cypress foundation (J1, J3, J14) | [ ] | frontend/cypress/ |
+| 01 | Journey registry J1–J14 | ✅ Merged (PR #56) | .grok/e2e/journey-registry.md |
+| 02 | Cypress foundation (J1, J3, J14) | 🔄 PR pending | frontend/cypress/ |
 | 03 | Core parking smoke (J4–J6, J8) | [ ] | frontend/cypress/e2e/smoke/ |
 | 04 | CI smoke stage | [ ] | .github/workflows/ci.yml |
 | 05 | Release policy + PR template | [ ] | .grok/reports/e2e-policy-and-release-pack.md |
@@ -607,7 +607,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.2 | Grok | CI path-based jobs on `fix/ci-path-based-jobs`: `dorny/paths-filter` change detection, conditional backend/frontend/payment jobs on PRs, full CI on push, `ci-summary` gate. PR #52 merged. |
 | 2026-06-18 | 1.4.3 | Grok | Created `single-tenant` branch from `main`; added to CI triggers; documented preservation/hotfix policy and ruleset checklist. Never merge `develop` into `single-tenant`. PR #53 merged. |
 | 2026-06-18 | 1.4.4 | Grok | Added E2E/Cypress agent playbook and prompt pack. Future UI/user-flow PRs must update Cypress smoke or document why not. PR #55 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 01: journey registry J1–J14 and hybrid strategy report. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 01: journey registry J1–J14 and hybrid strategy report. PR #56 merged. |
+| 2026-06-18 | 1.4.4 | Grok | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. |
 
 ---
 

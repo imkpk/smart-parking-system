@@ -31,7 +31,7 @@
 | **Roles** | ADMIN, SECURITY, USER |
 | **Route** | `/login` → `/admin/dashboard`, `/security/dashboard`, or `/user/dashboard` |
 | **Spec** | `auth-login.cy.ts` |
-| **Status** | `planned` (E2E 02) |
+| **Status** | `implemented` |
 
 **User story:** As any role, I log in with email/password and land on my role-specific dashboard.
 
@@ -88,7 +88,7 @@
 | **Roles** | USER, ADMIN |
 | **Route** | `/vehicles` |
 | **Spec** | `vehicles.cy.ts` |
-| **Status** | `planned` (E2E 02) |
+| **Status** | `implemented` |
 
 **User story:** As a user, I register a vehicle and see it in my vehicles table.
 
@@ -370,7 +370,7 @@
 | **Roles** | ALL |
 | **Route** | Protected routes, `/login` |
 | **Spec** | `auth-guard.cy.ts` |
-| **Status** | `planned` (E2E 02) |
+| **Status** | `implemented` |
 
 **User story:** Unauthenticated users cannot access protected pages; users cannot access wrong-role routes; logout clears session.
 
