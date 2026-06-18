@@ -6,7 +6,7 @@
 
 **Version:** 1.6.0
 **Last updated:** 2026-06-18  
-**Current branch:** `verify/phase-1-tenant-isolation-acceptance`
+**Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -240,7 +240,7 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1b verification | Backend tenant scoping audit | ✅ Merged (PR #66) | .grok/reports/phase-1b-verification.md |
 | 1c | Tenant onboarding API | ✅ Merged (PR #67) | .grok/reports/phase-1c-tenant-onboarding-api.md |
 | 1d | Frontend tenant context in auth state | ✅ Merged (PR #68) | .grok/reports/phase-1d-frontend-tenant-context.md |
-| Acceptance | Tenant isolation acceptance verification | 🔄 PR pending | .grok/reports/phase-1-tenant-isolation-acceptance.md |
+| Acceptance | Tenant isolation acceptance verification | ✅ Merged (PR #69) | .grok/reports/phase-1-tenant-isolation-acceptance.md |
 
 ### Frontend testing foundation ✅
 
@@ -277,10 +277,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-[ ] Phase 1 acceptance — tenant isolation verification; PR pending
-     Branch: verify/phase-1-tenant-isolation-acceptance
-     Report: .grok/reports/phase-1-tenant-isolation-acceptance.md
-     After merge: Phase 2 white-label (await human approval)
+Phase 1 multi-tenancy complete (1a–1d + acceptance).
+Next major milestone: Phase 2 white-label branding (await human approval).
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -301,7 +299,7 @@ Execute in this order unless the human redirects:
 [x] Phase 1b: backend tenant scoping (PR #42 ✅)
 [x] Phase 1c: tenant onboarding API (PR #67 ✅)
 [x] Phase 1d: frontend tenant context in AuthProvider (PR #68 ✅)
-[ ] Phase 1 acceptance: tenant isolation verification (PR pending)
+[x] Phase 1 acceptance: tenant isolation verification (PR #69 ✅)
 [ ] Frontend RTL/Vitest foundation — PR pending (feature/frontend-test-coverage-rtl-vitest)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```

@@ -1,6 +1,6 @@
 # Phase 1 Tenant Isolation Acceptance
 
-**Status:** Verified locally; PR pending
+**Status:** Merged (PR #69)
 **Loop:** FINAL LOOP - Phase 1 Tenant Isolation Acceptance
 **Branch:** `verify/phase-1-tenant-isolation-acceptance`
 **Scope:** Acceptance tests, documentation, and status updates
@@ -71,7 +71,7 @@ npm run test:run    - passed (299 tests)
 | 1B Backend tenant scoping verification | Complete | PR #66 |
 | 1C Tenant onboarding API | Complete | PR #67 |
 | 1D Frontend tenant context | Complete | PR #68 |
-| Acceptance | Complete | pending |
+| Acceptance | Complete | PR #69 |
 
 ## Known deferred work
 
