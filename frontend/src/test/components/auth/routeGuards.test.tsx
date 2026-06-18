@@ -168,6 +168,42 @@ describe('RoleRoute', () => {
     expect(screen.getByText('Branding Settings')).toBeInTheDocument();
   });
 
+  it('allows admin users to access parking lot slots drill-down route', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY']} />}>
+          <Route path="/parking-lots/:id/slots" element={<div>Parking Lot Slots</div>} />
+        </Route>
+      </Routes>,
+      { route: '/parking-lots/1/slots?status=AVAILABLE' },
+    );
+
+    expect(screen.getByText('Parking Lot Slots')).toBeInTheDocument();
+    expect(screen.queryByText(/you do not have access to this page/i)).not.toBeInTheDocument();
+  });
+
+  it('allows security users to access parking lot slots drill-down route', () => {
+    vi.mocked(useAuth).mockReturnValue(
+      createMockAuthValue({ user: createMockUser({ role: 'SECURITY' }) }),
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY']} />}>
+          <Route path="/parking-lots/:id/slots" element={<div>Parking Lot Slots</div>} />
+        </Route>
+      </Routes>,
+      { route: '/parking-lots/2/slots?status=OCCUPIED' },
+    );
+
+    expect(screen.getByText('Parking Lot Slots')).toBeInTheDocument();
+    expect(screen.queryByText(/you do not have access to this page/i)).not.toBeInTheDocument();
+  });
+
   it('allows users with the required role', () => {
     vi.mocked(useAuth).mockReturnValue(
       createMockAuthValue({ user: createMockUser({ role: 'ADMIN' }) }),

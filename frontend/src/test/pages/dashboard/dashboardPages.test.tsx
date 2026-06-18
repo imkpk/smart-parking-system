@@ -71,8 +71,10 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('Revenue Today')).toBeInTheDocument();
     expect(screen.getByText('Slot Status')).toBeInTheDocument();
     expect(screen.getByText('Lot Utilization')).toBeInTheDocument();
-    expect(screen.getByText('1. Lot B')).toBeInTheDocument();
-    expect(screen.getByText(/30\/40 · 75%/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('1. Lot B')).toBeInTheDocument();
+      expect(screen.getByText(/30\/40 · 75%/)).toBeInTheDocument();
+    });
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /view all activity/i })).toHaveAttribute(

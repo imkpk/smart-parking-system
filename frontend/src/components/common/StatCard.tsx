@@ -20,8 +20,12 @@ export function StatCard({
     <Card
       elevation={0}
       sx={{
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        marginLeft: 0, marginRight: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        maxWidth: '100%',
+        minWidth: 0,
+        width: '100%',
         border: '1px solid',
         borderColor: 'divider',
         height: '100%',

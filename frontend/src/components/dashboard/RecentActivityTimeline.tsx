@@ -10,6 +10,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { SxProps, Theme } from '@mui/material/styles';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -25,7 +26,7 @@ import { ParkingEventStatusChip } from '../common/ParkingEventStatusChip';
 import { SearchField } from '../common/SearchField';
 
 const ACTIVITY_PAGE_SIZE = 10;
-const ACTIVITY_PANEL_MIN_HEIGHT = 560;
+const ACTIVITY_PANEL_MIN_HEIGHT = 320;
 
 function formatActivityLocation(item: RecentActivityItem) {
   const parts = [item.parkingLotName, item.floorName, item.slotNumber].filter(Boolean);
@@ -91,11 +92,15 @@ function ActivityTimelineItem({ item }: { item: RecentActivityItem }) {
 
 export function RecentActivityTimeline({
   fillHeight = false,
+  matchedHeight,
   showViewAllLink = true,
+  sx,
   viewAllHref = '/parking-events',
 }: {
   fillHeight?: boolean;
+  matchedHeight?: number;
   showViewAllLink?: boolean;
+  sx?: SxProps<Theme>;
   viewAllHref?: string;
 }) {
   const [searchInput, setSearchInput] = useState('');
@@ -158,8 +163,22 @@ export function RecentActivityTimeline({
         borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        height: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : 'auto',
-        minHeight: fillHeight ? ACTIVITY_PANEL_MIN_HEIGHT : undefined,
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+        ...(fillHeight
+          ? matchedHeight
+            ? {
+                flex: 'none',
+                height: matchedHeight,
+                minHeight: 0,
+              }
+            : {
+                flex: 1,
+                minHeight: 0,
+              }
+          : {}),
+        ...sx,
       }}
     >
       <CardContent
@@ -195,7 +214,7 @@ export function RecentActivityTimeline({
         </Stack>
 
         {isInitialLoading || isSearching ? (
-          <Stack alignItems="center" flex={1} justifyContent="center" minHeight={280}>
+          <Stack alignItems="center" flex={1} justifyContent="center" minHeight={fillHeight ? 0 : 280}>
             <CircularProgress size={28} />
           </Stack>
         ) : null}
@@ -223,8 +242,8 @@ export function RecentActivityTimeline({
             ref={scrollContainerRef}
             sx={{
               flex: 1,
-              maxHeight: fillHeight ? 'none' : ACTIVITY_PANEL_MIN_HEIGHT - 120,
-              minHeight: 280,
+              maxHeight: fillHeight ? 'none' : ACTIVITY_PANEL_MIN_HEIGHT,
+              minHeight: fillHeight ? 0 : 240,
               overflowY: 'auto',
               pr: 0.5,
             }}

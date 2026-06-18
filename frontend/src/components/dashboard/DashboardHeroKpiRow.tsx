@@ -8,7 +8,7 @@ export function DashboardHeroKpiRow({ metrics }: { metrics: DashboardMetricItem[
   }
 
   return (
-    <Grid container spacing={2}>
+    <Grid container spacing={2} sx={{ maxWidth: '100%', minWidth: 0, width: '100%' }}>
       {metrics.slice(0, 4).map((metric) => (
         <Grid item key={metric.key} lg={3} md={6} xs={12}>
           <StatCard

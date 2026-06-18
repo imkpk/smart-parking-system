@@ -35,6 +35,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
+import { formatPersonName } from '../../lib/formatters';
 import { formatRole } from '../../lib/formatRole';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
@@ -312,12 +313,17 @@ export function AppLayout() {
             <Box sx={{ minWidth: 0 }}>
               <Typography
                 noWrap
-                sx={{ fontWeight: 600, lineHeight: 1.25 }}
-                variant="subtitle2"
+                sx={{
+                  fontSize: { xs: '0.9375rem', sm: '1rem' },
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.3,
+                }}
+                variant="subtitle1"
               >
-                {user?.name}
+                {formatPersonName(user?.name)}
               </Typography>
-              <Typography color="text.secondary" noWrap variant="caption">
+              <Typography color="text.secondary" noWrap variant="body2">
                 {formatRole(user?.role)}
               </Typography>
             </Box>
@@ -388,7 +394,9 @@ export function AppLayout() {
         component="main"
         sx={{
           flexGrow: 1,
+          maxWidth: '100%',
           minWidth: 0,
+          overflowX: 'hidden',
           px: { xs: 2, sm: 3, lg: 4 },
           py: { xs: 2, sm: 3 },
           mt: { xs: 8, sm: 9 },

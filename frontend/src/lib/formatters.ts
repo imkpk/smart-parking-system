@@ -22,6 +22,18 @@ export function formatDuration(minutes: number | null | undefined) {
   return `${minutes} min`;
 }
 
+export function formatPersonName(name: string | null | undefined) {
+  if (!name?.trim()) {
+    return '';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export function formatStatusLabel(status: string | null | undefined) {
   if (!status) {
     return '-';

@@ -62,6 +62,23 @@ describe('AppLayout', () => {
     });
   });
 
+  it('title-cases lowercase user names in the top bar', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'ADMIN', name: 'pratibha' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout,
+    });
+
+    renderAppLayout('/admin/dashboard');
+
+    expect(screen.getByText('Pratibha')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+  });
+
   it('renders admin navigation items and logout button', async () => {
     const user = userEvent.setup();
 

@@ -57,10 +57,6 @@ export const router = createBrowserRouter([
                 path: 'security/dashboard',
                 element: <SecurityDashboardPage />,
               },
-              {
-                path: 'parking-lots/:id/slots',
-                element: <ParkingLotDetailsPage />,
-              },
             ],
           },
           {
@@ -82,7 +78,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN']} />,
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY']} />,
             children: [
               {
                 path: 'parking-lots',

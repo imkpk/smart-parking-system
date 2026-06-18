@@ -1,6 +1,6 @@
 import { Stack } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
 import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
+import { DashboardSummaryColumns } from '../../components/dashboard/DashboardSummaryColumns';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
 import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
 import { SlotStatusDonutChart } from '../../components/dashboard/SlotStatusDonutChart';
@@ -18,17 +18,18 @@ export function AdminDashboardPage() {
           <Stack spacing={2.5}>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
             {metrics.occupancy ? (
-              <Grid alignItems="flex-start" container spacing={2}>
-                <Grid item lg={6} md={6} xs={12}>
+              <DashboardSummaryColumns
+                left={
                   <SlotStatusDonutChart
                     lotUtilization={metrics.lotUtilization}
                     occupancy={metrics.occupancy}
                   />
-                </Grid>
-                <Grid item lg={6} md={6} xs={12}>
-                  <RecentActivityTimeline fillHeight />
-                </Grid>
-              </Grid>
+                }
+                leftLg={6}
+                leftMd={6}
+                rightLg={6}
+                rightMd={6}
+              />
             ) : (
               <RecentActivityTimeline />
             )}
