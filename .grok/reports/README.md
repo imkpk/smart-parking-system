@@ -23,6 +23,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-1a-organization-schema.md](./phase-1a-organization-schema.md) | Multi-tenant schema (backend) | PR #40 ✅ |
 | [phase-1a-verification.md](./phase-1a-verification.md) | Phase 1a schema verification (LOOP 1A) | `verify/phase-1a-organization-schema` |
 | [phase-1b-tenant-scoping-backend.md](./phase-1b-tenant-scoping-backend.md) | Backend tenant scoping | PR #42 ✅ |
+| [phase-1b-verification.md](./phase-1b-verification.md) | Phase 1b tenant scoping verification (LOOP 1B) | `verify/phase-1b-tenant-scoping` |
 | [frontend-ui-theme-design-system.md](./frontend-ui-theme-design-system.md) | Frontend theme, illustrations, design system | PR #44 ✅, PR #45 ✅ |
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
 | [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |
@@ -36,3 +37,4 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [e2e-rollout-final-summary.md](./e2e-rollout-final-summary.md) | Full E2E rollout summary (LOOP 00–05) | `docs/e2e-rollout-final-summary` (PR pending) |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.
+
