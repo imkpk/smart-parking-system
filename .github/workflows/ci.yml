@@ -113,13 +113,13 @@ jobs:
         id: coverage
         run: npm run coverage
 
-      - name: Upload frontend coverage artifact
-        if: steps.coverage.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage
-          path: frontend/coverage/
-          if-no-files-found: error
+      # - name: Upload frontend coverage artifact
+      #   if: steps.coverage.outcome == 'success'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: frontend-coverage
+      #     path: frontend/coverage/
+      #     if-no-files-found: error
 
       - name: Frontend coverage summary
         if: steps.coverage.outcome == 'success'

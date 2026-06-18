@@ -27,8 +27,8 @@ const markdown = `## Frontend Coverage (Vitest v8)
 | Functions | ${formatMetric('functions')} |
 | Lines | ${formatMetric('lines')} |
 
-### LCOV report
-Download the \`frontend-coverage\` workflow artifact for \`lcov.info\` and the HTML report.
+### Coverage report
+See the job summary above for coverage metrics. LCOV/HTML files are generated during the CI run but not uploaded as artifacts.
 
 <details>
 <summary>Lowest line coverage (top 10)</summary>
