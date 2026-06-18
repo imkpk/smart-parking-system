@@ -18,7 +18,7 @@ export function getResponsiveDonutDimensions(containerWidth: number) {
   return {
     innerRadius: Math.round(DONUT_INNER_RADIUS * scale),
     outerRadius,
-    pieHeight: outerRadius * 2 + 36,
+    pieHeight: outerRadius * 2 + 12,
     skeletonBorder: Math.max(12, Math.round(DONUT_SKELETON_BORDER * scale)),
     skeletonSize: Math.round(DONUT_SKELETON_SIZE * scale),
     width,

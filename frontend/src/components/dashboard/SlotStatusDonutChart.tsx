@@ -63,6 +63,9 @@ export function SlotStatusDonutChart({
   })).filter((entry) => entry.value > 0);
 
   const hasData = occupancy.totalSlots > 0 && chartData.length > 0;
+  const utilizationPercent = Number.isFinite(occupancy.utilizationPercent)
+    ? occupancy.utilizationPercent
+    : 0;
 
   const handleStatusNavigate = (statusLabel: string) => {
     const status = slotStatusFromLabel(statusLabel);
@@ -133,7 +136,7 @@ export function SlotStatusDonutChart({
               <Fade in={isActive} timeout={500}>
                 <Stack
                   alignItems="center"
-                  spacing={1.25}
+                  spacing={1}
                   sx={{
                     display: isActive ? 'flex' : 'none',
                     maxWidth: '100%',
@@ -141,43 +144,85 @@ export function SlotStatusDonutChart({
                     width: '100%',
                   }}
                 >
-                  <PieChart
-                    key={`${animationKey}-${donut.width}`}
-                    height={donut.pieHeight}
-                    hideLegend
-                    skipAnimation={false}
-                    width={donut.width}
-                    onItemClick={(_event, item) => {
-                      const dataIndex = (item as { dataIndex?: number }).dataIndex;
-
-                      if (typeof dataIndex !== 'number') {
-                        return;
-                      }
-
-                      const segment = chartData[dataIndex];
-
-                      if (segment) {
-                        handleStatusNavigate(segment.label);
-                      }
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      height: donut.pieHeight,
+                      maxWidth: '100%',
+                      position: 'relative',
+                      width: donut.width,
                     }}
-                    series={[
-                      {
-                        data: chartData,
-                        innerRadius: donut.innerRadius,
-                        outerRadius: donut.outerRadius,
-                        paddingAngle: 2,
-                        cornerRadius: 4,
-                        highlightScope: { fade: 'global', highlight: 'item' },
-                      },
-                    ]}
-                    slotProps={{
-                      pieArc: {
-                        style: {
-                          cursor: 'pointer',
+                  >
+                    <PieChart
+                      key={`${animationKey}-${donut.width}`}
+                      height={donut.pieHeight}
+                      hideLegend
+                      skipAnimation={false}
+                      width={donut.width}
+                      onItemClick={(_event, item) => {
+                        const dataIndex = (item as { dataIndex?: number }).dataIndex;
+
+                        if (typeof dataIndex !== 'number') {
+                          return;
+                        }
+
+                        const segment = chartData[dataIndex];
+
+                        if (segment) {
+                          handleStatusNavigate(segment.label);
+                        }
+                      }}
+                      series={[
+                        {
+                          data: chartData,
+                          innerRadius: donut.innerRadius,
+                          outerRadius: donut.outerRadius,
+                          paddingAngle: 2,
+                          cornerRadius: 4,
+                          highlightScope: { fade: 'global', highlight: 'item' },
                         },
-                      },
-                    }}
-                  />
+                      ]}
+                      slotProps={{
+                        pieArc: {
+                          style: {
+                            cursor: 'pointer',
+                          },
+                        },
+                      }}
+                    />
+                    <Stack
+                      alignItems="center"
+                      aria-label={`${utilizationPercent}% utilized`}
+                      justifyContent="center"
+                      spacing={0.25}
+                      sx={{
+                        inset: 0,
+                        maxWidth: donut.innerRadius * 1.6,
+                        mx: 'auto',
+                        pointerEvents: 'none',
+                        position: 'absolute',
+                        textAlign: 'center',
+                        width: '100%',
+                      }}
+                    >
+                      <Typography
+                        color="text.primary"
+                        component="p"
+                        fontWeight={800}
+                        sx={{
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                          letterSpacing: '-0.02em',
+                          lineHeight: 1,
+                        }}
+                        variant="h4"
+                      >
+                        {utilizationPercent}%
+                      </Typography>
+                      <Typography color="text.secondary" variant="caption">
+                        Utilized
+                      </Typography>
+                    </Stack>
+                  </Box>
                   <SlotStatusChartLegend
                     items={chartData.map((segment) => ({
                       color: segment.color,
