@@ -227,6 +227,12 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 | 1a | Organization schema + migration + seed | ✅ Merged (PR #40) | .grok/reports/phase-1a-organization-schema.md |
 | 1b | Backend tenant scoping enforcement | ✅ Merged (PR #42) | .grok/reports/phase-1b-tenant-scoping-backend.md |
 
+### Frontend testing foundation 🔄
+
+| Item | Status | Report |
+|------|--------|--------|
+| Vitest + RTL coverage foundation | 🔄 PR pending | .grok/reports/frontend-test-coverage-rtl-vitest.md |
+
 ---
 
 ## 8. In progress (current sprint)
@@ -257,6 +263,7 @@ Execute in this order unless the human redirects:
 [x] Phase 1b: backend tenant scoping (PR #42 ✅)
 [ ] Phase 1c: tenant onboarding API (NEXT)
 [ ] Phase 1d: frontend tenant context in AuthProvider
+[ ] Frontend RTL/Vitest foundation — PR pending (feature/frontend-test-coverage-rtl-vitest)
 [ ] Remove or gate mock payment UI to dev-only if production path is complete
 ```
 

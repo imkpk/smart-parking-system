@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createPayment } from '../test/paymentFixtures';
+import { createPayment } from '@/test/paymentFixtures';
 import {
   buildVerifyRazorpayPaymentRequest,
   canShowPayNow,
-} from './paymentRazorpay';
+} from '@/lib/paymentRazorpay';
 
 describe('canShowPayNow', () => {
   it('shows Pay Now for initiated Razorpay payments with gateway order id', () => {
