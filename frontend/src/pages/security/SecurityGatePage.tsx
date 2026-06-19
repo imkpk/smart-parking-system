@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CheckCircle, Login, Logout, Search } from '@mui/icons-material';
+import { Login, Logout, Search } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useCallback, useMemo, useState } from 'react';
@@ -16,6 +16,7 @@ import { searchSecurityGate } from '../../api/securityGateApi';
 import { checkInParkingEvent, checkOutParkingEvent } from '../../api/parkingEventsApi';
 import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
+import { Illustration } from '../../components/common/Illustration';
 import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { InfoRows } from '../../components/common/InfoRows';
@@ -255,11 +256,20 @@ function GateResultCard({
       }}
     >
       <Stack spacing={2}>
-        <Stack spacing={0.5}>
-          <Typography variant="h6">Match found</Typography>
-          <Typography color="text.secondary" variant="body2">
-            Review details before continuing.
-          </Typography>
+        <Stack
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+        >
+          <Box sx={{ display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+            <Illustration alt="" maxWidth={88} name="booking" />
+          </Box>
+          <Stack spacing={0.5}>
+            <Typography variant="h6">Match found</Typography>
+            <Typography color="text.secondary" variant="body2">
+              Review details before continuing.
+            </Typography>
+          </Stack>
         </Stack>
 
         <InfoRows
@@ -517,11 +527,20 @@ function MultipleMatchesPanel({
           p: { xs: 2, sm: 2.5 },
         }}
       >
-        <Stack spacing={1}>
-          <Typography variant="h6">Multiple matches found</Typography>
-          <Typography color="text.secondary" variant="body2">
-            Choose the booking or active session you want to process.
-          </Typography>
+        <Stack
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+        >
+          <Box sx={{ display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+            <Illustration alt="" maxWidth={96} name="cityDriver" />
+          </Box>
+          <Stack spacing={1}>
+            <Typography variant="h6">Multiple matches found</Typography>
+            <Typography color="text.secondary" variant="body2">
+              Choose the booking or active session you want to process.
+            </Typography>
+          </Stack>
         </Stack>
       </Paper>
 
@@ -732,37 +751,49 @@ export function SecurityGatePage() {
             p: { xs: 2, sm: 2.5 },
           }}
         >
-          <Stack spacing={2}>
-            <TextField
-              autoComplete="off"
-              autoFocus
-              fullWidth
-              label="Search booking code, booking no, vehicle number, or phone number"
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search booking code, booking no, vehicle number, or phone number"
-              size="medium"
-              type="text"
-              value={searchQuery}
-            />
-            <Button
-              disabled={searchMutation.isPending}
-              fullWidth
-              size="large"
-              startIcon={
-                searchMutation.isPending ? (
-                  <CircularProgress color="inherit" size={20} />
-                ) : (
-                  <Search />
-                )
-              }
-              sx={{ minHeight: 52 }}
-              type="submit"
-              variant="contained"
-            >
-              Search
-            </Button>
-            {notFoundMessage ? <Alert severity="warning">{notFoundMessage}</Alert> : null}
-          </Stack>
+          <Box
+            sx={{
+              alignItems: 'center',
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: { xs: '1fr', sm: 'minmax(140px, 200px) 1fr' },
+            }}
+          >
+            <Box sx={{ maxWidth: { xs: 160, sm: 180 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
+              <Illustration alt="" maxWidth="100%" name="locationSearch" />
+            </Box>
+            <Stack spacing={2}>
+              <TextField
+                autoComplete="off"
+                autoFocus
+                fullWidth
+                label="Search booking code, booking no, vehicle number, or phone number"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search booking code, booking no, vehicle number, or phone number"
+                size="medium"
+                type="text"
+                value={searchQuery}
+              />
+              <Button
+                disabled={searchMutation.isPending}
+                fullWidth
+                size="large"
+                startIcon={
+                  searchMutation.isPending ? (
+                    <CircularProgress color="inherit" size={20} />
+                  ) : (
+                    <Search />
+                  )
+                }
+                sx={{ minHeight: 52 }}
+                type="submit"
+                variant="contained"
+              >
+                Search
+              </Button>
+              {notFoundMessage ? <Alert severity="warning">{notFoundMessage}</Alert> : null}
+            </Stack>
+          </Box>
         </Paper>
       ) : null}
 
@@ -798,7 +829,7 @@ export function SecurityGatePage() {
           }}
         >
           <Stack alignItems="center" spacing={2}>
-            <CheckCircle color="success" sx={{ fontSize: 56 }} />
+            <Illustration alt="" maxWidth={180} name="park" />
             <Typography variant="h6">{successMessage}</Typography>
             <Button fullWidth onClick={handleReset} size="large" variant="contained">
               Search again
