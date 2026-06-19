@@ -94,6 +94,7 @@ describe('AppLayout', () => {
     expect(screen.getByText('Admin')).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: /admin dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /support inbox/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /parking lots/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^vehicles$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /bookings/i })).toBeInTheDocument();
@@ -138,6 +139,7 @@ describe('AppLayout', () => {
     renderAppLayout('/security/dashboard');
 
     expect(screen.getByRole('link', { name: /security dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /security messages/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /bookings/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /parking events/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /payments/i })).toBeInTheDocument();

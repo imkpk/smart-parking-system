@@ -33,6 +33,7 @@ import {
   SvgIconComponent,
 } from '@mui/icons-material';
 import ContactSupportIcon from '@mui/icons-material/ContactSupport';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSidebarAutoCollapse } from '../../hooks/useSidebarAutoCollapse';
@@ -64,9 +65,21 @@ const navItems: NavItem[] = [
     roles: ['SUPER_ADMIN', 'TENANT_ADMIN', 'ADMIN'],
   },
   {
+    label: 'Support Inbox',
+    to: '/admin/support',
+    icon: ContactSupportIcon,
+    roles: ['TENANT_ADMIN', 'ADMIN'],
+  },
+  {
     label: 'Security Dashboard',
     to: '/security/dashboard',
     icon: Security,
+    roles: ['SECURITY'],
+  },
+  {
+    label: 'Security Messages',
+    to: '/security/messages',
+    icon: MailOutlineIcon,
     roles: ['SECURITY'],
   },
   {
