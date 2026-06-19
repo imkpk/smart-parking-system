@@ -44,6 +44,7 @@ import { formatRole } from '../../lib/formatRole';
 import { getNavLabelForRole } from '../../lib/userFacingLabels';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
+import { brand } from '../../theme/tokens';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 220;
@@ -226,7 +227,7 @@ export function AppLayout() {
             sx={{ minWidth: 0, width: '100%' }}
           >
             <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
-              <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText />
+              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
             </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
@@ -243,7 +244,7 @@ export function AppLayout() {
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
-            <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText={false} />
+            <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText={false} />
             {!isMobile ? (
               <Tooltip title="Expand sidebar">
                 <IconButton
