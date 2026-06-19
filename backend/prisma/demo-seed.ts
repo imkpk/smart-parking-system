@@ -26,10 +26,30 @@ const LEGACY_DEMO_LOT_NAMES = [
 ] as const;
 
 const DEMO_USERS = [
-  { email: 'demo-admin@smartparking.demo', name: 'Pratibha Sharma', role: Role.ADMIN },
-  { email: 'demo-tenant@smartparking.demo', name: 'Sunrise Operations', role: Role.TENANT_ADMIN },
-  { email: 'demo-security@smartparking.demo', name: 'Ravi Kumar', role: Role.SECURITY },
-  { email: 'demo-user@smartparking.demo', name: 'Asha Patel', role: Role.USER },
+  {
+    email: 'demo-admin@smartparking.demo',
+    name: 'Pratibha Sharma',
+    role: Role.ADMIN,
+    phone: '+919876543212',
+  },
+  {
+    email: 'demo-tenant@smartparking.demo',
+    name: 'Sunrise Operations',
+    role: Role.TENANT_ADMIN,
+    phone: '+919876543213',
+  },
+  {
+    email: 'demo-security@smartparking.demo',
+    name: 'Ravi Kumar',
+    role: Role.SECURITY,
+    phone: '+919876543211',
+  },
+  {
+    email: 'demo-user@smartparking.demo',
+    name: 'Asha Patel',
+    role: Role.USER,
+    phone: '+919876543210',
+  },
 ] as const;
 
 const DEMO_LOTS = [
@@ -117,12 +137,14 @@ async function upsertDemoUsers(organizationId: number, passwordHash: string) {
       update: {
         name: demoUser.name,
         role: demoUser.role,
+        phone: demoUser.phone,
         isActive: true,
       },
       create: {
         organizationId,
         name: demoUser.name,
         email: demoUser.email,
+        phone: demoUser.phone,
         passwordHash,
         role: demoUser.role,
         isActive: true,
@@ -459,7 +481,9 @@ async function cleanupSupersededDemoLots(organizationId: number, includeCurrentD
 function printDemoCredentials() {
   console.log('\n--- Demo login credentials (password for all: password123) ---');
   for (const demoUser of DEMO_USERS) {
-    console.log(`  ${demoUser.role.padEnd(8)}  ${demoUser.email}  (${demoUser.name})`);
+    console.log(
+      `  ${demoUser.role.padEnd(8)}  ${demoUser.email}  (${demoUser.name})  phone: ${demoUser.phone}`,
+    );
   }
   console.log('\nOpen: http://localhost:5173/login');
   console.log('Admin dashboard: http://localhost:5173/admin/dashboard\n');

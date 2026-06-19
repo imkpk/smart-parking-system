@@ -190,7 +190,7 @@ describe('SecurityGateService', () => {
         checkOutTime: lastCheckOutTime,
         booking: {
           ...confirmedBooking,
-          status: BookingStatus.COMPLETED,
+          status: BookingStatus.CONFIRMED,
           slot: {
             ...confirmedBooking.slot,
             status: SlotStatus.AVAILABLE,
@@ -244,6 +244,26 @@ describe('SecurityGateService', () => {
 
     expect(result.action).not.toBe('CHECK_OUT');
     expect(result.action).toBe('NONE');
+  });
+
+  it('returns NONE for completed bookings in phone search matches', async () => {
+    const completedBooking = {
+      ...confirmedBooking,
+      id: 501,
+      bookingCode: 'BK-DEMO-099',
+      status: BookingStatus.COMPLETED,
+    };
+
+    prisma.user.findMany.mockResolvedValue([{ id: normalUser.id }]);
+    prisma.booking.findMany.mockResolvedValue([completedBooking]);
+    prisma.parkingEvent.findFirst.mockResolvedValue(null);
+    prisma.parkingEvent.count.mockResolvedValue(1);
+
+    const result = expectSingleResult(await service.search('0000000000', securityUser));
+
+    expect(result.action).toBe('NONE');
+    expect(result.booking.status).toBe(BookingStatus.COMPLETED);
+    expect(result.actionDisabledReason).toBe('This booking is completed.');
   });
 
   it('returns multiple matches for phone search when several bookings exist', async () => {
