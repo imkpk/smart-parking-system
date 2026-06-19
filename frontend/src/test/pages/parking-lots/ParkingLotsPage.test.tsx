@@ -113,13 +113,22 @@ describe('ParkingLotsPage', () => {
     expect(await screen.findByText('Parking lot created.')).toBeInTheDocument();
   });
 
+  it('renders Manage action for each parking lot row', async () => {
+    renderWithProviders(<ParkingLotsPage />);
+    await screen.findByText('Main Lot');
+
+    expect(screen.getByRole('link', { name: /manage main lot/i })).toHaveAttribute(
+      'href',
+      '/parking-lots/1',
+    );
+  });
+
   it('edits a parking lot via dialog', async () => {
     const user = userEvent.setup({ delay: null });
     renderWithProviders(<ParkingLotsPage />);
     await screen.findByText('Main Lot');
 
-    const [, editButton] = getDataGridRowButtons('Main Lot');
-    await user.click(editButton);
+    await user.click(screen.getByLabelText(/edit main lot/i));
 
     const dialog = screen.getByRole('dialog', { name: /edit parking lot/i });
     const nameField = within(dialog).getByRole('textbox', { name: /name/i });

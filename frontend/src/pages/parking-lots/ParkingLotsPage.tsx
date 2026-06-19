@@ -20,11 +20,11 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { Add, Delete, Edit, OpenInNew } from '@mui/icons-material';
+import { Add, Delete, Edit, OpenInNew, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
 import { FormEvent, useMemo, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -39,6 +39,8 @@ import { HeaderActionButton, PageHeader } from '../../components/common/PageHead
 
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useUserRole } from '../../hooks/useUserRole';
+import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatDateTime } from '../../lib/formatters';
 import { filterParkingLots } from '../../lib/searchFilters';
@@ -75,8 +77,11 @@ const emptyForm: ParkingLotPayload = {
 };
 
 export function ParkingLotsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
+  const { isOperationalAdmin, isTenantAdmin } = useUserRole();
+  const canManageLots = isOperationalAdmin || isTenantAdmin;
   const [formOpen, setFormOpen] = useState(false);
   const [editingParkingLot, setEditingParkingLot] = useState<ParkingLot | null>(null);
   const [form, setForm] = useState<ParkingLotPayload>(emptyForm);
@@ -143,24 +148,53 @@ export function ParkingLotsPage() {
     () => [
       {
         field: 'name',
-        flex: 1.1,
+        flex: 1,
         headerName: 'Parking Lot Name',
+        maxWidth: 260,
         minWidth: 180,
+        width: 220,
+        renderCell: ({ row }) => (
+          <Button
+            component={RouterLink}
+            onClick={(event) => event.stopPropagation()}
+            size="small"
+            sx={{ fontWeight: 600, justifyContent: 'flex-start', minWidth: 0, px: 0, textTransform: 'none' }}
+            to={getParkingLotWorkspacePath(row.id, 'overview')}
+            variant="text"
+          >
+            {row.name}
+          </Button>
+        ),
       },
-      { field: 'type', headerName: 'Type', minWidth: 140 },
+      {
+        field: 'type',
+        headerName: 'Type',
+        maxWidth: 140,
+        minWidth: 110,
+        width: 130,
+      },
       {
         field: 'location',
-        flex: 1.3,
         headerName: 'Location',
-        minWidth: 220,
+        maxWidth: 280,
+        minWidth: 180,
+        width: 220,
         valueGetter: (_value, row) =>
           [row.address, row.city, row.state].filter(Boolean).join(', ') || '-',
       },
-      { field: 'pincode', headerName: 'Pincode', minWidth: 120 },
+      {
+        field: 'pincode',
+        headerName: 'Pincode',
+        maxWidth: 120,
+        minWidth: 90,
+        width: 100,
+      },
       {
         field: 'isActive',
         headerName: 'Status',
-        minWidth: 120,
+        maxWidth: 130,
+        minWidth: 110,
+        width: 120,
         renderCell: ({ row }) => (
           <Chip
             color={row.isActive ? 'success' : 'default'}
@@ -169,37 +203,81 @@ export function ParkingLotsPage() {
           />
         ),
       },
-      createDetailsColumn<ParkingLot>(setDetailsParkingLot),
+      {
+        ...createDetailsColumn<ParkingLot>(setDetailsParkingLot),
+        align: 'center',
+        headerAlign: 'center',
+        maxWidth: 110,
+        minWidth: 90,
+        width: 100,
+        renderCell: ({ row }) => (
+          <Stack alignItems="center" direction="row" justifyContent="center" width="100%">
+            <Tooltip title="View Details">
+              <IconButton
+                aria-label="View details"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDetailsParkingLot(row);
+                }}
+              >
+                <Visibility />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
       {
         field: 'actions',
         align: 'right',
         filterable: false,
         headerAlign: 'right',
         headerName: 'Actions',
-        minWidth: 170,
+        maxWidth: canManageLots ? 260 : 120,
+        minWidth: canManageLots ? 220 : 100,
         sortable: false,
+        width: canManageLots ? 240 : 110,
         renderCell: ({ row }) => (
-          <Stack direction="row" justifyContent="flex-end" width="100%">
-            <Tooltip title="Manage Lot">
-              <IconButton component={RouterLink} to={`/parking-lots/${row.id}`}>
-                <OpenInNew />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton onClick={() => openEditForm(row)}>
-                <Edit />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton color="error" onClick={() => setDeleteTarget(row)}>
-                <Delete />
-              </IconButton>
-            </Tooltip>
+          <Stack
+            alignItems="center"
+            direction="row"
+            justifyContent="flex-end"
+            onClick={(event) => event.stopPropagation()}
+            spacing={0.5}
+            width="100%"
+          >
+            <Button
+              aria-label={`Manage ${row.name}`}
+              component={RouterLink}
+              size="small"
+              startIcon={<OpenInNew />}
+              to={getParkingLotWorkspacePath(row.id, 'overview')}
+              variant="outlined"
+            >
+              Manage
+            </Button>
+            {canManageLots ? (
+              <>
+                <Tooltip title="Edit">
+                  <IconButton aria-label={`Edit ${row.name}`} onClick={() => openEditForm(row)}>
+                    <Edit />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete">
+                  <IconButton
+                    aria-label={`Delete ${row.name}`}
+                    color="error"
+                    onClick={() => setDeleteTarget(row)}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : null}
           </Stack>
         ),
       },
     ],
-    [],
+    [canManageLots],
   );
 
   const openCreateForm = () => {
@@ -264,9 +342,11 @@ export function ParkingLotsPage() {
     <Stack spacing={3}>
       <PageHeader
         action={
-          <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
-            Create Parking Lot
-          </HeaderActionButton>
+          canManageLots ? (
+            <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
+              Create Parking Lot
+            </HeaderActionButton>
+          ) : undefined
         }
         title="Parking Lots"
       />
@@ -296,6 +376,14 @@ export function ParkingLotsPage() {
         >
           <AppDataGrid
             columns={columns}
+            gridSx={{
+              '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+                maxWidth: 52,
+                minWidth: 52,
+                width: 52,
+              },
+            }}
+            onRowClick={(row) => navigate(getParkingLotWorkspacePath(row.id, 'overview'))}
             emptyState={{
               description: search
                 ? 'Try a parking lot name, city, state, or pincode.'

@@ -13,15 +13,16 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { getParkingLots } from '../../api/parkingLotsApi';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { getParkingLot, getParkingLots } from '../../api/parkingLotsApi';
 import { getSlotMap } from '../../api/slotMapApi';
 import { EmptyState } from '../../components/common/EmptyState';
-import { PageHeader, HeaderActionButton } from '../../components/common/PageHeader';
 import { SearchField } from '../../components/common/SearchField';
+import { ParkingLotWorkspaceShell } from '../../components/parking-lots/ParkingLotWorkspaceShell';
 import { SlotDetailDrawer } from '../../components/slot-map/SlotDetailDrawer';
 import { SlotMapGrid } from '../../components/slot-map/SlotMapGrid';
 import { SlotMapLegend } from '../../components/slot-map/SlotMapLegend';
+import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { isSlotStatus } from '../../lib/slotStatusNavigation';
 import { SlotMapQuery, SlotMapSlotItem } from '../../types/slotMap';
@@ -46,6 +47,8 @@ export function VisualSlotMapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<SlotMapSlotItem | null>(null);
+  const { isOperationalAdmin, isTenantAdmin } = useUserRole();
+  const canManageLot = isOperationalAdmin || isTenantAdmin;
 
   const floorFilter = searchParams.get('floorId') ?? ALL_FILTER;
   const statusFilter = searchParams.get('status') ?? ALL_FILTER;
@@ -58,6 +61,12 @@ export function VisualSlotMapPage() {
       : {}),
     ...(typeFilter !== ALL_FILTER ? { vehicleType: typeFilter as SlotType } : {}),
   };
+
+  const parkingLotQuery = useQuery({
+    queryKey: ['parking-lots', parkingLotId],
+    queryFn: () => getParkingLot(parkingLotId),
+    enabled: Number.isFinite(parkingLotId),
+  });
 
   const slotMapQueryResult = useQuery({
     queryKey: ['slot-map', parkingLotId, slotMapQuery],
@@ -116,31 +125,36 @@ export function VisualSlotMapPage() {
   };
 
   const mapData = slotMapQueryResult.data;
+  const parkingLot = parkingLotQuery.data;
+
+  if (parkingLotQuery.isLoading) {
+    return (
+      <Stack alignItems="center" py={8}>
+        <CircularProgress />
+      </Stack>
+    );
+  }
+
+  if (parkingLotQuery.error) {
+    return (
+      <Alert severity={isForbiddenError(parkingLotQuery.error) ? 'warning' : 'error'}>
+        {isForbiddenError(parkingLotQuery.error)
+          ? 'Access denied. You do not have permission to view this parking lot.'
+          : getApiErrorMessage(parkingLotQuery.error, 'Could not load parking lot.')}
+      </Alert>
+    );
+  }
+
+  if (!parkingLot) {
+    return null;
+  }
 
   return (
-    <Stack spacing={2.5}>
-      <PageHeader
-        compact
-        description={mapData ? mapData.parkingLot.name : 'Parking lot slot status map'}
-        title="Visual Slot Map"
-        action={
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-            {parkingLotId ? (
-              <HeaderActionButton
-                component={RouterLink}
-                to={`/parking-lots/${parkingLotId}`}
-                variant="outlined"
-              >
-                Lot details
-              </HeaderActionButton>
-            ) : null}
-            <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
-              Back
-            </HeaderActionButton>
-          </Stack>
-        }
-      />
-
+    <ParkingLotWorkspaceShell
+      activeTab="visual-map"
+      canManageLot={canManageLot}
+      parkingLot={parkingLot}
+    >
       {parkingLotsQuery.data && parkingLotsQuery.data.length > 1 ? (
         <FormControl size="small" sx={{ maxWidth: 320 }}>
           <InputLabel id="slot-map-lot-label">Parking lot</InputLabel>
@@ -274,6 +288,6 @@ export function VisualSlotMapPage() {
         open={selectedSlot != null}
         slot={selectedSlot}
       />
-    </Stack>
+    </ParkingLotWorkspaceShell>
   );
 }

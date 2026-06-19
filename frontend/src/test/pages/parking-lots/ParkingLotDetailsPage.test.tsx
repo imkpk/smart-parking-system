@@ -33,6 +33,7 @@ vi.mock('@/providers/AuthProvider', () => ({
 vi.mock('@/api/parkingLotsApi', () => ({
   getParkingLot: vi.fn(),
   getParkingLots: vi.fn(),
+  updateParkingLot: vi.fn(),
 }));
 
 vi.mock('@/api/floorsApi', () => ({
@@ -134,7 +135,11 @@ describe('ParkingLotDetailsPage', () => {
     expect(screen.getAllByText('Floors').length).toBeGreaterThan(0);
     expect(screen.getByText('Total Slots')).toBeInTheDocument();
     expect(screen.getByText('Parking Lot Info')).toBeInTheDocument();
-    expect(screen.getByText('MALL')).toBeInTheDocument();
+    expect(screen.getAllByText('MALL').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('link', { name: /open visual map/i })[0]).toHaveAttribute(
+      'href',
+      '/parking-lots/1/slot-map',
+    );
     expect(screen.getByText('Bengaluru')).toBeInTheDocument();
   });
 
