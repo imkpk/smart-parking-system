@@ -179,18 +179,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: parking_payment_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ppassword"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
     env:
       DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_db?schema=public
       SHADOW_DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_shadow_db?schema=public
@@ -199,8 +187,8 @@ jobs:
       JWT_EXPIRES_IN: 1d
       PAYMENT_SERVICE_URL: http://127.0.0.1:8081
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
-      DB_URL: jdbc:mysql://127.0.0.1:3306/parking_payment_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DB_USERNAME: root
+      DB_URL: jdbc:postgresql://postgres:password@127.0.0.1:5432/parking_payment_db
+      DB_USERNAME: postgres
       DB_PASSWORD: password
       JWT_SECRET_PAYMENT: smart_parking_dev_jwt_secret_32_chars_minimum
     steps:
@@ -226,9 +214,9 @@ jobs:
       - name: Prepare databases
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client default-mysql-client
+          sudo apt-get install -y -qq postgresql-client
           PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE smart_parking_shadow_db;"
-          mysql -h 127.0.0.1 -uroot -ppassword -e "CREATE DATABASE IF NOT EXISTS parking_payment_db;"
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE parking_payment_db;"
 
       - name: Install and migrate backend
         working-directory: backend

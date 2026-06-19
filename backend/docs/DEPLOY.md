@@ -125,7 +125,7 @@ npm run start:dev
 
 ## Out of scope (this phase)
 
-- Spring Boot `payment-service` still uses MySQL
+- Spring Boot `payment-service` uses PostgreSQL (see `payment-service/README.md` for Neon JDBC URL)
 - Vercel frontend deploy (Phase 6B+)
 - Full CI/CD pipeline changes beyond backend compatibility
 

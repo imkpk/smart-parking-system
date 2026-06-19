@@ -9,7 +9,7 @@ This service is intentionally separate from the existing NestJS backend. It owns
 - Java 21
 - Spring Boot 3
 - Maven
-- MySQL
+- PostgreSQL (Neon hosted / local Postgres)
 - Spring Web
 - Spring Data JPA
 - Bean Validation
@@ -27,15 +27,33 @@ Base URL: http://localhost:8081/api/payments
 
 ## Database Setup
 
-Use the same MySQL server as the main backend, but create a separate database:
+Payment-service uses **PostgreSQL** (same Neon project as the NestJS backend is fine — use a separate database such as `parking_payment_db`).
 
-```sql
-CREATE DATABASE IF NOT EXISTS parking_payment_db;
-GRANT ALL PRIVILEGES ON parking_payment_db.* TO 'parking_user'@'localhost';
-FLUSH PRIVILEGES;
+NestJS backend was migrated to PostgreSQL in PR #109. This service now matches that stack. Deployment execution comes in the next phase.
+
+**Local PostgreSQL:**
+
+```bash
+createdb parking_payment_db
 ```
 
-Do not commit real database passwords.
+```env
+DB_URL=jdbc:postgresql://localhost:5432/parking_payment_db
+DB_USERNAME=parking_user
+DB_PASSWORD=parking_password
+```
+
+**Neon (hosted):**
+
+```env
+DB_URL=jdbc:postgresql://HOST/DB?sslmode=require
+DB_USERNAME=USER
+DB_PASSWORD=PASSWORD
+```
+
+Hibernate `ddl-auto=update` creates payment tables on first start. No MySQL is required after Phase 6A-2.
+
+Do not commit real database credentials.
 
 ## Configuration
 
@@ -55,7 +73,7 @@ You can run with environment variables:
 
 ```bash
 set SERVER_PORT=8081
-set DB_URL=jdbc:mysql://localhost:3306/parking_payment_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+set DB_URL=jdbc:postgresql://localhost:5432/parking_payment_db
 set DB_USERNAME=parking_user
 set DB_PASSWORD=your_password
 ```
@@ -64,7 +82,7 @@ PowerShell:
 
 ```powershell
 $env:SERVER_PORT="8081"
-$env:DB_URL="jdbc:mysql://localhost:3306/parking_payment_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+$env:DB_URL="jdbc:postgresql://localhost:5432/parking_payment_db"
 $env:DB_USERNAME="parking_user"
 $env:DB_PASSWORD="your_password"
 $env:JWT_SECRET="smart_parking_dev_jwt_secret_32_chars_minimum"
