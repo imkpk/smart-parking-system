@@ -20,7 +20,8 @@ Alternatives considered:
 
 | Catalog key | unDraw slug | Use case |
 |-------------|-------------|----------|
-| `securityCheck` | `security-on_3ykb` | Gate search hero |
+| `securityGateCheck` | User download (Magnific JPG) | Gate search hero — **license verify before prod** |
+| `securityCheck` | `security-on_3ykb` | Staff inbox select-thread empty state |
 | `securityAlert` | `motion-alert_pr1a` | Security inbox empty |
 | `gateEntrance` | `knocking-on-the-door_vgly` | Gate check-in/out success |
 | `chatSupport` | `work-chat_kw8x` | Support thread picker |
@@ -32,7 +33,7 @@ Fetch script: `frontend/scripts/fetch-undraw-illustrations.mjs` (re-run to refre
 
 ## UI wiring (preview)
 
-* `/security/gate` — search panel `securityCheck`; success `gateEntrance`
+* `/security/gate` — search panel `securityGateCheck` (user Magnific art); success `gateEntrance`
 * `/support` (USER) — empty list `customerCare`; select thread `chatSupport`; empty messages `messaging`
 * `/security/messages` — empty inbox `securityAlert`; select thread `securityCheck`
 * `/admin/support` — defaults `customerCare` / `chatSupport` / `messaging`

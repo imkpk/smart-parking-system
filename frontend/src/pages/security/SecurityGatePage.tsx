@@ -756,11 +756,15 @@ export function SecurityGatePage() {
               alignItems: 'center',
               display: 'grid',
               gap: 2,
-              gridTemplateColumns: { xs: '1fr', sm: 'minmax(140px, 200px) 1fr' },
+              gridTemplateColumns: { xs: '1fr', sm: 'minmax(160px, 220px) 1fr' },
             }}
           >
-            <Box sx={{ maxWidth: { xs: 160, sm: 180 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
-              <Illustration alt="" maxWidth="100%" name="securityCheck" />
+            <Box sx={{ maxWidth: { xs: 200, sm: 220 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
+              <Illustration
+                alt="Security guard checking a vehicle at the parking gate"
+                maxWidth="100%"
+                name="securityGateCheck"
+              />
             </Box>
             <Stack spacing={2}>
               <TextField

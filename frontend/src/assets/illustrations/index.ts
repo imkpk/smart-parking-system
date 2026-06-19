@@ -17,6 +17,7 @@ import receipt from './receipt.svg?url';
 import secureLogin from './secure-login.svg?url';
 import securityAlert from './security-alert.svg?url';
 import securityCheck from './security-check.svg?url';
+import securityGateCheck from './security-gate-check.jpg?url';
 
 /** Free unDraw illustrations (MIT). Primary accent uses --primary-svg-color. */
 export const illustrations = {
@@ -39,6 +40,7 @@ export const illustrations = {
   secureLogin,
   securityAlert,
   securityCheck,
+  securityGateCheck,
 } as const;
 
 export type IllustrationName = keyof typeof illustrations;

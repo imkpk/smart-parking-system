@@ -72,6 +72,7 @@ We use **one design system** built on MUI — not a downloaded theme.
 | `@mui/x-data-grid` | ^9.5.0 | MIT (community) | ✅ Yes | package.json | Tables |
 | `@fontsource/inter` | ^5.2.8 | OFL-1.1 | ✅ Yes | package.json + main.tsx | Self-hosted font |
 | unDraw illustrations (19 files) | — | MIT ([unDraw license](https://undraw.co/license)) | ✅ Yes | frontend/src/assets/illustrations/ | Curated subset, bundled; +7 gate/chat (2026-06-19) |
+| `security-gate-check.jpg` (Magnific preview) | — | **Premium — license pending** | ⚠️ Preview only | `frontend/src/assets/illustrations/` | User-supplied gate search art; verify Magnific/Freepik license before production release |
 | `@emotion/react` | ^11.14.0 | MIT | ✅ Yes | package.json | MUI peer |
 | `@tanstack/react-query` | ^5.80.7 | MIT | ✅ Yes | package.json | Data fetching |
 
