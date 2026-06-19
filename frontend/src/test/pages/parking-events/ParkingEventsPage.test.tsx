@@ -191,7 +191,8 @@ describe('ParkingEventsPage', () => {
       expect(getParkingEventHistory).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByText('My Parking History')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /parking history/i })).toBeInTheDocument();
+    expect(screen.queryByText('My Parking History')).not.toBeInTheDocument();
     expect(await screen.findByText('BK-001')).toBeInTheDocument();
     expect(getActiveParkingEvents).not.toHaveBeenCalled();
   });

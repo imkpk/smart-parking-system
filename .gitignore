@@ -85,3 +85,6 @@ terminals/
 agent-artifacts/
 agent-tools/
 mcps/
+
+# Local printouts (flow diagrams, credentials — personal PDF only)
+local-printouts/

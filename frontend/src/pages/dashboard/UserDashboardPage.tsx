@@ -7,7 +7,10 @@ import { buildUserHeroKpis } from '../../lib/operatorDashboardMetrics';
 
 export function UserDashboardPage() {
   return (
-    <OperatorDashboardShell accessDeniedMessage="Access denied. Sign in to view your dashboard.">
+    <OperatorDashboardShell
+      accessDeniedMessage="Access denied. Sign in to view your dashboard."
+      title="My Dashboard"
+    >
       {(metrics) => (
         <Fragment>
           <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />

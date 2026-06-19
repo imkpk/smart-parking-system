@@ -41,6 +41,7 @@ import { AppLogo } from '../common/AppLogo';
 import { ThemeModeToggle } from '../common/ThemeModeToggle';
 import { formatPersonName } from '../../lib/formatters';
 import { formatRole } from '../../lib/formatRole';
+import { getNavLabelForRole } from '../../lib/userFacingLabels';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { Role } from '../../types/auth';
@@ -262,13 +263,16 @@ export function AppLayout() {
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = isNavItemActive(location.pathname, item);
+          const label = user
+            ? getNavLabelForRole(item.to, user.role, item.label)
+            : item.label;
 
           return (
             <Tooltip
               disableHoverListener={shouldShowExpandedDrawer}
               key={item.to}
               placement="right"
-              title={item.label}
+              title={label}
             >
               <ListItemButton
                 component={NavLink}
@@ -307,7 +311,7 @@ export function AppLayout() {
                 <ListItemIcon>
                   <Icon fontSize="small" />
                 </ListItemIcon>
-                {shouldShowExpandedDrawer ? <ListItemText primary={item.label} /> : null}
+                {shouldShowExpandedDrawer ? <ListItemText primary={label} /> : null}
               </ListItemButton>
             </Tooltip>
           );
