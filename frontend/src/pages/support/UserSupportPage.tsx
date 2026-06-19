@@ -38,7 +38,7 @@ import { Illustration } from '../../components/common/Illustration';
 import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatusChip } from '../../components/common/StatusChip';
-import { ChatMessageBubble } from '../../components/support/ChatMessageBubble';
+import { ChatMessageList } from '../../components/support/ChatMessageBubble';
 import { getChatIllustration } from '../../components/support/chatIllustrations';
 import {
   formatConversationType,
@@ -386,11 +386,7 @@ export function UserSupportPage() {
                     />
                   ) : null}
                   {messagesQuery.data && messagesQuery.data.length > 0 ? (
-                    <Stack spacing={1.5}>
-                      {messagesQuery.data.map((message) => (
-                        <ChatMessageBubble key={message.id} message={message} />
-                      ))}
-                    </Stack>
+                    <ChatMessageList messages={messagesQuery.data} />
                   ) : null}
                 </Box>
 

@@ -46,6 +46,20 @@ export function formatDateTime(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString() : '-';
 }
 
+export function formatChatTime(value: string | null | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export function formatCurrency(amount: number | string | null | undefined, currency = 'INR') {
   if (amount === null || amount === undefined) {
     return '-';
