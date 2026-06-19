@@ -724,13 +724,13 @@ export function SecurityGatePage() {
     result?.action === 'CHECK_OUT' ? 'Confirm check-out' : 'Confirm check-in';
   const confirmDescription = result ? buildGateConfirmDescription(result) : '';
 
-  const useWideLayout = step === 'matches';
+  const useWideLayout = step === 'matches' || step === 'search';
 
   return (
     <Stack
       spacing={3}
       sx={{
-        maxWidth: useWideLayout ? 'none' : 720,
+        maxWidth: useWideLayout ? '100%' : 720,
         mx: useWideLayout ? 0 : 'auto',
         width: '100%',
       }}
@@ -748,18 +748,24 @@ export function SecurityGatePage() {
           sx={{
             border: '1px solid',
             borderColor: 'divider',
-            p: { xs: 2, sm: 2.5 },
+            p: { xs: 2, sm: 3, md: 4 },
+            width: '100%',
           }}
         >
           <Box
             sx={{
               alignItems: 'center',
               display: 'grid',
-              gap: 2,
-              gridTemplateColumns: { xs: '1fr', sm: 'minmax(160px, 220px) 1fr' },
+              gap: { xs: 2, sm: 3, md: 4 },
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'minmax(300px, 420px) 1fr',
+                md: 'minmax(360px, 480px) 1fr',
+                lg: 'minmax(400px, 520px) 1fr',
+              },
             }}
           >
-            <Box sx={{ maxWidth: { xs: 200, sm: 220 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
+            <Box sx={{ maxWidth: { xs: 360, sm: 420, md: 480, lg: 520 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
               <Illustration
                 alt="Security guard checking a vehicle at the parking gate"
                 maxWidth="100%"
