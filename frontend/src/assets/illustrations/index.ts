@@ -16,7 +16,7 @@ import payments from './payments.svg?url';
 import receipt from './receipt.svg?url';
 import secureLogin from './secure-login.svg?url';
 import securityAlert from './security-alert.svg?url';
-import securityCheck from './security-check.svg?url';
+import securityCheck from './security-check.jpg?url';
 import securityGateCheck from './security-gate-check.jpg?url';
 
 /** Free unDraw illustrations (MIT). Primary accent uses --primary-svg-color. */

@@ -11,7 +11,7 @@ const outDir = join(__dirname, '../src/assets/illustrations');
 
 /** @type {Array<{ file: string; slug: string; title: string }>} */
 const picks = [
-  { file: 'security-check.svg', slug: 'security-on_3ykb', title: 'Security check' },
+  // security-check: user-supplied Magnific JPG (security-check.jpg) — not fetched from unDraw
   { file: 'security-alert.svg', slug: 'motion-alert_pr1a', title: 'Security alert' },
   { file: 'gate-entrance.svg', slug: 'knocking-on-the-door_vgly', title: 'Gate entrance' },
   { file: 'chat-support.svg', slug: 'work-chat_kw8x', title: 'Work chat' },
