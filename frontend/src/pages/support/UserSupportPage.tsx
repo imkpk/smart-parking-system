@@ -34,10 +34,12 @@ import { getMyBookings } from '../../api/bookingsApi';
 import { getParkingLots } from '../../api/parkingLotsApi';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Illustration } from '../../components/common/Illustration';
 import { HeaderActionButton, PageHeader } from '../../components/common/PageHeader';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatusChip } from '../../components/common/StatusChip';
 import { ChatMessageBubble } from '../../components/support/ChatMessageBubble';
+import { getChatIllustration } from '../../components/support/chatIllustrations';
 import {
   formatConversationType,
   getConversationContextLabel,
@@ -252,7 +254,8 @@ export function UserSupportPage() {
             {!listQuery.isLoading && (listQuery.data?.length ?? 0) === 0 ? (
               <EmptyState
                 description="Start a security or customer-care chat to get help."
-                illustration="customerCare"
+                illustration={getChatIllustration(null, 'emptyInbox')}
+                illustrationMaxWidth={260}
                 title="No conversations yet"
               />
             ) : null}
@@ -323,13 +326,14 @@ export function UserSupportPage() {
             {!selectedConversation ? (
               <EmptyState
                 description="Choose a conversation from the list or start a new chat."
-                illustration="chatSupport"
+                illustration={getChatIllustration(null, 'selectThread')}
+                illustrationMaxWidth={280}
                 title="Select a conversation"
               />
             ) : (
               <>
                 <Stack spacing={1} sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 2 }}>
-                  <Stack alignItems="center" direction="row" spacing={1}>
+                  <Stack alignItems="center" direction="row" spacing={1.5}>
                     {isMobile ? (
                       <Button
                         onClick={() => setSelectedConversationId(null)}
@@ -339,7 +343,14 @@ export function UserSupportPage() {
                         Back
                       </Button>
                     ) : null}
-                    <Typography sx={{ flex: 1 }} variant="h6">
+                    <Box sx={{ display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+                      <Illustration
+                        alt=""
+                        maxWidth={80}
+                        name={getChatIllustration(selectedConversation.type, 'threadHeader')}
+                      />
+                    </Box>
+                    <Typography sx={{ flex: 1, minWidth: 0 }} variant="h6">
                       {formatConversationType(selectedConversation.type)}
                     </Typography>
                     <StatusChip status={selectedConversation.status} />
@@ -369,7 +380,8 @@ export function UserSupportPage() {
                   {messagesQuery.data && messagesQuery.data.length === 0 ? (
                     <EmptyState
                       description="Send a message to continue the conversation."
-                      illustration="messaging"
+                      illustration={getChatIllustration(selectedConversation.type, 'emptyMessages')}
+                      illustrationMaxWidth={260}
                       title="No messages yet"
                     />
                   ) : null}
@@ -433,6 +445,11 @@ export function UserSupportPage() {
           <DialogTitle>Message security</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
+              <Illustration
+                alt=""
+                maxWidth={180}
+                name={getChatIllustration('SECURITY', 'startSecurity')}
+              />
               <Typography color="text.secondary" variant="body2">
                 Message security before you arrive.
               </Typography>
@@ -526,6 +543,11 @@ export function UserSupportPage() {
           <DialogTitle>Customer care</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
+              <Illustration
+                alt=""
+                maxWidth={180}
+                name={getChatIllustration('CUSTOMER_CARE', 'startCustomerCare')}
+              />
               <Typography color="text.secondary" variant="body2">
                 Ask for help with booking, payment, check-in, or general support.
               </Typography>

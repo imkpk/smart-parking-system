@@ -21,10 +21,12 @@ import { ArrowBack } from '@mui/icons-material';
 import { FormEvent, useMemo, useState } from 'react';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Illustration } from '../../components/common/Illustration';
 import { PageHeader } from '../../components/common/PageHeader';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatusChip } from '../../components/common/StatusChip';
 import { ChatMessageBubble } from '../../components/support/ChatMessageBubble';
+import { getChatIllustration } from '../../components/support/chatIllustrations';
 import {
   formatConversationType,
   getConversationContextLabel,
@@ -205,6 +207,7 @@ function StaffSupportInbox({
               <EmptyState
                 description="Conversations from users will appear here."
                 illustration={emptyInboxIllustration}
+                illustrationMaxWidth={260}
                 title="No conversations"
               />
             ) : null}
@@ -276,12 +279,13 @@ function StaffSupportInbox({
               <EmptyState
                 description="Select a conversation from the inbox to reply."
                 illustration={selectThreadIllustration}
+                illustrationMaxWidth={280}
                 title="Select a conversation"
               />
             ) : (
               <>
                 <Stack spacing={1} sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 2 }}>
-                  <Stack alignItems="center" direction="row" spacing={1}>
+                  <Stack alignItems="center" direction="row" spacing={1.5}>
                     {isMobile ? (
                       <Button
                         onClick={() => setSelectedConversationId(null)}
@@ -291,6 +295,13 @@ function StaffSupportInbox({
                         Back
                       </Button>
                     ) : null}
+                    <Box sx={{ display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+                      <Illustration
+                        alt=""
+                        maxWidth={80}
+                        name={getChatIllustration(selectedConversation.type, 'threadHeader')}
+                      />
+                    </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="h6">{selectedConversation.createdBy.name}</Typography>
                       <Typography color="text.secondary" variant="body2">
@@ -349,6 +360,7 @@ function StaffSupportInbox({
                     <EmptyState
                       description="Reply to start helping the customer."
                       illustration={emptyThreadIllustration}
+                      illustrationMaxWidth={260}
                       title="No messages yet"
                     />
                   ) : null}

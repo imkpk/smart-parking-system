@@ -7,11 +7,13 @@ export function EmptyState({
   action,
   description,
   illustration,
+  illustrationMaxWidth = 220,
   title,
 }: {
   action?: ReactNode;
   description?: string;
   illustration?: IllustrationName;
+  illustrationMaxWidth?: number;
   title: string;
 }) {
   return (
@@ -26,7 +28,7 @@ export function EmptyState({
       }}
     >
       <Stack alignItems="center" maxWidth={420} spacing={1.5} textAlign="center">
-        {illustration ? <Illustration maxWidth={220} name={illustration} /> : null}
+        {illustration ? <Illustration maxWidth={illustrationMaxWidth} name={illustration} /> : null}
         <Typography variant="subtitle1">{title}</Typography>
         {description ? (
           <Typography color="text.secondary" variant="body2">
