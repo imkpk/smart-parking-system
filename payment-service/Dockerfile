@@ -13,7 +13,6 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-ENV SERVER_PORT=8081
 ENV JAVA_TOOL_OPTIONS="-Xmx384m"
 
 COPY --from=build /app/target/*.jar app.jar
