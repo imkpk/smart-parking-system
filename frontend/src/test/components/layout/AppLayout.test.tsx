@@ -122,6 +122,7 @@ describe('AppLayout', () => {
 
     renderAppLayout('/admin/dashboard');
 
+    expect(screen.getByRole('link', { name: /support inbox/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^branding$/i })).toBeInTheDocument();
   });
 
