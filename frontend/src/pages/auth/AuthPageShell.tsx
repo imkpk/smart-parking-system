@@ -71,7 +71,11 @@ export function AuthPageShell({
             >
               {brand.loginHero}
             </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75 }} variant="body2">
+            <Typography
+              color="text.secondary"
+              sx={{ fontWeight: 700, mt: 0.75 }}
+              variant="body2"
+            >
               {branding.name}
             </Typography>
           </Box>
