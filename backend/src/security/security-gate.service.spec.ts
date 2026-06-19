@@ -8,7 +8,7 @@ import { SecurityGateService } from './security-gate.service';
 describe('SecurityGateService', () => {
   let service: SecurityGateService;
   let prisma: {
-    parkingEvent: { findFirst: jest.Mock };
+    parkingEvent: { findFirst: jest.Mock; count: jest.Mock };
     booking: { findFirst: jest.Mock };
   };
 
@@ -88,7 +88,10 @@ describe('SecurityGateService', () => {
 
   beforeEach(() => {
     prisma = {
-      parkingEvent: { findFirst: jest.fn().mockResolvedValue(null) },
+      parkingEvent: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        count: jest.fn().mockResolvedValue(0),
+      },
       booking: { findFirst: jest.fn() },
     };
 
@@ -116,23 +119,25 @@ describe('SecurityGateService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,
-          status: BookingStatus.CONFIRMED,
-          parkingEvents: { none: {} },
+          OR: expect.arrayContaining([{ bookingCode: org1.booking.bookingCode }]),
         }),
       }),
     );
+    expect(prisma.parkingEvent.count).toHaveBeenCalled();
   });
 
   it('returns check-out action for an active parking event', async () => {
+    prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
 
-    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+    const result = await service.search(org1.booking.bookingCode, securityUser);
 
     expect(result?.action).toBe('CHECK_OUT');
     expect(result?.parkingEvent?.id).toBe(activeEvent.id);
     expect(prisma.parkingEvent.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
+          bookingId: org1.booking.id,
           status: ParkingEventStatus.ACTIVE,
           checkOutTime: null,
         }),
@@ -140,13 +145,44 @@ describe('SecurityGateService', () => {
     );
   });
 
+  it('returns check-out for a vehicle with a current active session', async () => {
+    prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce(activeEvent)
+      .mockResolvedValueOnce(null);
+
+    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+
+    expect(result?.action).toBe('CHECK_OUT');
+    expect(result?.parkingEvent?.id).toBe(activeEvent.id);
+    expect(prisma.parkingEvent.findFirst).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+          vehicle: { vehicleNumber: org1.vehicle.vehicleNumber },
+        }),
+      }),
+    );
+  });
+
   it('does not return CHECK_OUT after checkout is completed', async () => {
+    const staleActiveEvent = {
+      ...activeEvent,
+      id: 302,
+      checkInTime: new Date('2026-06-19T08:00:00.000Z'),
+    };
+
     prisma.booking.findFirst
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         ...confirmedBooking,
         status: BookingStatus.COMPLETED,
       });
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce(staleActiveEvent)
+      .mockResolvedValueOnce({ id: 301, checkOutTime: new Date('2026-06-19T10:00:00.000Z') });
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
@@ -168,6 +204,15 @@ describe('SecurityGateService', () => {
         ...confirmedBooking,
         status: BookingStatus.COMPLETED,
       });
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce({
+        ...activeEvent,
+        checkInTime: new Date('2026-06-19T08:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 301,
+        checkOutTime: new Date('2026-06-19T09:30:00.000Z'),
+      });
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
@@ -180,15 +225,7 @@ describe('SecurityGateService', () => {
 
     await service.search(org2.booking.bookingCode, securityUser);
 
-    expect(prisma.parkingEvent.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          organizationId: org1.organizationId,
-        }),
-      }),
-    );
-    expect(prisma.booking.findFirst).toHaveBeenNthCalledWith(
-      1,
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,

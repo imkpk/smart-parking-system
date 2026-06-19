@@ -29,79 +29,109 @@ export class SecurityGateService {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
     const bookingIdFromLabel = this.parseBookingNo(normalizedQuery);
     const searchTerm = normalizedQuery.toUpperCase();
-    const activeEvent = await this.prisma.parkingEvent.findFirst({
-      where: {
-        organizationId,
-        status: ParkingEventStatus.ACTIVE,
-        checkOutTime: null,
-        OR: this.buildParkingEventSearchFilters(
-          searchTerm,
-          bookingIdFromLabel,
-        ),
-      },
-      orderBy: { checkInTime: 'desc' },
-      include: parkingEventListInclude,
-    });
 
-    if (activeEvent) {
-      const presentedEvent = presentParkingEvent(activeEvent);
-
-      return {
-        action: 'CHECK_OUT',
-        actionDisabledReason: null,
-        booking: {
-          id: presentedEvent.bookingId,
-          bookingCode: presentedEvent.bookingCode,
-          status: BookingStatus.CONFIRMED,
-          customerName: presentedEvent.customerName,
-          vehicleNumber: presentedEvent.vehicleNumber,
-          parkingLotName: presentedEvent.parkingLotName,
-          floorName: presentedEvent.floorName,
-          slotNumber: presentedEvent.slotNumber,
-        },
-        parkingEvent: {
-          id: presentedEvent.id,
-          status: presentedEvent.status,
-          checkInTime: presentedEvent.checkInTime.toISOString(),
-        },
-      };
+    if (this.isBookingReferenceSearch(searchTerm, bookingIdFromLabel)) {
+      return this.resolveBookingGateAction(organizationId, searchTerm, bookingIdFromLabel);
     }
 
-    const checkInBooking = await this.prisma.booking.findFirst({
+    return this.resolveVehicleGateAction(organizationId, searchTerm);
+  }
+
+  private async resolveBookingGateAction(
+    organizationId: number,
+    searchTerm: string,
+    bookingIdFromLabel: number | null,
+  ): Promise<SecurityGateSearchResult | null> {
+    const booking = await this.prisma.booking.findFirst({
       where: {
         organizationId,
-        status: BookingStatus.CONFIRMED,
-        parkingEvents: { none: {} },
         OR: this.buildBookingSearchFilters(searchTerm, bookingIdFromLabel),
       },
       orderBy: { id: 'desc' },
       include: bookingListInclude,
     });
 
-    if (checkInBooking) {
-      const presentedBooking = presentBooking(checkInBooking);
+    if (!booking) {
+      return null;
+    }
 
-      return {
-        action: 'CHECK_IN',
-        actionDisabledReason: null,
-        booking: {
-          id: presentedBooking.id,
-          bookingCode: presentedBooking.bookingCode,
-          status: presentedBooking.status,
-          customerName: presentedBooking.customerName,
-          vehicleNumber: presentedBooking.vehicleNumber,
-          parkingLotName: presentedBooking.parkingLotName,
-          floorName: presentedBooking.floorName,
-          slotNumber: presentedBooking.slotNumber,
+    const activeEvent = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId,
+        bookingId: booking.id,
+        status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
+      },
+      include: parkingEventListInclude,
+    });
+
+    if (activeEvent) {
+      return this.buildCheckOutResult(activeEvent);
+    }
+
+    if (booking.status === BookingStatus.CONFIRMED) {
+      const eventCount = await this.prisma.parkingEvent.count({
+        where: { organizationId, bookingId: booking.id },
+      });
+
+      if (eventCount === 0) {
+        return this.buildCheckInResult(booking);
+      }
+    }
+
+    return this.buildNoneResult(booking);
+  }
+
+  private async resolveVehicleGateAction(
+    organizationId: number,
+    vehicleNumber: string,
+  ): Promise<SecurityGateSearchResult | null> {
+    const checkInBooking = await this.prisma.booking.findFirst({
+      where: {
+        organizationId,
+        status: BookingStatus.CONFIRMED,
+        parkingEvents: { none: {} },
+        vehicle: { vehicleNumber },
+      },
+      orderBy: { id: 'desc' },
+      include: bookingListInclude,
+    });
+
+    const primaryActive = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId,
+        status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
+        vehicle: { vehicleNumber },
+      },
+      orderBy: { checkInTime: 'desc' },
+      include: parkingEventListInclude,
+    });
+
+    if (primaryActive) {
+      const checkoutAfterCheckIn = await this.prisma.parkingEvent.findFirst({
+        where: {
+          organizationId,
+          vehicle: { vehicleNumber },
+          status: ParkingEventStatus.COMPLETED,
+          checkOutTime: { gt: primaryActive.checkInTime },
         },
-        parkingEvent: null,
-      };
+        orderBy: { checkOutTime: 'desc' },
+      });
+
+      if (!checkoutAfterCheckIn) {
+        return this.buildCheckOutResult(primaryActive);
+      }
+    }
+
+    if (checkInBooking) {
+      return this.buildCheckInResult(checkInBooking);
     }
 
     const latestBooking = await this.prisma.booking.findFirst({
       where: {
         organizationId,
-        OR: this.buildBookingSearchFilters(searchTerm, bookingIdFromLabel),
+        vehicle: { vehicleNumber },
       },
       orderBy: { id: 'desc' },
       include: bookingListInclude,
@@ -111,11 +141,43 @@ export class SecurityGateService {
       return null;
     }
 
-    const presentedBooking = presentBooking(latestBooking);
+    return this.buildNoneResult(latestBooking);
+  }
+
+  private buildCheckOutResult(
+    activeEvent: Parameters<typeof presentParkingEvent>[0],
+  ): SecurityGateSearchResult {
+    const presentedEvent = presentParkingEvent(activeEvent);
 
     return {
-      action: 'NONE',
-      actionDisabledReason: this.getDisabledReason(latestBooking.status),
+      action: 'CHECK_OUT',
+      actionDisabledReason: null,
+      booking: {
+        id: presentedEvent.bookingId,
+        bookingCode: presentedEvent.bookingCode,
+        status: BookingStatus.CONFIRMED,
+        customerName: presentedEvent.customerName,
+        vehicleNumber: presentedEvent.vehicleNumber,
+        parkingLotName: presentedEvent.parkingLotName,
+        floorName: presentedEvent.floorName,
+        slotNumber: presentedEvent.slotNumber,
+      },
+      parkingEvent: {
+        id: presentedEvent.id,
+        status: presentedEvent.status,
+        checkInTime: presentedEvent.checkInTime.toISOString(),
+      },
+    };
+  }
+
+  private buildCheckInResult(
+    booking: Parameters<typeof presentBooking>[0],
+  ): SecurityGateSearchResult {
+    const presentedBooking = presentBooking(booking);
+
+    return {
+      action: 'CHECK_IN',
+      actionDisabledReason: null,
       booking: {
         id: presentedBooking.id,
         bookingCode: presentedBooking.bookingCode,
@@ -130,6 +192,32 @@ export class SecurityGateService {
     };
   }
 
+  private buildNoneResult(
+    booking: Parameters<typeof presentBooking>[0],
+  ): SecurityGateSearchResult {
+    const presentedBooking = presentBooking(booking);
+
+    return {
+      action: 'NONE',
+      actionDisabledReason: this.getDisabledReason(booking.status),
+      booking: {
+        id: presentedBooking.id,
+        bookingCode: presentedBooking.bookingCode,
+        status: presentedBooking.status,
+        customerName: presentedBooking.customerName,
+        vehicleNumber: presentedBooking.vehicleNumber,
+        parkingLotName: presentedBooking.parkingLotName,
+        floorName: presentedBooking.floorName,
+        slotNumber: presentedBooking.slotNumber,
+      },
+      parkingEvent: null,
+    };
+  }
+
+  private isBookingReferenceSearch(searchTerm: string, bookingIdFromLabel: number | null) {
+    return bookingIdFromLabel !== null || searchTerm.startsWith('BK-');
+  }
+
   private buildBookingSearchFilters(searchTerm: string, bookingIdFromLabel: number | null) {
     return [
       { bookingCode: searchTerm },
@@ -139,25 +227,6 @@ export class SecurityGateService {
         },
       },
       ...(bookingIdFromLabel ? [{ id: bookingIdFromLabel }] : []),
-    ];
-  }
-
-  private buildParkingEventSearchFilters(
-    searchTerm: string,
-    bookingIdFromLabel: number | null,
-  ) {
-    return [
-      {
-        booking: {
-          bookingCode: searchTerm,
-        },
-      },
-      {
-        vehicle: {
-          vehicleNumber: searchTerm,
-        },
-      },
-      ...(bookingIdFromLabel ? [{ bookingId: bookingIdFromLabel }] : []),
     ];
   }
 
