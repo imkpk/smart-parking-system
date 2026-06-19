@@ -28,7 +28,7 @@ export function ConfirmDialog({
     <Dialog fullWidth maxWidth="xs" onClose={onClose} open={open}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>{description}</DialogContentText>
+        <DialogContentText sx={{ whiteSpace: 'pre-line' }}>{description}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button disabled={isLoading} onClick={onClose} variant="outlined">

@@ -24,7 +24,7 @@ export class ParkingEventsController {
   constructor(private readonly parkingEventsService: ParkingEventsService) {}
 
   @Post('check-in')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.ADMIN, Role.TENANT_ADMIN, Role.SECURITY)
   checkIn(
     @Body() checkInDto: CheckInDto,
     @CurrentUser() currentUser: SafeUser,
@@ -33,7 +33,7 @@ export class ParkingEventsController {
   }
 
   @Post('check-out')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.ADMIN, Role.TENANT_ADMIN, Role.SECURITY)
   checkOut(
     @Body() checkOutDto: CheckOutDto,
     @CurrentUser() currentUser: SafeUser,
@@ -47,7 +47,7 @@ export class ParkingEventsController {
   }
 
   @Get('active')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.ADMIN, Role.TENANT_ADMIN, Role.SECURITY)
   findActive(@CurrentUser() currentUser: SafeUser) {
     return this.parkingEventsService.findActive(currentUser);
   }
