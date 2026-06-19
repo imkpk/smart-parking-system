@@ -7,6 +7,8 @@ import {
 import {
   BookingStatus,
   ParkingEventStatus,
+  Prisma,
+  SlotStatus,
 } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
@@ -60,8 +62,21 @@ export class ParkingEventsService {
           throw new NotFoundException('Booking not found');
         }
 
-        if (booking.status !== BookingStatus.CONFIRMED) {
+        const existingEvent = await tx.parkingEvent.findUnique({
+          where: { bookingId: booking.id },
+        });
+        const isReturnVisit = existingEvent?.status === ParkingEventStatus.COMPLETED;
+
+        if (!isReturnVisit && booking.status !== BookingStatus.CONFIRMED) {
           throw new BadRequestException('Only CONFIRMED bookings can be checked in');
+        }
+
+        if (
+          isReturnVisit &&
+          booking.status !== BookingStatus.CONFIRMED &&
+          booking.status !== BookingStatus.COMPLETED
+        ) {
+          throw new BadRequestException('This booking cannot be checked in again');
         }
 
         const activeEvent = await tx.parkingEvent.findFirst({
@@ -75,9 +90,37 @@ export class ParkingEventsService {
           throw new ConflictException('Booking is already checked in');
         }
 
-        const existingEvent = await tx.parkingEvent.findUnique({
-          where: { bookingId: booking.id },
-        });
+        if (isReturnVisit && existingEvent) {
+          await this.ensureSlotReadyForReturnCheckIn(
+            booking.slotId,
+            booking.organizationId,
+            tx,
+          );
+
+          if (booking.status === BookingStatus.COMPLETED) {
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: {
+                status: BookingStatus.CONFIRMED,
+                endTime: null,
+              },
+            });
+          }
+
+          const reactivatedEvent = await tx.parkingEvent.update({
+            where: { id: existingEvent.id },
+            data: {
+              status: ParkingEventStatus.ACTIVE,
+              checkInTime: new Date(),
+              checkOutTime: null,
+              durationMinutes: null,
+              feeAmount: null,
+            },
+            include: parkingEventListInclude,
+          });
+
+          return presentParkingEvent(reactivatedEvent);
+        }
 
         if (existingEvent) {
           throw new ConflictException('Parking event already exists for this booking');
@@ -119,49 +162,70 @@ export class ParkingEventsService {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
 
     const parkingEvent = await this.prisma.$transaction(async (tx) => {
-      const parkingEvent = await tx.parkingEvent.findFirst({
+      const existingEvent = await tx.parkingEvent.findFirst({
         where: {
           id: checkOutDto.parkingEventId,
           organizationId,
         },
       });
 
-      if (!parkingEvent) {
+      if (!existingEvent) {
         throw new NotFoundException('Parking event not found');
       }
 
-      if (parkingEvent.status !== ParkingEventStatus.ACTIVE) {
-        throw new BadRequestException('Only ACTIVE parking events can be checked out');
+      if (
+        existingEvent.status !== ParkingEventStatus.ACTIVE ||
+        existingEvent.checkOutTime !== null
+      ) {
+        throw new ConflictException('This session is already checked out.');
       }
 
       const checkOutTime = new Date();
       const durationMinutes = Math.max(
         0,
         Math.ceil(
-          (checkOutTime.getTime() - parkingEvent.checkInTime.getTime()) / 60000,
+          (checkOutTime.getTime() - existingEvent.checkInTime.getTime()) / 60000,
         ),
       );
       const feeAmount = this.calculateFee(durationMinutes);
 
-      const completedEvent = await tx.parkingEvent.update({
-        where: { id: parkingEvent.id },
+      const updateResult = await tx.parkingEvent.updateMany({
+        where: {
+          id: existingEvent.id,
+          organizationId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
         data: {
           status: ParkingEventStatus.COMPLETED,
           checkOutTime,
           durationMinutes,
           feeAmount,
         },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('This session is already checked out.');
+      }
+
+      const completedEvent = await tx.parkingEvent.findFirst({
+        where: { id: existingEvent.id },
         include: parkingEventListInclude,
       });
 
+      if (!completedEvent) {
+        throw new NotFoundException('Parking event not found');
+      }
+
       await tx.booking.update({
-        where: { id: parkingEvent.bookingId },
+        where: { id: existingEvent.bookingId },
         data: {
-          status: BookingStatus.COMPLETED,
+          status: BookingStatus.CONFIRMED,
+          endTime: null,
         },
       });
 
-      await this.slotLifecycleService.releaseOccupiedSlot(parkingEvent.slotId, tx);
+      await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
 
       return completedEvent;
     });
@@ -246,6 +310,42 @@ export class ParkingEventsService {
     );
 
     return presentParkingEvent(parkingEvent);
+  }
+
+  private async ensureSlotReadyForReturnCheckIn(
+    slotId: number,
+    organizationId: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+    });
+
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    if (slot.status === SlotStatus.AVAILABLE) {
+      await this.slotLifecycleService.occupyAvailableSlot(slotId, tx);
+      return;
+    }
+
+    if (slot.status === SlotStatus.OCCUPIED) {
+      const activeEventOnSlot = await tx.parkingEvent.findFirst({
+        where: {
+          organizationId,
+          slotId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
+      });
+
+      if (!activeEventOnSlot) {
+        return;
+      }
+    }
+
+    throw new ConflictException('Slot is not available');
   }
 
   private calculateFee(durationMinutes: number) {

@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.11.2
+**Version:** 1.12.0
 **Last updated:** 2026-06-19  
-**Current branch:** `fix/parking-lot-workspace-ux-regressions`
+**Current branch:** `feature/phase-5a-mobile-security-gate`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,9 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 4E UX regression fix (fix/parking-lot-workspace-ux-regressions).
-Phase 4 core complete (PRs #86–#89). Phase 4E polish merged (PR #92). Await human approval before Phase 5 mobile security gate.
+Phase 5 — Mobile Security Gate + In-App Chat MVP (PR stack 5A–5D).
+PR 5A in progress: mobile security gate (/security/gate) on feature/phase-5a-mobile-security-gate.
+Phase 4E complete (PRs #92–#95). Chat MVP (5B–5C) starts after 5A merges.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -385,12 +386,13 @@ Execute in this order unless the human redirects:
 
 Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/parking-lot-workspace-ux-regressions.md`
 
-### Phase 5 — Mobile security gate
+### Phase 5 — Mobile security gate + chat MVP
 
 ```text
-[ ] /security/gate route — large touch targets
-[ ] Search booking code / vehicle number
-[ ] One-handed check-in/out on 375px screen
+[ ] 5A: /security/gate mobile check-in/out — in progress
+[ ] 5B: tenant-scoped chat backend API
+[ ] 5C: user/security/admin chat frontend (polling)
+[ ] 5D: Phase 5 smoke cleanup
 ```
 
 ### Phase 6 — Subscription & billing
@@ -677,6 +679,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.11.0 | Grok | Phase 4 complete: visual slot map acceptance — backend/frontend acceptance tests, Cypress J15 smoke, tenant isolation and role-safe occupancy verified. Report: `.grok/reports/phase-4-visual-slot-map-acceptance.md`. PR #89 ✅. |
 | 2026-06-19 | 1.11.1 | Grok | Phase 4E: parking lot management workspace UX — Manage button, shared shell/tabs, visual map CTA, SECURITY read-only tables, compact grid columns. Report: `.grok/reports/phase-4e-parking-lot-management-ux.md`. |
 | 2026-06-19 | 1.11.2 | Grok | Phase 4E regression fix: workspace header horizontal layout, deduplicated visual map CTA (header + tab only), removed aggressive parking lots row click. Report: `.grok/reports/parking-lot-workspace-ux-regressions.md`. |
+| 2026-06-19 | 1.12.0 | Grok | Phase 5A started: mobile security gate — tenant-scoped gate search API, `/security/gate` UI, nav for SECURITY/ADMIN/TENANT_ADMIN. |
 
 ---
 

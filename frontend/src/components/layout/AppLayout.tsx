@@ -23,6 +23,7 @@ import {
   Dashboard,
   DirectionsCar,
   LocalParking,
+  Login,
   Logout,
   Menu,
   MenuOpen,
@@ -66,6 +67,12 @@ const navItems: NavItem[] = [
     to: '/security/dashboard',
     icon: Security,
     roles: ['SECURITY'],
+  },
+  {
+    label: 'Security Gate',
+    to: '/security/gate',
+    icon: Login,
+    roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY'],
   },
   {
     label: 'User Dashboard',

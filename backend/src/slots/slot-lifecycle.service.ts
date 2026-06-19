@@ -95,6 +95,23 @@ export class SlotLifecycleService {
     }
   }
 
+  async occupyAvailableSlot(slotId: number, tx?: Prisma.TransactionClient) {
+    const client = this.getClient(tx);
+    const updatedSlots = await client.slot.updateMany({
+      where: {
+        id: slotId,
+        status: SlotStatus.AVAILABLE,
+      },
+      data: {
+        status: SlotStatus.OCCUPIED,
+      },
+    });
+
+    if (updatedSlots.count !== 1) {
+      throw new ConflictException('Slot is not available');
+    }
+  }
+
   async validateSlotOccupied(slotId: number, tx?: Prisma.TransactionClient) {
     const client = this.getClient(tx);
     const slot = await client.slot.findUnique({
