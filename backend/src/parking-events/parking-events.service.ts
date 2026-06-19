@@ -119,49 +119,69 @@ export class ParkingEventsService {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
 
     const parkingEvent = await this.prisma.$transaction(async (tx) => {
-      const parkingEvent = await tx.parkingEvent.findFirst({
+      const existingEvent = await tx.parkingEvent.findFirst({
         where: {
           id: checkOutDto.parkingEventId,
           organizationId,
         },
       });
 
-      if (!parkingEvent) {
+      if (!existingEvent) {
         throw new NotFoundException('Parking event not found');
       }
 
-      if (parkingEvent.status !== ParkingEventStatus.ACTIVE) {
-        throw new BadRequestException('Only ACTIVE parking events can be checked out');
+      if (
+        existingEvent.status !== ParkingEventStatus.ACTIVE ||
+        existingEvent.checkOutTime !== null
+      ) {
+        throw new ConflictException('This session is already checked out.');
       }
 
       const checkOutTime = new Date();
       const durationMinutes = Math.max(
         0,
         Math.ceil(
-          (checkOutTime.getTime() - parkingEvent.checkInTime.getTime()) / 60000,
+          (checkOutTime.getTime() - existingEvent.checkInTime.getTime()) / 60000,
         ),
       );
       const feeAmount = this.calculateFee(durationMinutes);
 
-      const completedEvent = await tx.parkingEvent.update({
-        where: { id: parkingEvent.id },
+      const updateResult = await tx.parkingEvent.updateMany({
+        where: {
+          id: existingEvent.id,
+          organizationId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
         data: {
           status: ParkingEventStatus.COMPLETED,
           checkOutTime,
           durationMinutes,
           feeAmount,
         },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('This session is already checked out.');
+      }
+
+      const completedEvent = await tx.parkingEvent.findFirst({
+        where: { id: existingEvent.id },
         include: parkingEventListInclude,
       });
 
+      if (!completedEvent) {
+        throw new NotFoundException('Parking event not found');
+      }
+
       await tx.booking.update({
-        where: { id: parkingEvent.bookingId },
+        where: { id: existingEvent.bookingId },
         data: {
           status: BookingStatus.COMPLETED,
         },
       });
 
-      await this.slotLifecycleService.releaseOccupiedSlot(parkingEvent.slotId, tx);
+      await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
 
       return completedEvent;
     });

@@ -128,6 +128,27 @@ describe('SecurityGateService', () => {
 
     expect(result?.action).toBe('CHECK_OUT');
     expect(result?.parkingEvent?.id).toBe(activeEvent.id);
+    expect(prisma.parkingEvent.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        }),
+      }),
+    );
+  });
+
+  it('does not return CHECK_OUT after checkout is completed', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      ...confirmedBooking,
+      status: BookingStatus.COMPLETED,
+    });
+
+    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+
+    expect(result?.action).toBe('NONE');
+    expect(result?.actionDisabledReason).toBe('Already checked out.');
+    expect(result?.parkingEvent).toBeNull();
   });
 
   it('scopes search to the current user organization', async () => {

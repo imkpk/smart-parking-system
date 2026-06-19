@@ -21,6 +21,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { buildGateConfirmDescription } from '../../lib/gateConfirmText';
 import { formatBookingNo, formatDateTime, formatSessionNo } from '../../lib/formatters';
 import { SecurityGateSearchResult } from '../../types/securityGate';
 
@@ -160,13 +161,19 @@ export function SecurityGatePage() {
     onSuccess: async () => {
       await invalidateOperationalQueries();
       setConfirmOpen(false);
+      setResult(null);
       setSuccessMessage('Vehicle checked out successfully.');
       setStep('success');
       showSuccess('Checked out.');
     },
     onError: (error) => {
       setConfirmOpen(false);
-      showError(getApiErrorMessage(error));
+      const message = getApiErrorMessage(error);
+      showError(message);
+      if (message.toLowerCase().includes('already checked out')) {
+        setResult(null);
+        setStep('search');
+      }
     },
   });
 
@@ -211,9 +218,7 @@ export function SecurityGatePage() {
 
   const confirmTitle =
     result?.action === 'CHECK_OUT' ? 'Confirm check-out' : 'Confirm check-in';
-  const confirmDescription = result
-    ? `${confirmTitle} for ${result.booking.vehicleNumber} at ${result.booking.parkingLotName}, slot ${result.booking.slotNumber}?`
-    : '';
+  const confirmDescription = result ? buildGateConfirmDescription(result) : '';
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 720, mx: 'auto', width: '100%' }}>

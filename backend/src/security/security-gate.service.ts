@@ -33,6 +33,7 @@ export class SecurityGateService {
       where: {
         organizationId,
         status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
         OR: this.buildParkingEventSearchFilters(
           searchTerm,
           bookingIdFromLabel,
@@ -174,7 +175,7 @@ export class SecurityGateService {
       case BookingStatus.CANCELLED:
         return 'This booking was cancelled.';
       case BookingStatus.COMPLETED:
-        return 'This booking is already completed.';
+        return 'Already checked out.';
       case BookingStatus.EXPIRED:
         return 'This booking has expired.';
       case BookingStatus.PENDING:
