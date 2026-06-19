@@ -1,4 +1,5 @@
 import { OrganizationPlan, PrismaClient } from '@prisma/client';
+import { syncPostgresSequences } from './sync-postgres-sequences';
 
 const prisma = new PrismaClient();
 
@@ -19,6 +20,8 @@ async function main() {
       isActive: true,
     },
   });
+
+  await syncPostgresSequences(prisma);
 }
 
 main()

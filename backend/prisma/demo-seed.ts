@@ -10,6 +10,7 @@ import {
   VehicleType,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { syncPostgresSequences } from './sync-postgres-sequences';
 
 const prisma = new PrismaClient();
 
@@ -521,6 +522,7 @@ async function main() {
   }
 
   await seedDemoParkingStructure(organization.id, adminUser.id);
+  await syncPostgresSequences(prisma);
   printDemoCredentials();
 }
 
