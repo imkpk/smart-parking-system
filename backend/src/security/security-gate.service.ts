@@ -20,20 +20,21 @@ export class SecurityGateService {
   ) {}
 
   async search(query: string, currentUser: SafeUser): Promise<SecurityGateSearchResult | null> {
-    const normalizedQuery = query.trim();
+    const trimmedQuery = query.trim();
 
-    if (!normalizedQuery) {
+    if (!trimmedQuery) {
       throw new BadRequestException('Search query is required');
     }
 
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
-    const bookingIdFromLabel = this.parseBookingNo(normalizedQuery);
+    const bookingIdFromLabel = this.parseBookingNo(trimmedQuery);
+    const searchTerm = trimmedQuery.toUpperCase();
     const activeEvent = await this.prisma.parkingEvent.findFirst({
       where: {
         organizationId,
         status: ParkingEventStatus.ACTIVE,
         OR: this.buildParkingEventSearchFilters(
-          normalizedQuery,
+          searchTerm,
           bookingIdFromLabel,
         ),
       },
@@ -68,7 +69,7 @@ export class SecurityGateService {
     const booking = await this.prisma.booking.findFirst({
       where: {
         organizationId,
-        OR: this.buildBookingSearchFilters(normalizedQuery, bookingIdFromLabel),
+        OR: this.buildBookingSearchFilters(searchTerm, bookingIdFromLabel),
       },
       orderBy: { id: 'desc' },
       include: bookingListInclude,
@@ -115,23 +116,12 @@ export class SecurityGateService {
     };
   }
 
-  private buildBookingSearchFilters(
-    normalizedQuery: string,
-    bookingIdFromLabel: number | null,
-  ) {
+  private buildBookingSearchFilters(searchTerm: string, bookingIdFromLabel: number | null) {
     return [
-      {
-        bookingCode: {
-          equals: normalizedQuery,
-          mode: 'insensitive' as const,
-        },
-      },
+      { bookingCode: searchTerm },
       {
         vehicle: {
-          vehicleNumber: {
-            equals: normalizedQuery,
-            mode: 'insensitive' as const,
-          },
+          vehicleNumber: searchTerm,
         },
       },
       ...(bookingIdFromLabel ? [{ id: bookingIdFromLabel }] : []),
@@ -139,24 +129,18 @@ export class SecurityGateService {
   }
 
   private buildParkingEventSearchFilters(
-    normalizedQuery: string,
+    searchTerm: string,
     bookingIdFromLabel: number | null,
   ) {
     return [
       {
         booking: {
-          bookingCode: {
-            equals: normalizedQuery,
-            mode: 'insensitive' as const,
-          },
+          bookingCode: searchTerm,
         },
       },
       {
         vehicle: {
-          vehicleNumber: {
-            equals: normalizedQuery,
-            mode: 'insensitive' as const,
-          },
+          vehicleNumber: searchTerm,
         },
       },
       ...(bookingIdFromLabel ? [{ bookingId: bookingIdFromLabel }] : []),
