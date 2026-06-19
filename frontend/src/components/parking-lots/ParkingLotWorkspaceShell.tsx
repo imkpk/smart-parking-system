@@ -2,10 +2,7 @@ import { Box, Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { ViewModule } from '@mui/icons-material';
 import { ReactNode } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import {
-  ActionButtonGroup,
-  HeaderActionButton,
-} from '../common/PageHeader';
+import { HeaderActionButton } from '../common/PageHeader';
 import {
   formatParkingLotLocation,
   getParkingLotSettingsPath,
@@ -47,11 +44,14 @@ export function ParkingLotWorkspaceShell({
   return (
     <Stack spacing={2.5}>
       <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: { xs: 2, sm: 2.5 } }}>
-        <Stack
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          spacing={2}
+        <Box
+          sx={{
+            alignItems: 'flex-start',
+            display: 'flex',
+            flexWrap: { xs: 'wrap', md: 'nowrap' },
+            gap: 2,
+            justifyContent: 'space-between',
+          }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Stack alignItems="center" direction="row" flexWrap="wrap" gap={1}>
@@ -64,36 +64,51 @@ export function ParkingLotWorkspaceShell({
                 size="small"
               />
             </Stack>
-            <Stack
-              alignItems="center"
-              direction="row"
-              flexWrap="wrap"
-              gap={0.75}
-              sx={{ mt: 0.5 }}
+            <Chip
+              label={parkingLot.type}
+              size="small"
+              sx={{ mt: 0.75 }}
+              variant="outlined"
+            />
+            <Typography
+              color="text.secondary"
+              sx={{ lineHeight: 1.45, mt: 0.75, wordBreak: 'normal' }}
+              variant="body2"
             >
-              <Chip label={parkingLot.type} size="small" variant="outlined" />
-              <Typography color="text.secondary" sx={{ minWidth: 0 }} variant="body2">
-                {locationSummary}
-              </Typography>
-            </Stack>
+              {locationSummary}
+            </Typography>
           </Box>
 
-          <ActionButtonGroup sx={{ flexShrink: 0 }}>
+          <Box
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              flexShrink: 0,
+              gap: 1,
+            }}
+          >
             {activeTab !== 'visual-map' ? (
               <HeaderActionButton
                 component={RouterLink}
                 startIcon={<ViewModule />}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
                 to={visualMapPath}
                 variant="contained"
               >
                 Open visual map
               </HeaderActionButton>
             ) : null}
-            <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
+            <HeaderActionButton
+              component={RouterLink}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+              to="/parking-lots"
+              variant="outlined"
+            >
               Back
             </HeaderActionButton>
-          </ActionButtonGroup>
-        </Stack>
+          </Box>
+        </Box>
 
         <Tabs
           onChange={handleTabChange}
