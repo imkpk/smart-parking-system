@@ -47,8 +47,8 @@ import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { brand } from '../../theme/tokens';
 import { Role } from '../../types/auth';
 
-const drawerWidth = 252;
-const collapsedDrawerWidth = 80;
+const drawerWidth = 230;
+const collapsedDrawerWidth = 85;
 
 interface NavItem {
   label: string;
@@ -223,24 +223,24 @@ export function AppLayout() {
           <Stack
             alignItems="center"
             direction="row"
-            spacing={1}
+            spacing={0.75}
             sx={{ minWidth: 0, width: '100%' }}
           >
-            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden', pr: 1 }}>
-              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
-            </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
                 <IconButton
                   aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
                   onClick={toggleSidebar}
                   size="small"
-                  sx={{ flexShrink: 0, ml: 'auto' }}
+                  sx={{ flexShrink: 0 }}
                 >
                   {isSidebarOpen ? <MenuOpen /> : <Menu />}
                 </IconButton>
               </Tooltip>
             ) : null}
+            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
+              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
+            </Box>
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
