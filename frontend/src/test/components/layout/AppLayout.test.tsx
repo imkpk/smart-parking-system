@@ -159,6 +159,7 @@ describe('AppLayout', () => {
     renderAppLayout('/user/dashboard');
 
     expect(screen.getByRole('link', { name: /user dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^support$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^vehicles$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /bookings/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /admin dashboard/i })).not.toBeInTheDocument();

@@ -32,6 +32,7 @@ import {
   SensorOccupied,
   SvgIconComponent,
 } from '@mui/icons-material';
+import ContactSupportIcon from '@mui/icons-material/ContactSupport';
 import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSidebarAutoCollapse } from '../../hooks/useSidebarAutoCollapse';
@@ -78,6 +79,12 @@ const navItems: NavItem[] = [
     label: 'User Dashboard',
     to: '/user/dashboard',
     icon: Dashboard,
+    roles: ['USER'],
+  },
+  {
+    label: 'Support',
+    to: '/support',
+    icon: ContactSupportIcon,
     roles: ['USER'],
   },
   {

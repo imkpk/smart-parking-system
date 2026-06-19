@@ -17,6 +17,7 @@ import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
 import { PaymentsPage } from './pages/payments/PaymentsPage';
 import { BrandingSettingsPage } from './pages/settings/BrandingSettingsPage';
 import { SecurityGatePage } from './pages/security/SecurityGatePage';
+import { UserSupportPage } from './pages/support/UserSupportPage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
 export const router = createBrowserRouter([
@@ -76,6 +77,10 @@ export const router = createBrowserRouter([
               {
                 path: 'user/dashboard',
                 element: <UserDashboardPage />,
+              },
+              {
+                path: 'support',
+                element: <UserSupportPage />,
               },
             ],
           },
