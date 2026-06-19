@@ -3,19 +3,21 @@ import { ReactNode } from 'react';
 import type { IllustrationName } from '../../assets/illustrations';
 import { Illustration } from '../../components/common/Illustration';
 import { ThemeModeToggle } from '../../components/common/ThemeModeToggle';
-import { AppLogo } from '../../components/common/AppLogo';
 import { DEFAULT_LOGIN_TITLE } from '../../constants/defaultBranding';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { brand } from '../../theme/tokens';
+import { LoginBrandBlock } from './LoginBrandBlock';
 
 export function AuthPageShell({
   title,
   subtitle,
+  mobileSubtitle,
   illustration = 'secureLogin',
   children,
 }: {
   title: string;
   subtitle?: string;
+  mobileSubtitle?: string;
   illustration?: IllustrationName;
   children: ReactNode;
 }) {
@@ -24,7 +26,8 @@ export function AuthPageShell({
     branding.loginTitle && branding.loginTitle !== DEFAULT_LOGIN_TITLE
       ? branding.loginTitle
       : title;
-  const pageSubtitle = subtitle ?? brand.tagline;
+  const desktopSubtitle = subtitle ?? brand.tagline;
+  const compactSubtitle = mobileSubtitle ?? brand.mobileTagline;
 
   return (
     <Box
@@ -60,18 +63,6 @@ export function AuthPageShell({
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2, py: 1 }}
         >
           <Illustration maxWidth={300} name={illustration} />
-          <Box sx={{ maxWidth: 320, textAlign: 'center' }}>
-            <Typography
-              component="h2"
-              sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 }}
-              variant="h4"
-            >
-              {brand.loginHero}
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75 }} variant="body2">
-              {branding.name}
-            </Typography>
-          </Box>
         </Stack>
 
         <Paper
@@ -86,13 +77,24 @@ export function AuthPageShell({
         >
           <Stack spacing={3}>
             <Stack alignItems="flex-start" spacing={1.5}>
-              <AppLogo emphasis logoUrl={branding.logoUrl} name={branding.name} />
+              <LoginBrandBlock logoUrl={branding.logoUrl} name={branding.name} />
               <Box>
                 <Typography component="h1" variant="h5">
                   {isLoading ? title : pageTitle}
                 </Typography>
-                <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
-                  {pageSubtitle}
+                <Typography
+                  color="text.secondary"
+                  sx={{ display: { xs: 'none', md: 'block' }, mt: 0.5 }}
+                  variant="body2"
+                >
+                  {desktopSubtitle}
+                </Typography>
+                <Typography
+                  color="text.secondary"
+                  sx={{ display: { xs: 'block', md: 'none' }, mt: 0.5 }}
+                  variant="body2"
+                >
+                  {compactSubtitle}
                 </Typography>
               </Box>
             </Stack>
