@@ -104,7 +104,7 @@ describe('SecurityGateService', () => {
     );
   });
 
-  it('returns check-in action for a confirmed booking', async () => {
+  it('returns check-in action for a confirmed booking without a parking event', async () => {
     prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
 
     const result = await service.search(org1.booking.bookingCode, securityUser);
@@ -116,6 +116,8 @@ describe('SecurityGateService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,
+          status: BookingStatus.CONFIRMED,
+          parkingEvents: { none: {} },
         }),
       }),
     );
@@ -139,16 +141,38 @@ describe('SecurityGateService', () => {
   });
 
   it('does not return CHECK_OUT after checkout is completed', async () => {
-    prisma.booking.findFirst.mockResolvedValue({
-      ...confirmedBooking,
-      status: BookingStatus.COMPLETED,
-    });
+    prisma.booking.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        ...confirmedBooking,
+        status: BookingStatus.COMPLETED,
+      });
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
     expect(result?.action).toBe('NONE');
     expect(result?.actionDisabledReason).toBe('Already checked out.');
     expect(result?.parkingEvent).toBeNull();
+  });
+
+  it('returns check-in for a new confirmed booking after an older session completed', async () => {
+    const nextBooking = {
+      ...confirmedBooking,
+      id: 401,
+      bookingCode: 'BK-DEMO-010',
+    };
+
+    prisma.booking.findFirst
+      .mockResolvedValueOnce(nextBooking)
+      .mockResolvedValueOnce({
+        ...confirmedBooking,
+        status: BookingStatus.COMPLETED,
+      });
+
+    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+
+    expect(result?.action).toBe('CHECK_IN');
+    expect(result?.booking.bookingCode).toBe('BK-DEMO-010');
   });
 
   it('scopes search to the current user organization', async () => {
@@ -163,7 +187,8 @@ describe('SecurityGateService', () => {
         }),
       }),
     );
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+    expect(prisma.booking.findFirst).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,

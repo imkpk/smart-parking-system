@@ -67,22 +67,20 @@ export class SecurityGateService {
       };
     }
 
-    const booking = await this.prisma.booking.findFirst({
+    const checkInBooking = await this.prisma.booking.findFirst({
       where: {
         organizationId,
+        status: BookingStatus.CONFIRMED,
+        parkingEvents: { none: {} },
         OR: this.buildBookingSearchFilters(searchTerm, bookingIdFromLabel),
       },
       orderBy: { id: 'desc' },
       include: bookingListInclude,
     });
 
-    if (!booking) {
-      return null;
-    }
+    if (checkInBooking) {
+      const presentedBooking = presentBooking(checkInBooking);
 
-    const presentedBooking = presentBooking(booking);
-
-    if (booking.status === BookingStatus.CONFIRMED) {
       return {
         action: 'CHECK_IN',
         actionDisabledReason: null,
@@ -100,9 +98,24 @@ export class SecurityGateService {
       };
     }
 
+    const latestBooking = await this.prisma.booking.findFirst({
+      where: {
+        organizationId,
+        OR: this.buildBookingSearchFilters(searchTerm, bookingIdFromLabel),
+      },
+      orderBy: { id: 'desc' },
+      include: bookingListInclude,
+    });
+
+    if (!latestBooking) {
+      return null;
+    }
+
+    const presentedBooking = presentBooking(latestBooking);
+
     return {
       action: 'NONE',
-      actionDisabledReason: this.getDisabledReason(booking.status),
+      actionDisabledReason: this.getDisabledReason(latestBooking.status),
       booking: {
         id: presentedBooking.id,
         bookingCode: presentedBooking.bookingCode,
