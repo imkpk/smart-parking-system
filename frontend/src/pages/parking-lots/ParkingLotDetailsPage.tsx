@@ -23,7 +23,12 @@ import { Add, Delete, Edit, Layers, LocalParking, ViewModule, Visibility } from 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams, useSearchParams } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { getParkingLot, updateParkingLot } from '../../api/parkingLotsApi';
 import { createFloor, deleteFloor, getFloors, updateFloor } from '../../api/floorsApi';
 import {
@@ -44,7 +49,10 @@ import { ParkingLotWorkspaceShell } from '../../components/parking-lots/ParkingL
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useUserRole } from '../../hooks/useUserRole';
-import { resolveParkingLotWorkspaceTab } from '../../lib/parkingLotWorkspace';
+import {
+  getParkingLotVisualMapPath,
+  resolveParkingLotWorkspaceTab,
+} from '../../lib/parkingLotWorkspace';
 import {
   ParkingLotPayload,
   ParkingLotType,
@@ -522,6 +530,38 @@ export function ParkingLotDetailsPage() {
         >
           {activeTab === 'overview' ? (
             <Stack spacing={2}>
+              <Paper
+                elevation={0}
+                sx={{
+                  alignItems: { xs: 'stretch', sm: 'center' },
+                  border: '1px solid',
+                  borderColor: 'primary.light',
+                  bgcolor: 'rgba(21, 101, 192, 0.06)',
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 2,
+                  justifyContent: 'space-between',
+                  p: 2,
+                }}
+              >
+                <Stack spacing={0.5}>
+                  <Typography fontWeight={600} variant="subtitle1">
+                    Operational view
+                  </Typography>
+                  <Typography color="text.secondary" variant="body2">
+                    Open the visual map to monitor slot status across floors.
+                  </Typography>
+                </Stack>
+                <Button
+                  component={RouterLink}
+                  startIcon={<ViewModule />}
+                  to={getParkingLotVisualMapPath(parkingLotId)}
+                  variant="contained"
+                >
+                  Open visual map
+                </Button>
+              </Paper>
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard icon={<Layers />} label="Floors" value={floors.length} />

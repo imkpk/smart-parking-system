@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.11.2
+**Version:** 1.11.1
 **Last updated:** 2026-06-19  
-**Current branch:** `fix/parking-lot-workspace-ux-regressions`
+**Current branch:** `fix/phase-4e-parking-lot-management-ux`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -287,8 +287,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 4E UX regression fix (fix/parking-lot-workspace-ux-regressions).
-Phase 4 core complete (PRs #86–#89). Phase 4E polish merged (PR #92). Await human approval before Phase 5 mobile security gate.
+Phase 4E parking lot management UX polish (fix/phase-4e-parking-lot-management-ux).
+Phase 4 core complete (PRs #86–#89). Await human approval before Phase 5 mobile security gate.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -376,14 +376,13 @@ Execute in this order unless the human redirects:
 #### Phase 4E — Parking lot management UX polish (extension)
 
 ```text
-[x] Manage button + name link navigation on parking lots list (row click removed in regression fix)
+[x] Manage button + row navigation on parking lots list
 [x] Shared workspace shell with visual map CTA and tabs
 [x] SECURITY read-only workspace; USER blocked from management routes
 [x] Compact table columns on list/floors/slots grids
-[x] Regression fix: header layout, single visual map CTA, intentional table navigation only
 ```
 
-Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/parking-lot-workspace-ux-regressions.md`
+Report: `.grok/reports/phase-4e-parking-lot-management-ux.md`
 
 ### Phase 5 — Mobile security gate
 
@@ -676,7 +675,6 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.10.2 | Grok | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. PR #88 ✅. |
 | 2026-06-19 | 1.11.0 | Grok | Phase 4 complete: visual slot map acceptance — backend/frontend acceptance tests, Cypress J15 smoke, tenant isolation and role-safe occupancy verified. Report: `.grok/reports/phase-4-visual-slot-map-acceptance.md`. PR #89 ✅. |
 | 2026-06-19 | 1.11.1 | Grok | Phase 4E: parking lot management workspace UX — Manage button, shared shell/tabs, visual map CTA, SECURITY read-only tables, compact grid columns. Report: `.grok/reports/phase-4e-parking-lot-management-ux.md`. |
-| 2026-06-19 | 1.11.2 | Grok | Phase 4E regression fix: workspace header horizontal layout, deduplicated visual map CTA (header + tab only), removed aggressive parking lots row click. Report: `.grok/reports/parking-lot-workspace-ux-regressions.md`. |
 
 ---
 

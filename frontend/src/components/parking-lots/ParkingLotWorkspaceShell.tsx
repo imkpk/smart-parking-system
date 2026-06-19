@@ -1,4 +1,4 @@
-import { Box, Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
+import { Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { ViewModule } from '@mui/icons-material';
 import { ReactNode } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -48,14 +48,14 @@ export function ParkingLotWorkspaceShell({
     <Stack spacing={2.5}>
       <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: { xs: 2, sm: 2.5 } }}>
         <Stack
-          alignItems={{ xs: 'stretch', sm: 'center' }}
+          alignItems={{ xs: 'stretch', sm: 'flex-start' }}
           direction={{ xs: 'column', sm: 'row' }}
           justifyContent="space-between"
           spacing={2}
         >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack spacing={0.75} sx={{ minWidth: 0 }}>
             <Stack alignItems="center" direction="row" flexWrap="wrap" gap={1}>
-              <Typography component="h1" sx={{ lineHeight: 1.25 }} variant="h5">
+              <Typography component="h1" noWrap variant="h5">
                 {parkingLot.name}
               </Typography>
               <Chip
@@ -64,19 +64,13 @@ export function ParkingLotWorkspaceShell({
                 size="small"
               />
             </Stack>
-            <Stack
-              alignItems="center"
-              direction="row"
-              flexWrap="wrap"
-              gap={0.75}
-              sx={{ mt: 0.5 }}
-            >
-              <Chip label={parkingLot.type} size="small" variant="outlined" />
-              <Typography color="text.secondary" sx={{ minWidth: 0 }} variant="body2">
-                {locationSummary}
-              </Typography>
-            </Stack>
-          </Box>
+            <Typography color="text.secondary" variant="body2">
+              {locationSummary}
+            </Typography>
+            <Typography color="text.secondary" variant="caption">
+              {parkingLot.type}
+            </Typography>
+          </Stack>
 
           <ActionButtonGroup sx={{ flexShrink: 0 }}>
             {activeTab !== 'visual-map' ? (
