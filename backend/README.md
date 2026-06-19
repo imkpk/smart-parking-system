@@ -106,7 +106,7 @@ CORS_ALLOWED_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 
 **Neon (hosted):** use `?sslmode=require` — see `.env.example`.
 
-> NestJS backend no longer uses MySQL. `payment-service` still uses MySQL until a later phase.
+> NestJS backend and `payment-service` both use PostgreSQL (Neon/local Postgres).
 
 **Render + Neon deploy:** see [docs/DEPLOY.md](./docs/DEPLOY.md).
 
