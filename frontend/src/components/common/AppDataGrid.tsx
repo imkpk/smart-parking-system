@@ -104,6 +104,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   gridSx,
   loading = false,
   noRowsLabel = 'No rows',
+  onRowClick,
   onRowSelectionModelChange,
   rowSelectionModel,
   rows,
@@ -117,6 +118,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   gridSx?: SxProps<Theme>;
   loading?: boolean;
   noRowsLabel?: string;
+  onRowClick?: (row: Row) => void;
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
   rowSelectionModel?: GridRowId[];
   rows: GridRowsProp<Row>;
@@ -172,6 +174,13 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             loading={loading}
             localeText={{ noRowsLabel: emptyState ? '' : noRowsLabel }}
             onPaginationModelChange={setPaginationModel}
+            onRowClick={
+              onRowClick
+                ? (params) => {
+                    onRowClick(params.row as Row);
+                  }
+                : undefined
+            }
             onRowSelectionModelChange={
               onRowSelectionModelChange
                 ? (model) => onRowSelectionModelChange(Array.from(model.ids))

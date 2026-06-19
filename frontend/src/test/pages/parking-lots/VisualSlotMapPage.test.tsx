@@ -2,17 +2,23 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getParkingLots } from '@/api/parkingLotsApi';
+import { getParkingLot, getParkingLots } from '@/api/parkingLotsApi';
 import { getSlotMap } from '@/api/slotMapApi';
+import { useAuth } from '@/providers/AuthProvider';
 import { VisualSlotMapPage } from '@/pages/parking-lots/VisualSlotMapPage';
-import { renderWithProviders } from '@/test/test-utils';
+import { createMockUser, renderWithProviders } from '@/test/test-utils';
 import { SlotMapResponse } from '@/types/slotMap';
+
+vi.mock('@/providers/AuthProvider', () => ({
+  useAuth: vi.fn(),
+}));
 
 vi.mock('@/api/slotMapApi', () => ({
   getSlotMap: vi.fn(),
 }));
 
 vi.mock('@/api/parkingLotsApi', () => ({
+  getParkingLot: vi.fn(),
   getParkingLots: vi.fn(),
 }));
 
@@ -79,29 +85,40 @@ function renderSlotMapPage(route = '/parking-lots/1/slot-map') {
   );
 }
 
+const parkingLotFixture = {
+  id: 1,
+  name: 'Main Lot',
+  type: 'MALL' as const,
+  address: '123 Main St',
+  city: 'Bengaluru',
+  state: 'Karnataka',
+  pincode: '560001',
+  isActive: true,
+  createdAt: '2026-06-18T00:00:00.000Z',
+  updatedAt: '2026-06-18T00:00:00.000Z',
+};
+
 describe('VisualSlotMapPage', () => {
   beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'ADMIN' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
     vi.mocked(getSlotMap).mockResolvedValue(slotMapFixture);
-    vi.mocked(getParkingLots).mockResolvedValue([
-      {
-        id: 1,
-        name: 'Main Lot',
-        type: 'MALL',
-        address: '123 Main St',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        pincode: '560001',
-        isActive: true,
-        createdAt: '2026-06-18T00:00:00.000Z',
-        updatedAt: '2026-06-18T00:00:00.000Z',
-      },
-    ]);
+    vi.mocked(getParkingLot).mockResolvedValue(parkingLotFixture);
+    vi.mocked(getParkingLots).mockResolvedValue([parkingLotFixture]);
   });
 
-  it('renders slot map, legend, and status labels', async () => {
+  it('renders workspace header, slot map, legend, and status labels', async () => {
     renderSlotMapPage();
 
-    expect(screen.getByRole('heading', { name: /visual slot map/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /main lot/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /visual map/i })).toHaveAttribute('aria-selected', 'true');
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /ground/i })).toBeInTheDocument();
@@ -138,9 +155,10 @@ describe('VisualSlotMapPage', () => {
 
     await waitFor(() => {
       expect(getSlotMap).toHaveBeenCalledWith(1, {});
+      expect(screen.getByRole('combobox', { name: /^floor$/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByLabelText(/^floor$/i));
+    await user.click(screen.getByRole('combobox', { name: /^floor$/i }));
     await user.click(screen.getByRole('option', { name: 'Ground' }));
 
     await waitFor(() => {

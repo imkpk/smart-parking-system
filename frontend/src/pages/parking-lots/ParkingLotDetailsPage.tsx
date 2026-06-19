@@ -14,8 +14,6 @@ import {
   Paper,
   Select,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -28,11 +26,10 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   Link as RouterLink,
   useLocation,
-  useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { getParkingLot } from '../../api/parkingLotsApi';
+import { getParkingLot, updateParkingLot } from '../../api/parkingLotsApi';
 import { createFloor, deleteFloor, getFloors, updateFloor } from '../../api/floorsApi';
 import {
   createBulkSlots,
@@ -47,15 +44,20 @@ import { AppDataGrid } from '../../components/common/AppDataGrid';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
-import {
-  ActionButtonGroup,
-  HeaderActionButton,
-  PageHeader,
-  ToolbarButton,
-} from '../../components/common/PageHeader';
-
+import { ToolbarButton } from '../../components/common/PageHeader';
+import { ParkingLotWorkspaceShell } from '../../components/parking-lots/ParkingLotWorkspaceShell';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
+import { useUserRole } from '../../hooks/useUserRole';
+import {
+  getParkingLotVisualMapPath,
+  resolveParkingLotWorkspaceTab,
+} from '../../lib/parkingLotWorkspace';
+import {
+  ParkingLotPayload,
+  ParkingLotType,
+  parkingLotTypeOptions,
+} from '../../types/parkingLot';
 import { SlotStatusChip } from '../../components/common/SlotStatusChip';
 import { StatCard } from '../../components/common/StatCard';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
@@ -143,27 +145,17 @@ function buildSlotTechnicalRows(slot: Slot, parkingLotId: number): DetailsRow[] 
   ];
 }
 
-function getTabFromPath(pathname: string) {
-  if (pathname.endsWith('/floors')) {
-    return 'floors';
-  }
-
-  if (pathname.endsWith('/slots')) {
-    return 'slots';
-  }
-
-  return 'overview';
-}
-
 export function ParkingLotDetailsPage() {
   const { id } = useParams();
   const parkingLotId = Number(id);
   const location = useLocation();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
-  const activeTab = getTabFromPath(location.pathname);
+  const { isOperationalAdmin, isTenantAdmin } = useUserRole();
+  const canManageLot = isOperationalAdmin || isTenantAdmin;
+  const activeTab = resolveParkingLotWorkspaceTab(location.pathname, searchParams.get('tab'));
+  const [settingsForm, setSettingsForm] = useState<ParkingLotPayload | null>(null);
 
   const [floorFormOpen, setFloorFormOpen] = useState(false);
   const [editingFloor, setEditingFloor] = useState<Floor | null>(null);
@@ -196,6 +188,34 @@ export function ParkingLotDetailsPage() {
     queryKey: ['parking-lots', parkingLotId],
     queryFn: () => getParkingLot(parkingLotId),
     enabled: Number.isFinite(parkingLotId),
+  });
+
+  useEffect(() => {
+    if (!parkingLotQuery.data) {
+      return;
+    }
+
+    setSettingsForm({
+      name: parkingLotQuery.data.name,
+      type: parkingLotQuery.data.type,
+      address: parkingLotQuery.data.address ?? '',
+      city: parkingLotQuery.data.city ?? '',
+      state: parkingLotQuery.data.state ?? '',
+      pincode: parkingLotQuery.data.pincode ?? '',
+      isActive: parkingLotQuery.data.isActive,
+    });
+  }, [parkingLotQuery.data]);
+
+  const updateParkingLotMutation = useMutation({
+    mutationFn: (payload: ParkingLotPayload) => updateParkingLot(parkingLotId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['parking-lots', parkingLotId] });
+      await queryClient.invalidateQueries({ queryKey: ['parking-lots'] });
+      showSuccess('Parking lot updated.');
+    },
+    onError: (error) => {
+      showError(getApiErrorMessage(error, 'Could not update parking lot.'));
+    },
   });
   const floorsQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId, 'floors'],
@@ -442,13 +462,21 @@ export function ParkingLotDetailsPage() {
     });
   };
 
-  const handleTabChange = (_event: unknown, nextTab: string) => {
-    if (nextTab === 'overview') {
-      navigate(`/parking-lots/${parkingLotId}`);
+  const handleSettingsSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!settingsForm) {
       return;
     }
 
-    navigate(`/parking-lots/${parkingLotId}/${nextTab}`);
+    updateParkingLotMutation.mutate({
+      ...settingsForm,
+      name: settingsForm.name.trim(),
+      address: settingsForm.address?.trim() || undefined,
+      city: settingsForm.city?.trim() || undefined,
+      state: settingsForm.state?.trim() || undefined,
+      pincode: settingsForm.pincode?.trim() || undefined,
+    });
   };
 
   const toggleSlotSelection = (slotId: number) => {
@@ -480,27 +508,6 @@ export function ParkingLotDetailsPage() {
 
   return (
     <Stack spacing={3}>
-      <PageHeader
-        title={parkingLotQuery.data?.name ?? 'Parking Lot'}
-        action={
-          <ActionButtonGroup>
-            {parkingLotId ? (
-              <HeaderActionButton
-                component={RouterLink}
-                startIcon={<ViewModule />}
-                to={`/parking-lots/${parkingLotId}/slot-map`}
-                variant="outlined"
-              >
-                Visual map
-              </HeaderActionButton>
-            ) : null}
-            <HeaderActionButton component={RouterLink} to="/parking-lots" variant="outlined">
-              Back
-            </HeaderActionButton>
-          </ActionButtonGroup>
-        }
-      />
-
       {isLoading ? (
         <Stack alignItems="center" py={8}>
           <CircularProgress />
@@ -516,21 +523,45 @@ export function ParkingLotDetailsPage() {
       ) : null}
 
       {parkingLotQuery.data ? (
-        <>
-          <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-            <Tabs
-              onChange={handleTabChange}
-              value={activeTab}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              <Tab label="Overview" value="overview" />
-              <Tab label="Floors" value="floors" />
-              <Tab label="Slots" value="slots" />
-            </Tabs>
-          </Paper>
-
+        <ParkingLotWorkspaceShell
+          activeTab={activeTab}
+          canManageLot={canManageLot}
+          parkingLot={parkingLotQuery.data}
+        >
           {activeTab === 'overview' ? (
+            <Stack spacing={2}>
+              <Paper
+                elevation={0}
+                sx={{
+                  alignItems: { xs: 'stretch', sm: 'center' },
+                  border: '1px solid',
+                  borderColor: 'primary.light',
+                  bgcolor: 'rgba(21, 101, 192, 0.06)',
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 2,
+                  justifyContent: 'space-between',
+                  p: 2,
+                }}
+              >
+                <Stack spacing={0.5}>
+                  <Typography fontWeight={600} variant="subtitle1">
+                    Operational view
+                  </Typography>
+                  <Typography color="text.secondary" variant="body2">
+                    Open the visual map to monitor slot status across floors.
+                  </Typography>
+                </Stack>
+                <Button
+                  component={RouterLink}
+                  startIcon={<ViewModule />}
+                  to={getParkingLotVisualMapPath(parkingLotId)}
+                  variant="contained"
+                >
+                  Open visual map
+                </Button>
+              </Paper>
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} lg={3}>
                 <StatCard icon={<Layers />} label="Floors" value={floors.length} />
@@ -581,10 +612,12 @@ export function ParkingLotDetailsPage() {
                 </Paper>
               </Grid>
             </Grid>
+            </Stack>
           ) : null}
 
           {activeTab === 'floors' ? (
             <FloorsSection
+              canManage={canManageLot}
               floors={floors}
               parkingLotName={parkingLotName}
               slotCountByFloorId={slotCountByFloorId}
@@ -596,6 +629,7 @@ export function ParkingLotDetailsPage() {
 
           {activeTab === 'slots' ? (
             <SlotsSection
+              canManage={canManageLot}
               floors={floors}
               floorNameById={floorNameById}
               filteredSlots={filteredSlots}
@@ -620,7 +654,98 @@ export function ParkingLotDetailsPage() {
               slotTypeFilter={slotTypeFilter}
             />
           ) : null}
-        </>
+
+          {activeTab === 'settings' && canManageLot && settingsForm ? (
+            <Paper
+              component="form"
+              elevation={0}
+              onSubmit={handleSettingsSubmit}
+              sx={{ border: '1px solid', borderColor: 'divider', p: 2.5 }}
+            >
+              <Typography mb={2} variant="subtitle1">
+                Parking Lot Settings
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  label="Name"
+                  onChange={(event) =>
+                    setSettingsForm((current) =>
+                      current ? { ...current, name: event.target.value } : current,
+                    )
+                  }
+                  required
+                  value={settingsForm.name}
+                />
+                <FormControl required>
+                  <InputLabel id="workspace-lot-type-label">Type</InputLabel>
+                  <Select
+                    label="Type"
+                    labelId="workspace-lot-type-label"
+                    onChange={(event) =>
+                      setSettingsForm((current) =>
+                        current
+                          ? { ...current, type: event.target.value as ParkingLotType }
+                          : current,
+                      )
+                    }
+                    value={settingsForm.type}
+                  >
+                    {parkingLotTypeOptions.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Address"
+                  onChange={(event) =>
+                    setSettingsForm((current) =>
+                      current ? { ...current, address: event.target.value } : current,
+                    )
+                  }
+                  value={settingsForm.address}
+                />
+                <TextField
+                  label="City"
+                  onChange={(event) =>
+                    setSettingsForm((current) =>
+                      current ? { ...current, city: event.target.value } : current,
+                    )
+                  }
+                  value={settingsForm.city}
+                />
+                <TextField
+                  label="State"
+                  onChange={(event) =>
+                    setSettingsForm((current) =>
+                      current ? { ...current, state: event.target.value } : current,
+                    )
+                  }
+                  value={settingsForm.state}
+                />
+                <TextField
+                  label="Pincode"
+                  onChange={(event) =>
+                    setSettingsForm((current) =>
+                      current ? { ...current, pincode: event.target.value } : current,
+                    )
+                  }
+                  value={settingsForm.pincode}
+                />
+                <Stack direction="row" justifyContent="flex-end">
+                  <Button
+                    disabled={updateParkingLotMutation.isPending}
+                    type="submit"
+                    variant="contained"
+                  >
+                    Save Changes
+                  </Button>
+                </Stack>
+              </Stack>
+            </Paper>
+          ) : null}
+        </ParkingLotWorkspaceShell>
       ) : null}
 
       <Dialog fullWidth maxWidth="sm" onClose={closeFloorForm} open={floorFormOpen}>
@@ -777,6 +902,7 @@ export function ParkingLotDetailsPage() {
 }
 
 function FloorsSection({
+  canManage,
   floors,
   parkingLotName,
   slotCountByFloorId,
@@ -784,6 +910,7 @@ function FloorsSection({
   onDelete,
   onEdit,
 }: {
+  canManage: boolean;
   floors: Floor[];
   parkingLotName: string;
   slotCountByFloorId: Map<number, number>;
@@ -801,46 +928,86 @@ function FloorsSection({
 
   const columns = useMemo<GridColDef<Floor>[]>(
     () => [
-      { field: 'name', flex: 1, headerName: 'Floor Name', minWidth: 180 },
-      { field: 'level', headerName: 'Floor Number', minWidth: 120 },
-      createDetailsColumn<Floor>(setDetailsFloor),
       {
-        field: 'actions',
-        align: 'right',
-        filterable: false,
-        headerAlign: 'right',
-        headerName: 'Actions',
-        minWidth: 140,
-        sortable: false,
-        renderCell: ({ row }) => (
-          <Stack direction="row" justifyContent="flex-end" width="100%">
-            <Tooltip title="Edit">
-              <IconButton onClick={() => onEdit(row)}>
-                <Edit />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton color="error" onClick={() => onDelete(row)}>
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
+        field: 'name',
+        flex: 1,
+        headerName: 'Floor Name',
+        maxWidth: 260,
+        minWidth: 180,
+        width: 220,
       },
+      {
+        field: 'level',
+        headerName: 'Floor Number',
+        maxWidth: 140,
+        minWidth: 110,
+        width: 120,
+      },
+      {
+        ...createDetailsColumn<Floor>(setDetailsFloor),
+        align: 'center',
+        headerAlign: 'center',
+        maxWidth: 110,
+        minWidth: 90,
+        width: 100,
+      },
+      ...(canManage
+        ? [
+            {
+              field: 'actions',
+              align: 'right' as const,
+              filterable: false,
+              headerAlign: 'right' as const,
+              headerName: 'Actions',
+              maxWidth: 120,
+              minWidth: 100,
+              sortable: false,
+              width: 110,
+              renderCell: ({ row }: { row: Floor }) => (
+                <Stack direction="row" justifyContent="flex-end" spacing={0.5} width="100%">
+                  <Tooltip title="Edit">
+                    <IconButton aria-label={`Edit ${row.name}`} onClick={() => onEdit(row)}>
+                      <Edit />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      aria-label={`Delete ${row.name}`}
+                      color="error"
+                      onClick={() => onDelete(row)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              ),
+            },
+          ]
+        : []),
     ],
-    [onDelete, onEdit],
+    [canManage, onDelete, onEdit],
   );
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
       <Stack alignItems="center" direction="row" justifyContent="space-between" p={2} spacing={2}>
         <Typography variant="subtitle1">Floors</Typography>
-        <HeaderActionButton onClick={onCreate} startIcon={<Add />} sx={{ width: 'auto' }}>
-          Create Floor
-        </HeaderActionButton>
+        {canManage ? (
+          <ToolbarButton onClick={onCreate} startIcon={<Add />} sx={{ width: 'auto' }}>
+            Create Floor
+          </ToolbarButton>
+        ) : null}
       </Stack>
       <AppDataGrid
+        checkboxSelection={canManage}
         columns={columns}
+        gridSx={{
+          '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+            maxWidth: 52,
+            minWidth: 52,
+            width: 52,
+          },
+        }}
         emptyState={{
           description: floorSearch
             ? 'Try a floor name or floor number.'
@@ -876,6 +1043,7 @@ function FloorsSection({
 }
 
 function SlotsSection({
+  canManage,
   filteredSlots,
   filteredSlotIds,
   floorNameById,
@@ -899,6 +1067,7 @@ function SlotsSection({
   slotStatusFilter,
   slotTypeFilter,
 }: {
+  canManage: boolean;
   filteredSlots: Slot[];
   filteredSlotIds: number[];
   floorNameById: Map<number, string>;
@@ -973,40 +1142,50 @@ function SlotsSection({
           </Stack>
         ),
       },
-      {
-        field: 'actions',
-        align: 'right',
-        filterable: false,
-        headerAlign: 'right',
-        headerName: 'Actions',
-        maxWidth: 220,
-        minWidth: 180,
-        sortable: false,
-        width: 200,
-        renderCell: ({ row }) => (
-          <Stack direction="row" justifyContent="flex-end" spacing={1} width="100%">
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <Select
-                onChange={(event) => onStatusChange(row.id, event.target.value as SlotStatus)}
-                value={row.status}
-              >
-                {slotStatusOptions.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    <SlotStatusChip status={status} />
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip title="Delete">
-              <IconButton color="error" onClick={() => onDelete(row)}>
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
-      },
+      ...(canManage
+        ? [
+            {
+              field: 'actions',
+              align: 'right' as const,
+              filterable: false,
+              headerAlign: 'right' as const,
+              headerName: 'Actions',
+              maxWidth: 220,
+              minWidth: 180,
+              sortable: false,
+              width: 200,
+              renderCell: ({ row }: { row: Slot }) => (
+                <Stack direction="row" justifyContent="flex-end" spacing={1} width="100%">
+                  <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <Select
+                      onChange={(event) =>
+                        onStatusChange(row.id, event.target.value as SlotStatus)
+                      }
+                      value={row.status}
+                    >
+                      {slotStatusOptions.map((status) => (
+                        <MenuItem key={status} value={status}>
+                          <SlotStatusChip status={status} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      aria-label={`Delete slot ${row.slotNumber}`}
+                      color="error"
+                      onClick={() => onDelete(row)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              ),
+            },
+          ]
+        : []),
     ],
-    [floorNameById, onDelete, onStatusChange],
+    [canManage, floorNameById, onDelete, onStatusChange],
   );
 
   const slotEmptyState: {
@@ -1094,34 +1273,36 @@ function SlotsSection({
             </Select>
           </FormControl>
         </Box>
-        <ActionButtonGroup>
-          <ToolbarButton
-            color="error"
-            disabled={selectedSlotIds.length === 0}
-            onClick={onBulkDelete}
-            variant="outlined"
-          >
-            Delete Selected
-          </ToolbarButton>
-          <ToolbarButton
-            disabled={floors.length === 0}
-            onClick={onCreate}
-            startIcon={<Add />}
-            variant="contained"
-          >
-            Create Slot
-          </ToolbarButton>
-          <ToolbarButton
-            disabled={floors.length === 0}
-            onClick={onBulkCreate}
-            variant="outlined"
-          >
-            Bulk Create
-          </ToolbarButton>
-        </ActionButtonGroup>
+        {canManage ? (
+          <Stack direction={{ xs: 'column', sm: 'row' }} flexWrap="wrap" gap={1}>
+            <ToolbarButton
+              color="error"
+              disabled={selectedSlotIds.length === 0}
+              onClick={onBulkDelete}
+              variant="outlined"
+            >
+              Delete Selected
+            </ToolbarButton>
+            <ToolbarButton
+              disabled={floors.length === 0}
+              onClick={onCreate}
+              startIcon={<Add />}
+              variant="contained"
+            >
+              Create Slot
+            </ToolbarButton>
+            <ToolbarButton
+              disabled={floors.length === 0}
+              onClick={onBulkCreate}
+              variant="outlined"
+            >
+              Bulk Create
+            </ToolbarButton>
+          </Stack>
+        ) : null}
       </Stack>
       <AppDataGrid
-        checkboxSelection
+        checkboxSelection={canManage}
         columns={columns}
         emptyState={slotEmptyState}
         gridSx={{
