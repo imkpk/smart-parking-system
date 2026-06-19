@@ -724,14 +724,15 @@ export function SecurityGatePage() {
     result?.action === 'CHECK_OUT' ? 'Confirm check-out' : 'Confirm check-in';
   const confirmDescription = result ? buildGateConfirmDescription(result) : '';
 
-  const useWideLayout = step === 'matches' || step === 'search';
+  const useWideLayout = step === 'matches';
+  const useSearchWideLayout = step === 'search';
 
   return (
     <Stack
       spacing={3}
       sx={{
-        maxWidth: useWideLayout ? '100%' : 720,
-        mx: useWideLayout ? 0 : 'auto',
+        maxWidth: useWideLayout ? 'none' : useSearchWideLayout ? '100%' : 720,
+        mx: useWideLayout || useSearchWideLayout ? 0 : 'auto',
         width: '100%',
       }}
     >
