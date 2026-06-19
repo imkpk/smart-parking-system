@@ -69,48 +69,63 @@ enum AssignmentStatus {
   REVOKED
 }
 
+enum ConversationType {
+  SECURITY
+  CUSTOMER_CARE
+}
+
+enum ConversationStatus {
+  OPEN
+  RESOLVED
+}
+
 model Organization {
-  id             Int              @id @default(autoincrement())
-  name           String
-  slug           String           @unique
-  logoUrl        String?
-  primaryColor   String?
-  secondaryColor String?
-  accentColor    String?
-  loginTitle     String?
-  supportEmail   String?
-  plan           OrganizationPlan @default(STARTER)
-  maxParkingLots Int              @default(5) @map("maxLots")
-  maxUsers       Int              @default(50)
-  isActive       Boolean          @default(true)
-  users          User[]
-  parkingLots    ParkingLot[]
-  vehicles       Vehicle[]
-  bookings       Booking[]
-  parkingEvents  ParkingEvent[]
-  assignments    SlotAssignment[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                   Int                   @id @default(autoincrement())
+  name                 String
+  slug                 String                @unique
+  logoUrl              String?
+  primaryColor         String?
+  secondaryColor       String?
+  accentColor          String?
+  loginTitle           String?
+  supportEmail         String?
+  plan                 OrganizationPlan      @default(STARTER)
+  maxParkingLots       Int                   @default(5) @map("maxLots")
+  maxUsers             Int                   @default(50)
+  isActive             Boolean               @default(true)
+  users                User[]
+  parkingLots          ParkingLot[]
+  vehicles             Vehicle[]
+  bookings             Booking[]
+  parkingEvents        ParkingEvent[]
+  assignments          SlotAssignment[]
+  conversations        Conversation[]
+  conversationMessages ConversationMessage[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@map("organizations")
 }
 
 model User {
-  id             Int              @id @default(autoincrement())
-  organizationId Int?
-  name           String
-  email          String
-  phone          String?
-  passwordHash   String
-  role           Role             @default(USER)
-  isActive       Boolean          @default(true)
-  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  vehicles       Vehicle[]
-  bookings       Booking[]
-  parkingEvents  ParkingEvent[]
-  assignments    SlotAssignment[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                       Int                   @id @default(autoincrement())
+  organizationId           Int?
+  name                     String
+  email                    String
+  phone                    String?
+  passwordHash             String
+  role                     Role                  @default(USER)
+  isActive                 Boolean               @default(true)
+  organization             Organization?         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  vehicles                 Vehicle[]
+  bookings                 Booking[]
+  parkingEvents            ParkingEvent[]
+  assignments              SlotAssignment[]
+  createdConversations     Conversation[]        @relation("ConversationCreatedBy")
+  assignedConversations    Conversation[]        @relation("ConversationAssignedTo")
+  sentConversationMessages ConversationMessage[] @relation("ConversationMessageSender")
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
 
   @@unique([organizationId, email])
   @@unique([organizationId, phone])
@@ -132,6 +147,7 @@ model ParkingLot {
   floors         Floor[]
   bookings       Booking[]
   parkingEvents  ParkingEvent[]
+  conversations  Conversation[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -213,6 +229,7 @@ model Booking {
   slot           Slot           @relation(fields: [slotId], references: [id], onDelete: Cascade)
   parkingLot     ParkingLot     @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
   parkingEvents  ParkingEvent[]
+  conversations  Conversation[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -277,4 +294,53 @@ model ParkingEvent {
   @@index([parkingLotId])
   @@index([status])
   @@map("parking_events")
+}
+
+model Conversation {
+  id               Int                @id @default(autoincrement())
+  organizationId   Int
+  type             ConversationType
+  status           ConversationStatus @default(OPEN)
+  subject          String?
+  createdByUserId  Int
+  assignedToUserId Int?
+  parkingLotId     Int?
+  bookingId        Int?
+  lastMessageAt    DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdByUser  User                  @relation("ConversationCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  assignedToUser User?                 @relation("ConversationAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  parkingLot     ParkingLot?           @relation(fields: [parkingLotId], references: [id], onDelete: SetNull)
+  booking        Booking?              @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  messages       ConversationMessage[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([createdByUserId])
+  @@index([assignedToUserId])
+  @@index([parkingLotId])
+  @@index([bookingId])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             Int      @id @default(autoincrement())
+  organizationId Int
+  conversationId Int
+  senderId       Int
+  body           String   @db.Text
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("conversation_messages")
 }

@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.12.1
+**Version:** 1.13.0
 **Last updated:** 2026-06-19  
-**Current branch:** `feature/phase-5a-gate-phone-search-history`
+**Current branch:** `feature/phase-5b-chat-schema-contract`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -288,8 +288,9 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 
 ```text
 Phase 5 — Mobile Security Gate + In-App Chat MVP (PR stack 5A–5D).
-PR 5A phone search + visit history open: feature/phase-5a-gate-phone-search-history (PR #99).
-Base gate flow merged (PR #97). Chat MVP (5B–5C) starts after 5A merges.
+5A complete: gate flow (PR #97), phone search + visit history + illustrations (PR #99, #100).
+5B in progress: LOOP 5B-1 chat schema + contract on feature/phase-5b-chat-schema-contract.
+Next: 5B-2 REST API, 5B-3 frontend client, 5B-4 user UI, 5B-5 staff inbox, 5B-6 smoke cleanup.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -390,10 +391,14 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 
 ```text
 [x] 5A base: /security/gate mobile check-in/out — PR #97 ✅
-[ ] 5A extension: phone search + visit history — PR #99 open
-[ ] 5B: tenant-scoped chat backend API
-[ ] 5C: user/security/admin chat frontend (polling)
-[ ] 5D: Phase 5 smoke cleanup
+[x] 5A extension: phone search + visit history — PR #99 ✅
+[x] 5A illustrations + post-#99 UI fixes — PR #100 ✅
+[ ] 5B-1: chat Prisma schema + contract — feature/phase-5b-chat-schema-contract (in progress)
+[ ] 5B-2: tenant-scoped chat REST API
+[ ] 5B-3: frontend conversation client + hooks
+[ ] 5B-4: user support chat UI
+[ ] 5B-5: security/admin support inbox UI
+[ ] 5B-6: Phase 5B smoke cleanup
 ```
 
 ### Phase 6 — Subscription & billing
@@ -682,6 +687,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.11.2 | Grok | Phase 4E regression fix: workspace header horizontal layout, deduplicated visual map CTA (header + tab only), removed aggressive parking lots row click. Report: `.grok/reports/parking-lot-workspace-ux-regressions.md`. |
 | 2026-06-19 | 1.12.0 | Grok | Phase 5A started: mobile security gate — tenant-scoped gate search API, `/security/gate` UI, nav for SECURITY/ADMIN/TENANT_ADMIN. |
 | 2026-06-19 | 1.12.1 | Grok | Phase 5A extension: phone search, multiple-match selection, vehicle activity counts, recent visits UI on gate. PR #99 open. Report: `.grok/reports/phase-5a-gate-phone-search-history.md`. |
+| 2026-06-19 | 1.12.2 | Grok | Phase 5A illustrations + post-#99 gate UI fixes merged via PR #100. |
+| 2026-06-19 | 1.13.0 | Grok | Phase 5B LOOP 5B-1: Conversation + ConversationMessage Prisma schema, migration, REST contract types (`backend/src/conversations/conversation.types.ts`). Branch: `feature/phase-5b-chat-schema-contract`. |
 
 ---
 
