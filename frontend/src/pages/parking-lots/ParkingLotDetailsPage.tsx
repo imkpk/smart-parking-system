@@ -1110,36 +1110,12 @@ function SlotsSection({
               filterable: false,
               headerAlign: 'right' as const,
               headerName: 'Actions',
-              maxWidth: 220,
-              minWidth: 180,
+              maxWidth: 196,
+              minWidth: 176,
               sortable: false,
-              width: 200,
+              width: 188,
               renderCell: ({ row }: { row: Slot }) => (
-                <Stack direction="row" justifyContent="flex-end" spacing={1} width="100%">
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <Select
-                      onChange={(event) =>
-                        onStatusChange(row.id, event.target.value as SlotStatus)
-                      }
-                      value={row.status}
-                    >
-                      {slotStatusOptions.map((status) => (
-                        <MenuItem key={status} value={status}>
-                          <SlotStatusChip status={status} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      aria-label={`Delete slot ${row.slotNumber}`}
-                      color="error"
-                      onClick={() => onDelete(row)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
+                <SlotRowActions onDelete={onDelete} onStatusChange={onStatusChange} slot={row} />
               ),
             },
           ]
@@ -1271,6 +1247,14 @@ function SlotsSection({
             minWidth: 52,
             width: 52,
           },
+          '& .MuiDataGrid-cell[data-field="actions"]': {
+            justifyContent: 'flex-end',
+            overflow: 'hidden',
+            px: 1,
+          },
+          '& .MuiDataGrid-columnHeader[data-field="actions"] .MuiDataGrid-columnHeaderTitleContainer': {
+            justifyContent: 'flex-end',
+          },
         }}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
@@ -1300,6 +1284,73 @@ function SlotsSection({
         title="Slot Details"
       />
     </Paper>
+  );
+}
+
+function SlotRowActions({
+  onDelete,
+  onStatusChange,
+  slot,
+}: {
+  onDelete: (slot: Slot) => void;
+  onStatusChange: (slotId: number, status: SlotStatus) => void;
+  slot: Slot;
+}) {
+  return (
+    <Box
+      onClick={(event) => event.stopPropagation()}
+      sx={{
+        alignItems: 'center',
+        display: 'flex',
+        flexShrink: 0,
+        gap: 0.5,
+        justifyContent: 'flex-end',
+        width: '100%',
+      }}
+    >
+      <Select
+        onChange={(event) => onStatusChange(slot.id, event.target.value as SlotStatus)}
+        renderValue={(value) => <SlotStatusChip status={value as SlotStatus} />}
+        size="small"
+        value={slot.status}
+        sx={{
+          flexShrink: 0,
+          height: 32,
+          width: 136,
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'divider',
+          },
+          '& .MuiSelect-select': {
+            alignItems: 'center',
+            display: 'flex',
+            minHeight: 'unset',
+            py: 0.25,
+          },
+        }}
+        MenuProps={{
+          PaperProps: { sx: { minWidth: 168 } },
+          anchorOrigin: { horizontal: 'right', vertical: 'bottom' },
+          transformOrigin: { horizontal: 'right', vertical: 'top' },
+        }}
+      >
+        {slotStatusOptions.map((status) => (
+          <MenuItem key={status} sx={{ py: 0.75 }} value={status}>
+            <SlotStatusChip status={status} />
+          </MenuItem>
+        ))}
+      </Select>
+      <Tooltip title="Delete">
+        <IconButton
+          aria-label={`Delete slot ${slot.slotNumber}`}
+          color="error"
+          onClick={() => onDelete(slot)}
+          size="small"
+          sx={{ flexShrink: 0 }}
+        >
+          <Delete fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
   );
 }
 
