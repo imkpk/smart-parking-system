@@ -30,9 +30,9 @@ import {
   Palette,
   Security,
   SensorOccupied,
-  SupportAgent,
   SvgIconComponent,
 } from '@mui/icons-material';
+import ContactSupportIcon from '@mui/icons-material/ContactSupport';
 import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSidebarAutoCollapse } from '../../hooks/useSidebarAutoCollapse';
@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
   {
     label: 'Support',
     to: '/support',
-    icon: SupportAgent,
+    icon: ContactSupportIcon,
     roles: ['USER'],
   },
   {
