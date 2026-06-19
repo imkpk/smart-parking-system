@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
-import { Add, Delete, Edit, Layers, LocalParking, ViewModule } from '@mui/icons-material';
+import { Add, Delete, Edit, Layers, LocalParking, ViewModule, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef, GridRowId } from '@mui/x-data-grid';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
@@ -926,30 +926,63 @@ function SlotsSection({
 
   const columns = useMemo<GridColDef<Slot>[]>(
     () => [
-      { field: 'slotNumber', headerName: 'Slot Number', minWidth: 130 },
+      {
+        field: 'slotNumber',
+        headerName: 'Slot Number',
+        maxWidth: 150,
+        minWidth: 120,
+        width: 140,
+      },
       {
         field: 'floorId',
-        flex: 1,
         headerName: 'Floor',
-        minWidth: 160,
+        maxWidth: 220,
+        minWidth: 180,
+        width: 200,
         valueGetter: (_value, row) => floorNameById.get(row.floorId) ?? `Floor #${row.floorId}`,
       },
-      { field: 'slotType', headerName: 'Vehicle Type', minWidth: 140 },
+      {
+        field: 'slotType',
+        headerName: 'Vehicle Type',
+        maxWidth: 170,
+        minWidth: 140,
+        width: 155,
+      },
       {
         field: 'status',
         headerName: 'Status',
+        maxWidth: 180,
         minWidth: 150,
+        width: 165,
         renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
       },
-      createDetailsColumn<Slot>(setDetailsSlot),
+      {
+        ...createDetailsColumn<Slot>(setDetailsSlot),
+        align: 'center',
+        headerAlign: 'center',
+        maxWidth: 110,
+        minWidth: 90,
+        width: 100,
+        renderCell: ({ row }) => (
+          <Stack alignItems="center" direction="row" justifyContent="center" width="100%">
+            <Tooltip title="View Details">
+              <IconButton onClick={() => setDetailsSlot(row)}>
+                <Visibility />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
       {
         field: 'actions',
         align: 'right',
         filterable: false,
         headerAlign: 'right',
         headerName: 'Actions',
-        minWidth: 240,
+        maxWidth: 220,
+        minWidth: 180,
         sortable: false,
+        width: 200,
         renderCell: ({ row }) => (
           <Stack direction="row" justifyContent="flex-end" spacing={1} width="100%">
             <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -1091,6 +1124,13 @@ function SlotsSection({
         checkboxSelection
         columns={columns}
         emptyState={slotEmptyState}
+        gridSx={{
+          '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+            maxWidth: 52,
+            minWidth: 52,
+            width: 52,
+          },
+        }}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
         rows={filteredSlots}
