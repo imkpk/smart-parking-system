@@ -6,9 +6,11 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "nest start",
+    "start:prod": "node dist/main.js",
     "prestart:dev": "nest build",
     "start:dev": "nest start --watch",
     "build": "nest build",
+    "migrate:deploy": "prisma migrate deploy",
     "test": "jest",
     "test:run": "jest",
     "test:watch": "jest --watch",

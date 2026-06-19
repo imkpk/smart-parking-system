@@ -166,11 +166,24 @@ jobs:
     timeout-minutes: 30
     continue-on-error: true
     services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: smart_parking_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: parking_lot_db
+          MYSQL_DATABASE: parking_payment_db
         ports:
           - 3306:3306
         options: >-
@@ -179,8 +192,8 @@ jobs:
           --health-timeout=5s
           --health-retries=10
     env:
-      DATABASE_URL: mysql://root:password@127.0.0.1:3306/parking_lot_db
-      SHADOW_DATABASE_URL: mysql://root:password@127.0.0.1:3306/parking_lot_shadow_db
+      DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_db?schema=public
+      SHADOW_DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_shadow_db?schema=public
       PORT: '3000'
       JWT_SECRET: smart_parking_dev_jwt_secret_32_chars_minimum
       JWT_EXPIRES_IN: 1d
@@ -210,11 +223,11 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Prepare MySQL databases
+      - name: Prepare databases
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq default-mysql-client
-          mysql -h 127.0.0.1 -uroot -ppassword -e "CREATE DATABASE IF NOT EXISTS parking_lot_shadow_db;"
+          sudo apt-get install -y -qq postgresql-client default-mysql-client
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE smart_parking_shadow_db;"
           mysql -h 127.0.0.1 -uroot -ppassword -e "CREATE DATABASE IF NOT EXISTS parking_payment_db;"
 
       - name: Install and migrate backend

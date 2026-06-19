@@ -10,8 +10,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
-  const corsOrigins = configService
-    .get<string>('CORS_ORIGINS')
+  const corsOriginsConfig =
+    configService.get<string>('CORS_ALLOWED_ORIGINS') ??
+    configService.get<string>('CORS_ORIGINS');
+  const corsOrigins = corsOriginsConfig
     ?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean) ?? ['http://localhost:5173', 'http://127.0.0.1:5173'];

@@ -8,7 +8,7 @@ The backend currently covers authentication, role-based access, parking structur
 
 - NestJS
 - TypeScript
-- MySQL
+- PostgreSQL (Neon hosted / local Postgres)
 - Prisma ORM
 - JWT authentication
 - Passport JWT
@@ -91,25 +91,24 @@ backend/
 
 ## Environment Setup
 
-Create `backend/.env`:
+Copy `backend/.env.example` to `backend/.env`.
+
+**PostgreSQL (local):**
 
 ```env
-DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_db"
-SHADOW_DATABASE_URL="mysql://parking_user:password@localhost:3306/parking_lot_shadow_db"
+DATABASE_URL="postgresql://parking_user:parking_password@localhost:5432/smart_parking_db?schema=public"
+SHADOW_DATABASE_URL="postgresql://parking_user:parking_password@localhost:5432/smart_parking_shadow_db?schema=public"
 JWT_SECRET="smart_parking_dev_jwt_secret_32_chars_minimum"
 JWT_EXPIRES_IN="1d"
 PORT=3000
+CORS_ALLOWED_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 ```
 
-For Prisma migrations in local development, the shadow database must exist and the configured MySQL user must have access to it.
+**Neon (hosted):** use `?sslmode=require` — see `.env.example`.
 
-Example:
+> NestJS backend no longer uses MySQL. `payment-service` still uses MySQL until a later phase.
 
-```sql
-CREATE DATABASE IF NOT EXISTS parking_lot_shadow_db;
-GRANT ALL PRIVILEGES ON parking_lot_shadow_db.* TO 'parking_user'@'localhost';
-FLUSH PRIVILEGES;
-```
+**Render + Neon deploy:** see [docs/DEPLOY.md](./docs/DEPLOY.md).
 
 ## Installation
 
@@ -134,14 +133,13 @@ Check migration status:
 npx prisma migrate status
 ```
 
-Current migrations:
+Current migration (PostgreSQL baseline):
 
 ```text
-20260613200354_init
-20260614203000_milestone_2_parking_structure
-20260614214500_milestone_3_vehicles_bookings
-20260614223000_milestone_4_parking_events
+20260619120000_postgresql_baseline
 ```
+
+MySQL history: `prisma/migrations_mysql_archive/`
 
 ## Run The Backend
 
