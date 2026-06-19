@@ -23,11 +23,12 @@ export function ChatMessageBubble({
   showSender?: boolean;
 }) {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const isMine = message.isMine;
-  const receivedBg =
-    theme.palette.mode === 'light'
-      ? theme.palette.grey[100]
-      : alpha(theme.palette.common.white, 0.08);
+
+  const receivedBg = isLight
+    ? theme.palette.background.paper
+    : alpha(theme.palette.common.white, 0.08);
 
   return (
     <Box
@@ -50,7 +51,11 @@ export function ChatMessageBubble({
       <Box
         sx={{
           bgcolor: isMine ? 'primary.main' : receivedBg,
+          border: isLight && !isMine ? '1px solid' : 'none',
+          borderColor: isLight && !isMine ? alpha(theme.palette.text.primary, 0.08) : undefined,
           borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          boxShadow:
+            isLight && !isMine ? `0 1px 2px ${alpha(theme.palette.text.primary, 0.08)}` : 'none',
           color: isMine ? 'primary.contrastText' : 'text.primary',
           maxWidth: { xs: '85%', sm: '68%' },
           minWidth: 72,
@@ -83,7 +88,11 @@ export function ChatMessageBubble({
           <Typography
             component="span"
             sx={{
-              color: isMine ? alpha(theme.palette.primary.contrastText, 0.78) : 'text.secondary',
+              color: isMine
+                ? alpha(theme.palette.primary.contrastText, 0.78)
+                : isLight
+                  ? alpha(theme.palette.text.secondary, 0.9)
+                  : 'text.secondary',
               flexShrink: 0,
               fontSize: '0.6875rem',
               lineHeight: 1,
@@ -101,31 +110,31 @@ export function ChatMessageBubble({
 
 export function ChatMessageList({ messages }: { messages: ConversationMessage[] }) {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
 
   return (
-    <Stack
-      spacing={0}
+    <Box
       sx={{
-        bgcolor:
-          theme.palette.mode === 'light'
-            ? alpha(theme.palette.grey[500], 0.06)
-            : 'transparent',
-        borderRadius: 1,
-        mx: -1,
-        px: 1,
-        py: 0.5,
+        bgcolor: isLight ? 'background.default' : 'transparent',
+        minHeight: '100%',
+        mx: -2,
+        my: -2,
+        px: 2,
+        py: 2,
       }}
     >
-      {messages.map((message, index) => {
-        const previous = index > 0 ? messages[index - 1] : undefined;
-        const grouped = isGroupedWithPrevious(message, previous);
+      <Stack spacing={0}>
+        {messages.map((message, index) => {
+          const previous = index > 0 ? messages[index - 1] : undefined;
+          const grouped = isGroupedWithPrevious(message, previous);
 
-        return (
-          <Box key={message.id} sx={{ mt: grouped ? 0.25 : 1 }}>
-            <ChatMessageBubble message={message} showSender={!grouped && !message.isMine} />
-          </Box>
-        );
-      })}
-    </Stack>
+          return (
+            <Box key={message.id} sx={{ mt: grouped ? 0.25 : 1 }}>
+              <ChatMessageBubble message={message} showSender={!grouped && !message.isMine} />
+            </Box>
+          );
+        })}
+      </Stack>
+    </Box>
   );
 }
