@@ -33,6 +33,7 @@ import { matchItemToSingleResult } from '../../lib/securityGateMatch';
 import {
   SecurityGateMatchItem,
   SecurityGateMultipleMatchesResult,
+  SecurityGateRecentVisit,
   SecurityGateSingleResult,
 } from '../../types/securityGate';
 
@@ -74,6 +75,9 @@ function VehicleActivitySummary({
           Today: {activity.todayVisits} visits
         </Typography>
         <Typography color="text.secondary" variant="body2">
+          Last 7 days: {activity.last7DaysVisits} visits
+        </Typography>
+        <Typography color="text.secondary" variant="body2">
           Last 30 days: {activity.last30DaysVisits} visits
         </Typography>
         <Typography color="text.secondary" variant="body2">
@@ -82,6 +86,73 @@ function VehicleActivitySummary({
         <Typography color="text.secondary" variant="body2">
           Last visit: {lastVisitLabel}
         </Typography>
+      </Stack>
+    </Paper>
+  );
+}
+
+function RecentVisitsPanel({ visits }: { visits: SecurityGateRecentVisit[] }) {
+  if (visits.length === 0) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          bgcolor: 'action.hover',
+          borderRadius: 1,
+          p: 1.5,
+        }}
+      >
+        <Typography color="text.secondary" variant="body2">
+          No previous visits for this vehicle.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        bgcolor: 'action.hover',
+        borderRadius: 1,
+        p: 1.5,
+      }}
+    >
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle2">Recent Visits</Typography>
+        {visits.map((visit) => (
+          <Box
+            key={visit.sessionNo}
+            sx={{
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              pt: 1.5,
+              '&:first-of-type': { borderTop: 0, pt: 0 },
+            }}
+          >
+            <Stack spacing={0.5}>
+              <Stack
+                alignItems="center"
+                direction="row"
+                flexWrap="wrap"
+                justifyContent="space-between"
+                spacing={1}
+              >
+                <Typography fontWeight={600} variant="body2">
+                  {visit.sessionNo}
+                </Typography>
+                <ParkingEventStatusChip status={visit.status} />
+              </Stack>
+              <Typography color="text.secondary" variant="body2">
+                {visit.parkingLotName} · Slot {visit.slotNumber}
+              </Typography>
+              <Typography color="text.secondary" variant="caption">
+                In: {formatDateTime(visit.checkInTime)}
+                {visit.checkOutTime ? ` · Out: ${formatDateTime(visit.checkOutTime)}` : ''}
+              </Typography>
+            </Stack>
+          </Box>
+        ))}
       </Stack>
     </Paper>
   );
@@ -166,6 +237,7 @@ function GateResultCard({
         />
 
         <VehicleActivitySummary activity={result.vehicleActivity} />
+        <RecentVisitsPanel visits={result.recentVisits} />
 
         {result.action === 'CHECK_IN' && result.lastCheckOutTime ? (
           <Alert severity="info">
