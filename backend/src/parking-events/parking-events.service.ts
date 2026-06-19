@@ -79,6 +79,24 @@ export class ParkingEventsService {
           where: { bookingId: booking.id },
         });
 
+        if (existingEvent?.status === ParkingEventStatus.COMPLETED) {
+          await this.slotLifecycleService.occupyAvailableSlot(booking.slotId, tx);
+
+          const reactivatedEvent = await tx.parkingEvent.update({
+            where: { id: existingEvent.id },
+            data: {
+              status: ParkingEventStatus.ACTIVE,
+              checkInTime: new Date(),
+              checkOutTime: null,
+              durationMinutes: null,
+              feeAmount: null,
+            },
+            include: parkingEventListInclude,
+          });
+
+          return presentParkingEvent(reactivatedEvent);
+        }
+
         if (existingEvent) {
           throw new ConflictException('Parking event already exists for this booking');
         }
@@ -173,13 +191,6 @@ export class ParkingEventsService {
       if (!completedEvent) {
         throw new NotFoundException('Parking event not found');
       }
-
-      await tx.booking.update({
-        where: { id: existingEvent.bookingId },
-        data: {
-          status: BookingStatus.COMPLETED,
-        },
-      });
 
       await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
 

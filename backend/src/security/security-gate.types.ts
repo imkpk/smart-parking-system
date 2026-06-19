@@ -5,6 +5,7 @@ export type SecurityGateAction = 'CHECK_IN' | 'CHECK_OUT' | 'NONE';
 export interface SecurityGateSearchResult {
   action: SecurityGateAction;
   actionDisabledReason: string | null;
+  lastCheckOutTime: string | null;
   booking: {
     id: number;
     bookingCode: string;

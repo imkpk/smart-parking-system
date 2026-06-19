@@ -89,8 +89,22 @@ function GateResultCard({
                   },
                 ]
               : []),
+            ...(result.lastCheckOutTime
+              ? [
+                  {
+                    label: 'Last Checked Out At',
+                    value: formatDateTime(result.lastCheckOutTime),
+                  },
+                ]
+              : []),
           ]}
         />
+
+        {result.action === 'CHECK_IN' && result.lastCheckOutTime ? (
+          <Alert severity="info">
+            Slot is available. Customer can check in again for this booking.
+          </Alert>
+        ) : null}
 
         {result.actionDisabledReason ? (
           <Alert severity="warning">{result.actionDisabledReason}</Alert>

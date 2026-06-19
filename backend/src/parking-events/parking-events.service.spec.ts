@@ -264,17 +264,53 @@ describe('ParkingEventsService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('blocks check-in when a parking event already exists', async () => {
-    prisma.booking.findFirst.mockResolvedValue(booking);
+  it('reactivates a completed parking event when the customer returns', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-14T12:30:00.000Z'));
+    const completedEvent = buildEnrichedParkingEvent({
+      id: 100,
+      status: ParkingEventStatus.COMPLETED,
+      checkOutTime: new Date('2026-06-14T12:00:00.000Z'),
+      durationMinutes: 120,
+      feeAmount: 100,
+    });
+    const reactivatedEvent = buildEnrichedParkingEvent({
+      id: 100,
+      checkInTime: new Date('2026-06-14T12:30:00.000Z'),
+      checkOutTime: null,
+      status: ParkingEventStatus.ACTIVE,
+      durationMinutes: null,
+      feeAmount: null,
+    });
+
+    prisma.booking.findFirst.mockResolvedValue({
+      ...booking,
+      slot: { id: booking.slotId, status: SlotStatus.AVAILABLE },
+    });
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findUnique.mockResolvedValue({
       id: 100,
       status: ParkingEventStatus.COMPLETED,
     });
+    prisma.parkingEvent.update.mockResolvedValue(reactivatedEvent);
 
-    await expect(
-      service.checkIn({ bookingId: booking.id }, securityUser),
-    ).rejects.toBeInstanceOf(ConflictException);
+    const result = await service.checkIn({ bookingId: booking.id }, securityUser);
+
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: booking.slotId, status: SlotStatus.AVAILABLE },
+      data: { status: SlotStatus.OCCUPIED },
+    });
+    expect(prisma.parkingEvent.update).toHaveBeenCalledWith({
+      where: { id: 100 },
+      data: {
+        status: ParkingEventStatus.ACTIVE,
+        checkInTime: new Date('2026-06-14T12:30:00.000Z'),
+        checkOutTime: null,
+        durationMinutes: null,
+        feeAmount: null,
+      },
+      include: parkingEventListInclude,
+    });
+    expect(result).toEqual(presentParkingEvent(reactivatedEvent));
   });
 
   it('rejects check-in when slot is not reserved', async () => {
@@ -306,7 +342,7 @@ describe('ParkingEventsService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('checks out an active parking event, completes booking, and releases slot', async () => {
+  it('checks out an active parking event and releases the slot for return visits', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-14T12:01:00.000Z'));
     const activeEvent = {
       id: 100,
@@ -350,10 +386,7 @@ describe('ParkingEventsService', () => {
         feeAmount: 110,
       }),
     });
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      where: { id: booking.id },
-      data: { status: BookingStatus.COMPLETED },
-    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(prisma.slot.updateMany).toHaveBeenCalledWith({
       where: { id: booking.slotId, status: SlotStatus.OCCUPIED },
       data: { status: SlotStatus.AVAILABLE },

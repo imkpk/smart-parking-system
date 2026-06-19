@@ -208,6 +208,17 @@ describe('SlotLifecycleService', () => {
     });
   });
 
+  it('occupies an available slot for a returning vehicle', async () => {
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+
+    await service.occupyAvailableSlot(slot.id);
+
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: slot.id, status: SlotStatus.AVAILABLE },
+      data: { status: SlotStatus.OCCUPIED },
+    });
+  });
+
   it('rejects stale occupied slot release attempts', async () => {
     prisma.slot.updateMany.mockResolvedValue({ count: 0 });
 

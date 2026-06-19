@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus } from '@prisma/client';
+import { BookingStatus, ParkingEventStatus, SlotStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { org1, org2 } from '../test/test-tenant-fixtures';
 import { securityUser, securityUserOrg2 } from '../test/test-users';
@@ -32,6 +32,7 @@ describe('SecurityGateService', () => {
     slot: {
       id: org1.slot.id,
       slotNumber: org1.slot.slotNumber,
+      status: SlotStatus.RESERVED,
       floor: {
         id: org1.floor.id,
         name: org1.floor.name,
@@ -167,27 +168,30 @@ describe('SecurityGateService', () => {
     );
   });
 
-  it('does not return CHECK_OUT after checkout is completed', async () => {
+  it('returns check-in after checkout when the assigned slot is available again', async () => {
     const staleActiveEvent = {
       ...activeEvent,
       id: 302,
       checkInTime: new Date('2026-06-19T08:00:00.000Z'),
     };
+    const lastCheckOutTime = new Date('2026-06-19T10:00:00.000Z');
 
-    prisma.booking.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        ...confirmedBooking,
-        status: BookingStatus.COMPLETED,
-      });
+    prisma.booking.findFirst.mockResolvedValueOnce({
+      ...confirmedBooking,
+      slot: {
+        ...confirmedBooking.slot,
+        status: SlotStatus.AVAILABLE,
+      },
+    });
     prisma.parkingEvent.findFirst
       .mockResolvedValueOnce(staleActiveEvent)
-      .mockResolvedValueOnce({ id: 301, checkOutTime: new Date('2026-06-19T10:00:00.000Z') });
+      .mockResolvedValueOnce({ checkOutTime: lastCheckOutTime })
+      .mockResolvedValueOnce({ checkOutTime: lastCheckOutTime });
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
-    expect(result?.action).toBe('NONE');
-    expect(result?.actionDisabledReason).toBe('Already checked out.');
+    expect(result?.action).toBe('CHECK_IN');
+    expect(result?.lastCheckOutTime).toBe(lastCheckOutTime.toISOString());
     expect(result?.parkingEvent).toBeNull();
   });
 
@@ -199,11 +203,8 @@ describe('SecurityGateService', () => {
     };
 
     prisma.booking.findFirst
-      .mockResolvedValueOnce(nextBooking)
-      .mockResolvedValueOnce({
-        ...confirmedBooking,
-        status: BookingStatus.COMPLETED,
-      });
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(nextBooking);
     prisma.parkingEvent.findFirst
       .mockResolvedValueOnce({
         ...activeEvent,

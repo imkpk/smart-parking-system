@@ -24,7 +24,11 @@ export function buildGateConfirmDescription(result: SecurityGateSearchResult) {
     : '';
 
   if (result.action === 'CHECK_IN') {
-    return `Check in vehicle ${booking.vehicleNumber} to slot ${booking.slotNumber}${lotSuffix}?`;
+    const returnLine = result.lastCheckOutTime
+      ? `\n\nLast checked out ${formatDateTime(result.lastCheckOutTime)}. Slot is available now.`
+      : '';
+
+    return `Check in vehicle ${booking.vehicleNumber} to slot ${booking.slotNumber}${lotSuffix}?${returnLine}`;
   }
 
   if (result.action === 'CHECK_OUT' && parkingEvent) {
