@@ -1,6 +1,8 @@
 import type { IllustrationName } from '../../assets/illustrations';
 import type { ConversationType } from '../../types/conversation';
 
+const securityChatIllustration: IllustrationName = 'securityGuardChat';
+
 export function getChatIllustration(
   type: ConversationType | null | undefined,
   placement:
@@ -12,24 +14,28 @@ export function getChatIllustration(
     | 'startCustomerCare',
 ): IllustrationName {
   if (placement === 'startSecurity') {
-    return 'securityChat';
+    return securityChatIllustration;
   }
 
   if (placement === 'startCustomerCare') {
     return 'customerCare';
   }
 
+  if (type === 'SECURITY') {
+    return securityChatIllustration;
+  }
+
   if (placement === 'emptyMessages') {
-    return type === 'SECURITY' ? 'securityMessages' : 'messaging';
+    return 'messaging';
   }
 
   if (placement === 'selectThread') {
-    return type === 'SECURITY' ? 'securitySurveillance' : 'chatSupport';
+    return 'chatSupport';
   }
 
   if (placement === 'emptyInbox') {
-    return type === 'SECURITY' ? 'securityInbox' : 'customerCare';
+    return 'customerCare';
   }
 
-  return type === 'SECURITY' ? 'securityChat' : 'customerCare';
+  return 'customerCare';
 }

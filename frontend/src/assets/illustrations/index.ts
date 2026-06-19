@@ -19,6 +19,7 @@ import securityAlert from './security-alert.svg?url';
 import securityChat from './security-chat.svg?url';
 import securityCheck from './security-check.jpg?url';
 import securityGateCheck from './security-gate-check.jpg?url';
+import securityGuardChat from './security-guard-chat.svg?url';
 import securityInbox from './security-inbox.svg?url';
 import securityMessages from './security-messages.svg?url';
 import securitySurveillance from './security-surveillance.svg?url';
@@ -46,6 +47,7 @@ export const illustrations = {
   securityChat,
   securityCheck,
   securityGateCheck,
+  securityGuardChat,
   securityInbox,
   securityMessages,
   securitySurveillance,
