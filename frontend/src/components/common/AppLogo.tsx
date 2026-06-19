@@ -6,20 +6,23 @@ export function AppLogo({
   showText = true,
   name,
   logoUrl,
+  emphasis = false,
 }: {
   showText?: boolean;
   name?: string;
   logoUrl?: string | null;
+  emphasis?: boolean;
 }) {
   const displayName = name ?? brand.name;
   const logoSrc = logoUrl || parkLogo;
+  const logoSize = emphasis ? 50 : showText ? 45 : 38;
 
   return (
     <Box
       sx={{
         alignItems: 'center',
         display: 'flex',
-        gap: 1.25,
+        gap: emphasis ? 1.5 : 1.25,
         minWidth: 0,
       }}
     >
@@ -30,14 +33,19 @@ export function AppLogo({
         sx={{
           display: 'block',
           flexShrink: 0,
-          height: showText ? 40 : 36,
+          height: logoSize,
           objectFit: 'contain',
-          width: showText ? 40 : 36,
+          width: logoSize,
         }}
       />
       {showText ? (
         <Box minWidth={0}>
-          <Typography noWrap sx={{ fontWeight: 600, lineHeight: 1.2 }} variant="subtitle2">
+          <Typography
+            component="span"
+            noWrap
+            sx={{ fontWeight: emphasis ? 700 : 600, lineHeight: 1.2 }}
+            variant={emphasis ? 'h5' : 'h6'}
+          >
             {displayName}
           </Typography>
         </Box>

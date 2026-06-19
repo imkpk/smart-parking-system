@@ -56,18 +56,28 @@ export function AuthPageShell({
         <Stack
           alignItems="center"
           justifyContent="center"
-          spacing={2}
-          sx={{ display: { xs: 'none', md: 'flex' }, px: 2 }}
+          spacing={2.5}
+          sx={{ display: { xs: 'none', md: 'flex' }, px: 2, py: 1 }}
         >
           <Illustration maxWidth={300} name={illustration} />
-          <Typography color="text.secondary" textAlign="center" variant="body2">
-            {branding.name}
-          </Typography>
+          <Box sx={{ maxWidth: 320, textAlign: 'center' }}>
+            <Typography
+              component="h2"
+              sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 }}
+              variant="h4"
+            >
+              {brand.loginHero}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }} variant="body2">
+              {branding.name}
+            </Typography>
+          </Box>
         </Stack>
 
         <Paper
           elevation={0}
           sx={{
+            alignSelf: 'center',
             border: '1px solid',
             borderColor: 'divider',
             p: { xs: 3, sm: 4 },
@@ -76,7 +86,7 @@ export function AuthPageShell({
         >
           <Stack spacing={3}>
             <Stack alignItems="flex-start" spacing={1.5}>
-              <AppLogo logoUrl={branding.logoUrl} name={branding.name} />
+              <AppLogo emphasis logoUrl={branding.logoUrl} name={branding.name} />
               <Box>
                 <Typography component="h1" variant="h5">
                   {isLoading ? title : pageTitle}
