@@ -74,9 +74,15 @@ export interface SecurityGateMultipleMatchesResult {
   matches: SecurityGateMatchItem[];
 }
 
+export interface SecurityGateNotFoundResult {
+  resultType: 'NOT_FOUND';
+  message: string;
+}
+
 export type SecurityGateSearchResponse =
   | SecurityGateSingleResult
-  | SecurityGateMultipleMatchesResult;
+  | SecurityGateMultipleMatchesResult
+  | SecurityGateNotFoundResult;
 
 /** @deprecated Use SecurityGateSingleResult */
 export type SecurityGateSearchResult = SecurityGateSingleResult;

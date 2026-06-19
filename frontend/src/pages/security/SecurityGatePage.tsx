@@ -421,6 +421,7 @@ export function SecurityGatePage() {
   const [matches, setMatches] = useState<SecurityGateMultipleMatchesResult['matches']>([]);
   const [result, setResult] = useState<SecurityGateSingleResult | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [notFoundMessage, setNotFoundMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const invalidateOperationalQueries = async () => {
@@ -434,6 +435,16 @@ export function SecurityGatePage() {
   const searchMutation = useMutation({
     mutationFn: searchSecurityGate,
     onSuccess: (data) => {
+      if (data.resultType === 'NOT_FOUND') {
+        setNotFoundMessage(data.message);
+        setMatches([]);
+        setResult(null);
+        setStep('search');
+        return;
+      }
+
+      setNotFoundMessage(null);
+
       if (data.resultType === 'MULTIPLE_MATCHES') {
         setMatches(data.matches);
         setResult(null);
@@ -495,6 +506,7 @@ export function SecurityGatePage() {
       return;
     }
 
+    setNotFoundMessage(null);
     searchMutation.mutate(trimmedQuery);
   };
 
@@ -502,6 +514,7 @@ export function SecurityGatePage() {
     setStep('search');
     setResult(null);
     setMatches([]);
+    setNotFoundMessage(null);
     setSuccessMessage('');
     setSearchQuery('');
   };
@@ -580,6 +593,7 @@ export function SecurityGatePage() {
             >
               Search
             </Button>
+            {notFoundMessage ? <Alert severity="warning">{notFoundMessage}</Alert> : null}
           </Stack>
         </Paper>
       ) : null}

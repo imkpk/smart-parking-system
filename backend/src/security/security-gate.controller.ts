@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  NotFoundException,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -27,7 +21,10 @@ export class SecurityGateController {
     const result = await this.securityGateService.search(query ?? '', currentUser);
 
     if (!result) {
-      throw new NotFoundException('No matching booking or active session found');
+      return {
+        resultType: 'NOT_FOUND' as const,
+        message: 'No matching booking or active session found',
+      };
     }
 
     return result;
