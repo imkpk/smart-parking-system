@@ -60,9 +60,14 @@ export function AuthPageShell({
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2 }}
         >
           <Illustration maxWidth={300} name={illustration} />
-          <Typography color="text.secondary" textAlign="center" variant="body2">
-            {branding.name}
-          </Typography>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography component="h2" sx={{ fontWeight: 600, lineHeight: 1.2 }} variant="h4">
+              {branding.name}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5 }} variant="body2">
+              {brand.loginHero}
+            </Typography>
+          </Box>
         </Stack>
 
         <Paper

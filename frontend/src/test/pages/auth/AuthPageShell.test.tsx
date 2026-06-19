@@ -23,6 +23,8 @@ describe('AuthPageShell', () => {
     );
 
     expect(screen.getByRole('heading', { name: /welcome back/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /smart parking/i })).toBeInTheDocument();
+    expect(screen.getByText('Find, Book, Park')).toBeInTheDocument();
     expect(screen.getByText(/sign in to continue/i)).toBeInTheDocument();
     expect(screen.getByText('Form content')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();

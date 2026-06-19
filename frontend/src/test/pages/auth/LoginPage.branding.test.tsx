@@ -44,9 +44,10 @@ describe('LoginPage branding', () => {
 
     renderWithProviders(<LoginPage />);
 
-    expect(screen.getByRole('heading', { name: /find\. book\. park\./i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getAllByText('Smart Parking').length).toBeGreaterThan(0);
+    expect(screen.getByText('Find, Book, Park')).toBeInTheDocument();
   });
 
   it('renders tenant branding when slug branding is available', async () => {
@@ -84,7 +85,7 @@ describe('LoginPage branding', () => {
     renderWithProviders(<LoginPage />, { route: '/login/missing-tenant' });
 
     expect(screen.getByRole('alert')).toHaveTextContent(/unable to load tenant branding/i);
-    expect(screen.getByRole('heading', { name: /find\. book\. park\./i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 });
