@@ -486,6 +486,7 @@ export class SecurityGateService {
         ...(filters.vehicle ? { vehicle: filters.vehicle } : {}),
         booking: {
           organizationId,
+          status: BookingStatus.CONFIRMED,
           parkingEvents: {
             none: {
               status: ParkingEventStatus.ACTIVE,
@@ -550,6 +551,10 @@ export class SecurityGateService {
   private async buildReturnCheckInResolved(
     booking: GateBooking,
   ): Promise<ResolvedGateAction | null> {
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      return null;
+    }
+
     const slotReadyForReturn = await this.isSlotReadyForReturnCheckIn(
       booking.organizationId,
       booking.slot.id,
@@ -678,9 +683,7 @@ export class SecurityGateService {
       case BookingStatus.CANCELLED:
         return 'This booking was cancelled.';
       case BookingStatus.COMPLETED:
-        return lastCheckOutTime
-          ? 'Already checked out. Slot is not available for check-in right now.'
-          : 'Already checked out.';
+        return 'This booking is completed.';
       case BookingStatus.EXPIRED:
         return 'This booking has expired.';
       case BookingStatus.PENDING:

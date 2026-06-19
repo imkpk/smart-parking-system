@@ -47,13 +47,49 @@ function gateActionLabel(action: SecurityGateSingleResult['action']) {
   return 'No action';
 }
 
-function gateMatchSelectLabel(action: SecurityGateMatchItem['gateAction']) {
-  if (action === 'CHECK_IN') {
+function gateMatchActionLabel(match: SecurityGateMatchItem) {
+  if (match.gateAction === 'CHECK_IN') {
+    return 'Check in';
+  }
+
+  if (match.gateAction === 'CHECK_OUT') {
+    return 'Check out';
+  }
+
+  if (match.bookingStatus === 'COMPLETED') {
+    return 'Completed';
+  }
+
+  if (match.bookingStatus === 'CANCELLED') {
+    return 'Cancelled';
+  }
+
+  if (match.bookingStatus === 'EXPIRED') {
+    return 'Expired';
+  }
+
+  return 'No action';
+}
+
+function gateMatchSelectLabel(match: SecurityGateMatchItem) {
+  if (match.gateAction === 'CHECK_IN') {
     return 'Use this booking';
   }
 
-  if (action === 'CHECK_OUT') {
+  if (match.gateAction === 'CHECK_OUT') {
     return 'Use this session';
+  }
+
+  if (match.bookingStatus === 'COMPLETED') {
+    return 'Completed';
+  }
+
+  if (match.bookingStatus === 'CANCELLED') {
+    return 'Cancelled';
+  }
+
+  if (match.bookingStatus === 'EXPIRED') {
+    return 'Expired';
   }
 
   return 'No action';
@@ -76,7 +112,7 @@ function filterGateMatches(matches: SecurityGateMatchItem[], query: string) {
       match.parkingLotName,
       match.slotNumber,
       match.bookingStatus,
-      gateActionLabel(match.gateAction),
+      gateMatchActionLabel(match),
     ]
       .filter(Boolean)
       .join(' ')
@@ -310,7 +346,7 @@ function MatchCard({
   match: SecurityGateMatchItem;
   onSelect: () => void;
 }) {
-  const selectLabel = gateMatchSelectLabel(match.gateAction);
+  const selectLabel = gateMatchSelectLabel(match);
   const canSelect = match.gateAction !== 'NONE';
 
   return (
@@ -344,7 +380,7 @@ function MatchCard({
               label: 'Status',
               value: <BookingStatusChip status={match.bookingStatus} />,
             },
-            { label: 'Gate Action', value: gateActionLabel(match.gateAction) },
+            { label: 'Gate Action', value: gateMatchActionLabel(match) },
           ]}
         />
         <Button
@@ -435,7 +471,11 @@ function MultipleMatchesPanel({
         headerName: 'Gate Action',
         minWidth: 110,
         sortable: false,
-        valueGetter: (_value, row) => gateActionLabel(row.gateAction),
+        renderCell: ({ row }) => (
+          <Typography color={row.gateAction === 'NONE' ? 'text.secondary' : 'text.primary'} variant="body2">
+            {gateMatchActionLabel(row)}
+          </Typography>
+        ),
       },
       {
         field: 'actions',
@@ -446,7 +486,7 @@ function MultipleMatchesPanel({
         minWidth: 168,
         sortable: false,
         renderCell: ({ row }) => {
-          const selectLabel = gateMatchSelectLabel(row.gateAction);
+          const selectLabel = gateMatchSelectLabel(row);
           const canSelect = row.gateAction !== 'NONE';
 
           return (
@@ -635,6 +675,10 @@ export function SecurityGatePage() {
   };
 
   const handleSelectMatch = useCallback((match: SecurityGateMatchItem) => {
+    if (match.gateAction === 'NONE') {
+      return;
+    }
+
     setResult(matchItemToSingleResult(match));
     setStep('result');
   }, []);
