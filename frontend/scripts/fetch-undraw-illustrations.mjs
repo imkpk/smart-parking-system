@@ -18,6 +18,7 @@ const picks = [
   { file: 'security-messages.svg', slug: 'messages_okui', title: 'Security messages' },
   { file: 'security-surveillance.svg', slug: 'home-cameras_hbw3', title: 'Security surveillance' },
   { file: 'gate-entrance.svg', slug: 'knocking-on-the-door_vgly', title: 'Gate entrance' },
+  { file: 'admin-support-chat.svg', slug: 'real-time-collaboration_bchs', title: 'Admin support chat' },
   { file: 'chat-support.svg', slug: 'work-chat_kw8x', title: 'Work chat' },
   { file: 'customer-care.svg', slug: 'contact-us_s4jn', title: 'Customer care' },
   { file: 'messaging.svg', slug: 'respond_o54z', title: 'Messaging reply' },

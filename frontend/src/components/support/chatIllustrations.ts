@@ -2,6 +2,7 @@ import type { IllustrationName } from '../../assets/illustrations';
 import type { ConversationType } from '../../types/conversation';
 
 const securityChatIllustration: IllustrationName = 'securityGuardChat';
+const customerCareIllustration: IllustrationName = 'adminSupportChat';
 
 export function getChatIllustration(
   type: ConversationType | null | undefined,
@@ -18,11 +19,15 @@ export function getChatIllustration(
   }
 
   if (placement === 'startCustomerCare') {
-    return 'customerCare';
+    return customerCareIllustration;
   }
 
   if (type === 'SECURITY') {
     return securityChatIllustration;
+  }
+
+  if (type === 'CUSTOMER_CARE') {
+    return customerCareIllustration;
   }
 
   if (placement === 'emptyMessages') {

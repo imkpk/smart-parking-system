@@ -429,6 +429,9 @@ export function AdminSupportInboxPage() {
   return (
     <StaffSupportInbox
       description="Handle customer-care requests and monitor security conversations."
+      emptyInboxIllustration="adminSupportChat"
+      emptyThreadIllustration="adminSupportChat"
+      selectThreadIllustration="adminSupportChat"
       showTypeFilter
       title="Support Inbox"
     />

@@ -1,3 +1,4 @@
+import adminSupportChat from './admin-support-chat.svg?url';
 import analytics from './business-analytics.svg?url';
 import booking from './booking.svg?url';
 import chatSupport from './chat-support.svg?url';
@@ -26,6 +27,7 @@ import securitySurveillance from './security-surveillance.svg?url';
 
 /** Free unDraw illustrations (MIT). Primary accent uses --primary-svg-color. */
 export const illustrations = {
+  adminSupportChat,
   analytics,
   booking,
   chatSupport,
