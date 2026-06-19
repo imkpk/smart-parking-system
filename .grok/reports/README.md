@@ -55,6 +55,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-4b-slot-map-api.md](./phase-4b-slot-map-api.md) | Phase 4B visual slot map API | PR #87 ✅ |
 | [phase-4c-visual-slot-map-ui.md](./phase-4c-visual-slot-map-ui.md) | Phase 4C visual slot map UI | PR #88 ✅ |
 | [phase-4-visual-slot-map-acceptance.md](./phase-4-visual-slot-map-acceptance.md) | Phase 4 visual slot map acceptance (FINAL LOOP) | PR #89 ✅ |
-| [phase-4e-parking-lot-management-ux.md](./phase-4e-parking-lot-management-ux.md) | Phase 4E parking lot management workspace UX polish | `fix/phase-4e-parking-lot-management-ux` |
+| [phase-4e-parking-lot-management-ux.md](./phase-4e-parking-lot-management-ux.md) | Phase 4E parking lot management workspace UX polish | PR #92 ✅ |
+| [parking-lot-workspace-ux-regressions.md](./parking-lot-workspace-ux-regressions.md) | Phase 4E regression fix — header layout, visual map CTA dedup, table row navigation | `fix/parking-lot-workspace-ux-regressions` |
 
 Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.

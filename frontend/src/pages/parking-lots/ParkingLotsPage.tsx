@@ -24,7 +24,7 @@ import { Add, Delete, Edit, OpenInNew, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
 import { FormEvent, useMemo, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -77,7 +77,6 @@ const emptyForm: ParkingLotPayload = {
 };
 
 export function ParkingLotsPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const { isOperationalAdmin, isTenantAdmin } = useUserRole();
@@ -383,7 +382,6 @@ export function ParkingLotsPage() {
                 width: 52,
               },
             }}
-            onRowClick={(row) => navigate(getParkingLotWorkspacePath(row.id, 'overview'))}
             emptyState={{
               description: search
                 ? 'Try a parking lot name, city, state, or pincode.'
