@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.13.3
+**Version:** 1.13.4
 **Last updated:** 2026-06-19  
-**Current branch:** `feature/phase-5b-user-chat-ui`
+**Current branch:** `feature/phase-5b-staff-chat-inbox`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -289,8 +289,8 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ```text
 Phase 5 — Mobile Security Gate + In-App Chat MVP (PR stack 5A–5D).
 5A complete: gate flow (PR #97), phone search + visit history + illustrations (PR #99, #100).
-5B in progress: LOOP 5B-4 user support chat UI on feature/phase-5b-user-chat-ui (5B-3 merged PR #103).
-Next: 5B-5 staff inbox, 5B-6 smoke cleanup.
+5B in progress: LOOP 5B-5 staff support inbox on feature/phase-5b-staff-chat-inbox (5B-4 merged PR #104).
+Next: 5B-6 smoke cleanup.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -396,8 +396,8 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 [x] 5B-1: chat Prisma schema + contract — PR #101 ✅
 [x] 5B-2: tenant-scoped chat REST API — PR #102 ✅ (manual API smoke passed)
 [x] 5B-3: frontend conversation client + hooks — PR #103 ✅
-[ ] 5B-4: user support chat UI — feature/phase-5b-user-chat-ui (in progress)
-[ ] 5B-5: security/admin support inbox UI
+[x] 5B-4: user support chat UI — PR #104 ✅
+[ ] 5B-5: security/admin support inbox UI — feature/phase-5b-staff-chat-inbox (in progress)
 [ ] 5B-6: Phase 5B smoke cleanup
 ```
 
@@ -691,7 +691,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.13.0 | Grok | Phase 5B LOOP 5B-1: Conversation + ConversationMessage Prisma schema, migration, REST contract types (`backend/src/conversations/conversation.types.ts`). PR #101 ✅. |
 | 2026-06-19 | 1.13.1 | Grok | Phase 5B LOOP 5B-2: tenant-scoped `/api/conversations` REST API, access rules, presenter, focused service tests. PR #102 ✅ manual smoke passed. |
 | 2026-06-19 | 1.13.2 | Grok | Phase 5B LOOP 5B-3: frontend `conversationsApi`, `conversation` types, React Query hooks with 5s message polling option. PR #103 ✅. |
-| 2026-06-19 | 1.13.3 | Grok | Phase 5B LOOP 5B-4: USER `/support` chat UI — conversation list, security/customer-care starters, thread with 5s polling. Branch: `feature/phase-5b-user-chat-ui`. |
+| 2026-06-19 | 1.13.3 | Grok | Phase 5B LOOP 5B-4: USER `/support` chat UI — conversation list, security/customer-care starters, thread with 5s polling. PR #104 ✅. |
+| 2026-06-19 | 1.13.4 | Grok | Phase 5B LOOP 5B-5: SECURITY `/security/messages` + ADMIN `/admin/support` staff inboxes with reply, resolve, 5s polling. Branch: `feature/phase-5b-staff-chat-inbox`. |
 
 ---
 
