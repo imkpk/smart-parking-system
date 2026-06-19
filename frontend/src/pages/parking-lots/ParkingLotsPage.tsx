@@ -347,6 +347,8 @@ export function ParkingLotsPage() {
             </HeaderActionButton>
           ) : undefined
         }
+        description="Manage parking lots, floors, and slot capacity across your organization."
+        illustration="heatmap"
         title="Parking Lots"
       />
 

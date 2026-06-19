@@ -1,17 +1,21 @@
 import { Box, Button, ButtonProps, Stack, SxProps, Theme, Typography } from '@mui/material';
 import { ReactNode } from 'react';
+import type { IllustrationName } from '../../assets/illustrations';
+import { Illustration } from './Illustration';
 
 export function PageHeader({
   title,
   description,
   action,
   compact = false,
+  illustration,
   sx,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   compact?: boolean;
+  illustration?: IllustrationName;
   sx?: SxProps<Theme>;
 }) {
   return (
@@ -22,28 +26,40 @@ export function PageHeader({
       spacing={compact ? 1 : 2}
       sx={sx}
     >
-      <Box sx={{ minWidth: 0 }}>
-        <Typography
-          component="h1"
-          sx={compact ? { lineHeight: 1.2, mb: 0 } : undefined}
-          variant="h5"
-        >
-          {title}
-        </Typography>
-        {description ? (
-          <Typography
-            color="text.secondary"
-            sx={{
-              lineHeight: 1.45,
-              mb: compact ? 0 : undefined,
-              mt: compact ? 0.5 : 0.75,
-            }}
-            variant="body2"
-          >
-            {description}
-          </Typography>
+      <Stack
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        sx={{ flex: 1, minWidth: 0 }}
+      >
+        {illustration ? (
+          <Box sx={{ display: { xs: 'none', md: 'block' }, flexShrink: 0 }}>
+            <Illustration alt="" maxWidth={96} name={illustration} />
+          </Box>
         ) : null}
-      </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            component="h1"
+            sx={compact ? { lineHeight: 1.2, mb: 0 } : undefined}
+            variant="h5"
+          >
+            {title}
+          </Typography>
+          {description ? (
+            <Typography
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.45,
+                mb: compact ? 0 : undefined,
+                mt: compact ? 0.5 : 0.75,
+              }}
+              variant="body2"
+            >
+              {description}
+            </Typography>
+          ) : null}
+        </Box>
+      </Stack>
       {action ? (
         <Box
           sx={{

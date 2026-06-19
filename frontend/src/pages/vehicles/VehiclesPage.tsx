@@ -230,6 +230,8 @@ export function VehiclesPage() {
   return (
     <Stack spacing={3}>
       <PageHeader
+        description="Register and manage vehicles linked to customer accounts."
+        illustration="orderCar"
         title="Vehicles"
         action={
           canManageVehicles ? (

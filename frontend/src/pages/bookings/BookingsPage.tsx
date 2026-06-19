@@ -314,6 +314,8 @@ export function BookingsPage() {
   return (
     <Stack spacing={3}>
       <PageHeader
+        description="View and manage parking slot reservations and booking status."
+        illustration="booking"
         title="Bookings"
         action={
           isUser ? (
