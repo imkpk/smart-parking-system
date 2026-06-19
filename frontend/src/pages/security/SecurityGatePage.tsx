@@ -5,6 +5,12 @@ import {
   CircularProgress,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -23,16 +29,70 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { buildGateConfirmDescription } from '../../lib/gateConfirmText';
 import { formatBookingNo, formatDateTime, formatSessionNo } from '../../lib/formatters';
-import { SecurityGateSearchResult } from '../../types/securityGate';
+import { matchItemToSingleResult } from '../../lib/securityGateMatch';
+import {
+  SecurityGateMatchItem,
+  SecurityGateMultipleMatchesResult,
+  SecurityGateSingleResult,
+} from '../../types/securityGate';
 
-type GateStep = 'search' | 'result' | 'success';
+type GateStep = 'search' | 'matches' | 'result' | 'success';
+
+function gateActionLabel(action: SecurityGateSingleResult['action']) {
+  if (action === 'CHECK_IN') {
+    return 'Check in';
+  }
+
+  if (action === 'CHECK_OUT') {
+    return 'Check out';
+  }
+
+  return 'No action';
+}
+
+function VehicleActivitySummary({
+  activity,
+}: {
+  activity: SecurityGateSingleResult['vehicleActivity'];
+}) {
+  const lastVisitLabel = activity.lastVisitAt
+    ? formatDateTime(activity.lastVisitAt)
+    : 'No previous visits';
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        bgcolor: 'action.hover',
+        borderRadius: 1,
+        p: 1.5,
+      }}
+    >
+      <Stack spacing={0.75}>
+        <Typography variant="subtitle2">Vehicle Activity</Typography>
+        <Typography color="text.secondary" variant="body2">
+          Today: {activity.todayVisits} visits
+        </Typography>
+        <Typography color="text.secondary" variant="body2">
+          Last 30 days: {activity.last30DaysVisits} visits
+        </Typography>
+        <Typography color="text.secondary" variant="body2">
+          Last 1 year: {activity.last365DaysVisits} visits
+        </Typography>
+        <Typography color="text.secondary" variant="body2">
+          Last visit: {lastVisitLabel}
+        </Typography>
+      </Stack>
+    </Paper>
+  );
+}
 
 function GateResultCard({
   result,
   onAction,
   actionPending,
 }: {
-  result: SecurityGateSearchResult;
+  result: SecurityGateSingleResult;
   onAction: () => void;
   actionPending: boolean;
 }) {
@@ -65,6 +125,7 @@ function GateResultCard({
             { label: 'Booking No', value: formatBookingNo(result.booking.id) },
             { label: 'Booking Code', value: result.booking.bookingCode },
             { label: 'Customer', value: result.booking.customerName },
+            { label: 'Phone', value: result.booking.customerPhone ?? '—' },
             { label: 'Vehicle Number', value: result.booking.vehicleNumber },
             { label: 'Parking Lot', value: result.booking.parkingLotName },
             { label: 'Floor', value: result.booking.floorName },
@@ -73,15 +134,19 @@ function GateResultCard({
               label: 'Booking Status',
               value: <BookingStatusChip status={result.booking.status} />,
             },
+            {
+              label: 'Session Status',
+              value: result.parkingEvent ? (
+                <ParkingEventStatusChip status={result.parkingEvent.status} />
+              ) : (
+                '—'
+              ),
+            },
             ...(result.parkingEvent
               ? [
                   {
                     label: 'Session No',
                     value: formatSessionNo(result.parkingEvent.id),
-                  },
-                  {
-                    label: 'Session Status',
-                    value: <ParkingEventStatusChip status={result.parkingEvent.status} />,
                   },
                   {
                     label: 'Checked In At',
@@ -99,6 +164,8 @@ function GateResultCard({
               : []),
           ]}
         />
+
+        <VehicleActivitySummary activity={result.vehicleActivity} />
 
         {result.action === 'CHECK_IN' && result.lastCheckOutTime ? (
           <Alert severity="info">
@@ -129,12 +196,158 @@ function GateResultCard({
   );
 }
 
+function MatchCard({
+  match,
+  onSelect,
+}: {
+  match: SecurityGateMatchItem;
+  onSelect: () => void;
+}) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        p: 2,
+      }}
+    >
+      <Stack spacing={1.5}>
+        <Stack spacing={0.25}>
+          <Typography fontWeight={600}>{match.bookingNo}</Typography>
+          <Typography color="text.secondary" variant="body2">
+            {match.bookingCode}
+          </Typography>
+        </Stack>
+        <InfoRows
+          rows={[
+            { label: 'Customer', value: match.customerName },
+            { label: 'Phone', value: match.customerPhone ?? '—' },
+            { label: 'Vehicle', value: match.vehicleNumber },
+            {
+              label: 'Lot / Slot',
+              value: `${match.parkingLotName} · ${match.slotNumber}`,
+            },
+            {
+              label: 'Status',
+              value: <BookingStatusChip status={match.bookingStatus} />,
+            },
+            { label: 'Action', value: gateActionLabel(match.gateAction) },
+          ]}
+        />
+        <Button fullWidth onClick={onSelect} size="large" sx={{ minHeight: 52 }} variant="contained">
+          Select
+        </Button>
+      </Stack>
+    </Paper>
+  );
+}
+
+function MultipleMatchesPanel({
+  matches,
+  onSelect,
+  onBack,
+}: {
+  matches: SecurityGateMatchItem[];
+  onSelect: (match: SecurityGateMatchItem) => void;
+  onBack: () => void;
+}) {
+  return (
+    <Stack spacing={2}>
+      <Paper
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          p: { xs: 2, sm: 2.5 },
+        }}
+      >
+        <Stack spacing={1}>
+          <Typography variant="h6">Multiple matches found</Typography>
+          <Typography color="text.secondary" variant="body2">
+            Select the booking or vehicle you want to process.
+          </Typography>
+        </Stack>
+      </Paper>
+
+      <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 2 }}>
+        {matches.map((match) => (
+          <MatchCard
+            key={`${match.bookingId}-${match.vehicleNumber}`}
+            match={match}
+            onSelect={() => onSelect(match)}
+          />
+        ))}
+      </Box>
+
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          display: { xs: 'none', sm: 'block' },
+        }}
+      >
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Booking</TableCell>
+              <TableCell>Customer</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Vehicle</TableCell>
+              <TableCell>Lot / Slot</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell align="right"> </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {matches.map((match) => (
+              <TableRow key={`${match.bookingId}-${match.vehicleNumber}`}>
+                <TableCell>
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2">{match.bookingNo}</Typography>
+                    <Typography color="text.secondary" variant="caption">
+                      {match.bookingCode}
+                    </Typography>
+                  </Stack>
+                </TableCell>
+                <TableCell>{match.customerName}</TableCell>
+                <TableCell>{match.customerPhone ?? '—'}</TableCell>
+                <TableCell>{match.vehicleNumber}</TableCell>
+                <TableCell>
+                  {match.parkingLotName} · {match.slotNumber}
+                </TableCell>
+                <TableCell>
+                  <BookingStatusChip status={match.bookingStatus} />
+                </TableCell>
+                <TableCell>{gateActionLabel(match.gateAction)}</TableCell>
+                <TableCell align="right">
+                  <Button onClick={() => onSelect(match)} size="small" variant="outlined">
+                    Select
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Button fullWidth onClick={onBack} size="large" variant="outlined">
+        Search again
+      </Button>
+    </Stack>
+  );
+}
+
 export function SecurityGatePage() {
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [step, setStep] = useState<GateStep>('search');
   const [searchQuery, setSearchQuery] = useState('');
-  const [result, setResult] = useState<SecurityGateSearchResult | null>(null);
+  const [matches, setMatches] = useState<SecurityGateMultipleMatchesResult['matches']>([]);
+  const [result, setResult] = useState<SecurityGateSingleResult | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -149,7 +362,15 @@ export function SecurityGatePage() {
   const searchMutation = useMutation({
     mutationFn: searchSecurityGate,
     onSuccess: (data) => {
+      if (data.resultType === 'MULTIPLE_MATCHES') {
+        setMatches(data.matches);
+        setResult(null);
+        setStep('matches');
+        return;
+      }
+
       setResult(data);
+      setMatches([]);
       setStep('result');
     },
     onError: (error) => showError(getApiErrorMessage(error)),
@@ -198,7 +419,7 @@ export function SecurityGatePage() {
     const trimmedQuery = searchQuery.trim();
 
     if (!trimmedQuery) {
-      showError('Enter a booking code or vehicle number.');
+      showError('Enter a booking code, vehicle number, or phone number.');
       return;
     }
 
@@ -208,8 +429,14 @@ export function SecurityGatePage() {
   const handleReset = () => {
     setStep('search');
     setResult(null);
+    setMatches([]);
     setSuccessMessage('');
     setSearchQuery('');
+  };
+
+  const handleSelectMatch = (match: SecurityGateMatchItem) => {
+    setResult(matchItemToSingleResult(match));
+    setStep('result');
   };
 
   const handleConfirmAction = () => {
@@ -237,7 +464,7 @@ export function SecurityGatePage() {
   return (
     <Stack spacing={3} sx={{ maxWidth: 720, mx: 'auto', width: '100%' }}>
       <PageHeader
-        description="Search by booking code or vehicle number, then check vehicles in or out."
+        description="Search by booking code, booking no, vehicle number, or phone number."
         title="Security Gate"
       />
 
@@ -257,9 +484,9 @@ export function SecurityGatePage() {
               autoComplete="off"
               autoFocus
               fullWidth
-              label="Booking code or vehicle number"
+              label="Search booking code, booking no, vehicle number, or phone number"
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="e.g. BK-ORG1 or TS09EA1234"
+              placeholder="Search booking code, booking no, vehicle number, or phone number"
               size="medium"
               type="text"
               value={searchQuery}
@@ -283,6 +510,14 @@ export function SecurityGatePage() {
             </Button>
           </Stack>
         </Paper>
+      ) : null}
+
+      {step === 'matches' ? (
+        <MultipleMatchesPanel
+          matches={matches}
+          onBack={handleReset}
+          onSelect={handleSelectMatch}
+        />
       ) : null}
 
       {step === 'result' && result ? (

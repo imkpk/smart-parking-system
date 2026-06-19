@@ -1,5 +1,5 @@
 import { formatDateTime, formatSessionNo } from './formatters';
-import { SecurityGateSearchResult } from '../types/securityGate';
+import { SecurityGateSingleResult } from '../types/securityGate';
 
 const ACCESS_LOT_PATTERN = /^access\s+lot\s+\d+$/i;
 
@@ -17,7 +17,7 @@ export function isReadableParkingLotName(name: string | undefined) {
   return !/\d{6,}/.test(trimmed);
 }
 
-export function buildGateConfirmDescription(result: SecurityGateSearchResult) {
+export function buildGateConfirmDescription(result: SecurityGateSingleResult) {
   const { booking, parkingEvent } = result;
   const lotSuffix = isReadableParkingLotName(booking.parkingLotName)
     ? ` at ${booking.parkingLotName}`

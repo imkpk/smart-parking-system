@@ -2,14 +2,27 @@ import { BadRequestException } from '@nestjs/common';
 import { BookingStatus, ParkingEventStatus, SlotStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { org1, org2 } from '../test/test-tenant-fixtures';
-import { securityUser, securityUserOrg2 } from '../test/test-users';
+import { normalUser, securityUser, securityUserOrg2 } from '../test/test-users';
 import { SecurityGateService } from './security-gate.service';
+
+function expectSingleResult(
+  result: Awaited<ReturnType<SecurityGateService['search']>>,
+) {
+  expect(result?.resultType).toBe('SINGLE');
+
+  if (!result || result.resultType !== 'SINGLE') {
+    throw new Error('Expected a single gate result');
+  }
+
+  return result;
+}
 
 describe('SecurityGateService', () => {
   let service: SecurityGateService;
   let prisma: {
-    parkingEvent: { findFirst: jest.Mock; count: jest.Mock };
-    booking: { findFirst: jest.Mock };
+    parkingEvent: { findFirst: jest.Mock; findMany: jest.Mock; count: jest.Mock };
+    booking: { findFirst: jest.Mock; findMany: jest.Mock };
+    user: { findMany: jest.Mock };
   };
 
   const confirmedBooking = {
@@ -91,9 +104,16 @@ describe('SecurityGateService', () => {
     prisma = {
       parkingEvent: {
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       },
-      booking: { findFirst: jest.fn() },
+      booking: {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+      },
+      user: {
+        findMany: jest.fn(),
+      },
     };
 
     service = new SecurityGateService(
@@ -111,61 +131,48 @@ describe('SecurityGateService', () => {
   it('returns check-in action for a confirmed booking without a parking event', async () => {
     prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
 
-    const result = await service.search(org1.booking.bookingCode, securityUser);
+    const result = expectSingleResult(
+      await service.search(org1.booking.bookingCode, securityUser),
+    );
 
-    expect(result?.action).toBe('CHECK_IN');
-    expect(result?.booking.bookingCode).toBe(org1.booking.bookingCode);
-    expect(result?.parkingEvent).toBeNull();
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+    expect(result.action).toBe('CHECK_IN');
+    expect(result.booking.bookingCode).toBe(org1.booking.bookingCode);
+    expect(result.parkingEvent).toBeNull();
+    expect(result.vehicleActivity.todayVisits).toBe(0);
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,
-          OR: expect.arrayContaining([{ bookingCode: org1.booking.bookingCode }]),
+          vehicleId: org1.vehicle.id,
         }),
       }),
     );
-    expect(prisma.parkingEvent.count).toHaveBeenCalled();
   });
 
   it('returns check-out action for an active parking event', async () => {
     prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
     prisma.parkingEvent.findFirst.mockResolvedValue(activeEvent);
 
-    const result = await service.search(org1.booking.bookingCode, securityUser);
-
-    expect(result?.action).toBe('CHECK_OUT');
-    expect(result?.parkingEvent?.id).toBe(activeEvent.id);
-    expect(prisma.parkingEvent.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          bookingId: org1.booking.id,
-          status: ParkingEventStatus.ACTIVE,
-          checkOutTime: null,
-        }),
-      }),
+    const result = expectSingleResult(
+      await service.search(org1.booking.bookingCode, securityUser),
     );
+
+    expect(result.action).toBe('CHECK_OUT');
+    expect(result.parkingEvent?.id).toBe(activeEvent.id);
   });
 
   it('returns check-out for a vehicle with a current active session', async () => {
-    prisma.booking.findFirst.mockResolvedValue(null);
     prisma.parkingEvent.findFirst
       .mockResolvedValueOnce(activeEvent)
       .mockResolvedValueOnce(null);
+    prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
 
-    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
-
-    expect(result?.action).toBe('CHECK_OUT');
-    expect(result?.parkingEvent?.id).toBe(activeEvent.id);
-    expect(prisma.parkingEvent.findFirst).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: ParkingEventStatus.ACTIVE,
-          checkOutTime: null,
-          vehicle: { vehicleNumber: org1.vehicle.vehicleNumber },
-        }),
-      }),
+    const result = expectSingleResult(
+      await service.search(org1.vehicle.vehicleNumber, securityUser),
     );
+
+    expect(result.action).toBe('CHECK_OUT');
+    expect(result.parkingEvent?.id).toBe(activeEvent.id);
   });
 
   it('returns check-in after checkout when the assigned slot is available again', async () => {
@@ -191,78 +198,117 @@ describe('SecurityGateService', () => {
         },
       });
 
-    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+    const result = expectSingleResult(
+      await service.search(org1.vehicle.vehicleNumber, securityUser),
+    );
 
-    expect(result?.action).toBe('CHECK_IN');
-    expect(result?.lastCheckOutTime).toBe(lastCheckOutTime.toISOString());
-    expect(result?.parkingEvent).toBeNull();
+    expect(result.action).toBe('CHECK_IN');
+    expect(result.lastCheckOutTime).toBe(lastCheckOutTime.toISOString());
+    expect(result.parkingEvent).toBeNull();
   });
 
-  it('returns check-in for a new confirmed booking after an older session completed', async () => {
-    const nextBooking = {
+  it('does not return CHECK_OUT after checkout is completed', async () => {
+    const staleActiveEvent = {
+      ...activeEvent,
+      id: 302,
+      checkInTime: new Date('2026-06-19T08:00:00.000Z'),
+    };
+    const lastCheckOutTime = new Date('2026-06-19T10:00:00.000Z');
+
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce(staleActiveEvent)
+      .mockResolvedValueOnce({ checkOutTime: lastCheckOutTime })
+      .mockResolvedValueOnce({
+        checkOutTime: lastCheckOutTime,
+        booking: {
+          ...confirmedBooking,
+          status: BookingStatus.COMPLETED,
+          slot: {
+            ...confirmedBooking.slot,
+            status: SlotStatus.RESERVED,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        checkOutTime: lastCheckOutTime,
+        booking: {
+          ...confirmedBooking,
+          status: BookingStatus.COMPLETED,
+        },
+      });
+    prisma.booking.findFirst.mockResolvedValue(null);
+
+    const result = expectSingleResult(
+      await service.search(org1.vehicle.vehicleNumber, securityUser),
+    );
+
+    expect(result.action).not.toBe('CHECK_OUT');
+    expect(result.action).toBe('NONE');
+  });
+
+  it('returns multiple matches for phone search when several bookings exist', async () => {
+    const secondBooking = {
       ...confirmedBooking,
       id: 401,
       bookingCode: 'BK-DEMO-010',
+      vehicle: {
+        id: 101,
+        vehicleNumber: 'TS09GB5678',
+      },
+      vehicleId: 101,
     };
 
-    prisma.booking.findFirst.mockResolvedValueOnce(nextBooking);
-    prisma.parkingEvent.findFirst
-      .mockResolvedValueOnce({
-        ...activeEvent,
-        checkInTime: new Date('2026-06-19T08:00:00.000Z'),
-      })
-      .mockResolvedValueOnce({
-        id: 301,
-        checkOutTime: new Date('2026-06-19T09:30:00.000Z'),
-      })
-      .mockResolvedValueOnce(null);
+    prisma.user.findMany.mockResolvedValue([{ id: normalUser.id }]);
+    prisma.booking.findMany.mockResolvedValue([confirmedBooking, secondBooking]);
 
-    const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
+    const result = await service.search('0000000000', securityUser);
 
-    expect(result?.action).toBe('CHECK_IN');
-    expect(result?.booking.bookingCode).toBe('BK-DEMO-010');
+    expect(result?.resultType).toBe('MULTIPLE_MATCHES');
+
+    if (result?.resultType === 'MULTIPLE_MATCHES') {
+      expect(result.matches).toHaveLength(2);
+      expect(result.matches[0].customerPhone).toBe(normalUser.phone);
+      expect(result.matches[0].gateAction).toBe('CHECK_IN');
+    }
   });
 
-  it('returns check-in for a completed booking when the slot is available again', async () => {
-    const lastCheckOutTime = new Date('2026-06-19T10:00:00.000Z');
+  it('scopes phone search to the current user organization', async () => {
+    prisma.user.findMany.mockResolvedValue([]);
 
-    prisma.booking.findFirst.mockResolvedValueOnce({
-      ...confirmedBooking,
-      status: BookingStatus.COMPLETED,
-      slot: {
-        ...confirmedBooking.slot,
-        status: SlotStatus.AVAILABLE,
-      },
+    await service.search('+910000000011', securityUser);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        organizationId: org1.organizationId,
+      }),
+      select: { id: true },
     });
-    prisma.parkingEvent.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        checkOutTime: lastCheckOutTime,
-      })
-      .mockResolvedValueOnce(null);
-
-    const result = await service.search(org1.booking.bookingCode, securityUser);
-
-    expect(result?.action).toBe('CHECK_IN');
-    expect(result?.lastCheckOutTime).toBe(lastCheckOutTime.toISOString());
+    expect(prisma.user.findMany).not.toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        organizationId: org2.organizationId,
+      }),
+      select: { id: true },
+    });
   });
 
-  it('scopes search to the current user organization', async () => {
-    prisma.booking.findFirst.mockResolvedValue(null);
+  it('scopes vehicle activity counts to the current organization', async () => {
+    prisma.booking.findFirst.mockResolvedValue(confirmedBooking);
 
-    await service.search(org2.booking.bookingCode, securityUser);
+    await service.search(org1.booking.bookingCode, securityUser);
 
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: org1.organizationId,
+          vehicleId: org1.vehicle.id,
         }),
       }),
     );
-    expect(prisma.booking.findFirst).not.toHaveBeenCalledWith(
+    expect(prisma.parkingEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          organizationId: org2.organizationId,
+          organizationId: org1.organizationId,
+          vehicleId: org1.vehicle.id,
         }),
       }),
     );

@@ -1,8 +1,8 @@
-import { SecurityGateSearchResult } from '../types/securityGate';
+import { SecurityGateSearchResponse } from '../types/securityGate';
 import { apiClient } from './client';
 
 export async function searchSecurityGate(query: string) {
-  const response = await apiClient.get<SecurityGateSearchResult>('/security/gate/search', {
+  const response = await apiClient.get<SecurityGateSearchResponse>('/security/gate/search', {
     params: { q: query },
   });
 
