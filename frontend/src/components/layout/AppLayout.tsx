@@ -23,12 +23,12 @@ import {
   Dashboard,
   DirectionsCar,
   LocalParking,
+  Login,
   Logout,
   Menu,
   MenuOpen,
   Palette,
   Security,
-  SensorDoor,
   SensorOccupied,
   SvgIconComponent,
 } from '@mui/icons-material';
@@ -71,7 +71,7 @@ const navItems: NavItem[] = [
   {
     label: 'Security Gate',
     to: '/security/gate',
-    icon: SensorDoor,
+    icon: Login,
     roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY'],
   },
   {
