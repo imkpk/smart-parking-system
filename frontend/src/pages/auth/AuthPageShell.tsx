@@ -63,8 +63,17 @@ export function AuthPageShell({
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2, py: 1 }}
         >
           <Illustration maxWidth={300} name={illustration} />
-          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-            <LoginBrandBlock logoUrl={branding.logoUrl} name={branding.name} />
+          <Box sx={{ maxWidth: 320, textAlign: 'center' }}>
+            <Typography
+              component="h2"
+              sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 }}
+              variant="h4"
+            >
+              {brand.loginHero}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }} variant="body2">
+              {branding.name}
+            </Typography>
           </Box>
         </Stack>
 
