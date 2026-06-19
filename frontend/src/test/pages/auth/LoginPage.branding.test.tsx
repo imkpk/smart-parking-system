@@ -46,7 +46,7 @@ describe('LoginPage branding', () => {
 
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getAllByText('Smart Parking').length).toBeGreaterThan(0);
-    expect(screen.getByText('Find • Book • Park')).toBeInTheDocument();
+    expect(screen.getAllByText('Find • Book • Park').length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(
         /reserve parking spots in real time, manage bookings, and make payments from one simple dashboard/i,

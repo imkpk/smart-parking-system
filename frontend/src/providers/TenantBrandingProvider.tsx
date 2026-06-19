@@ -1,35 +1,20 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { getCurrentBranding, getPublicBranding } from '../api/organizationsApi';
 import { DEFAULT_BRANDING } from '../constants/defaultBranding';
 import { mergeTenantBranding, toThemeBrandOverrides } from '../lib/branding';
 import { tenantSlugStorage } from '../lib/tenantSlugStorage';
 import { createAppTheme } from '../theme';
-import { TenantBranding } from '../types/branding';
 import { useAuth } from './AuthProvider';
 import { useThemeMode } from './ThemeModeProvider';
+import {
+  TenantBrandingContext,
+  type TenantBrandingContextValue,
+} from './tenantBrandingContext';
 
-export interface TenantBrandingContextValue {
-  branding: TenantBranding;
-  isLoading: boolean;
-  error: string | null;
-  tenantSlug: string | null;
-  setTenantSlug: (slug: string | null) => void;
-  refreshBranding: () => Promise<void>;
-}
-
-const TenantBrandingContext = createContext<TenantBrandingContextValue | undefined>(
-  undefined,
-);
+export type { TenantBrandingContextValue } from './tenantBrandingContext';
+export { useTenantBranding } from './tenantBrandingContext';
 
 export function TenantBrandingProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -145,14 +130,4 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
       </ThemeProvider>
     </TenantBrandingContext.Provider>
   );
-}
-
-export function useTenantBranding() {
-  const context = useContext(TenantBrandingContext);
-
-  if (!context) {
-    throw new Error('useTenantBranding must be used within TenantBrandingProvider');
-  }
-
-  return context;
 }
