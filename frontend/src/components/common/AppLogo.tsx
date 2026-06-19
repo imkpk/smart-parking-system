@@ -7,24 +7,22 @@ export function AppLogo({
   name,
   logoUrl,
   emphasis = false,
-  compact = false,
 }: {
   showText?: boolean;
   name?: string;
   logoUrl?: string | null;
   emphasis?: boolean;
-  compact?: boolean;
 }) {
   const displayName = name ?? brand.name;
   const logoSrc = logoUrl || parkLogo;
-  const logoSize = emphasis ? 50 : compact ? 32 : showText ? 45 : 38;
+  const logoSize = emphasis ? 50 : showText ? 45 : 38;
 
   return (
     <Box
       sx={{
         alignItems: 'center',
         display: 'flex',
-        gap: emphasis ? 1.5 : compact ? 1 : 1.25,
+        gap: emphasis ? 1.5 : 1.25,
         minWidth: 0,
       }}
     >
@@ -46,7 +44,7 @@ export function AppLogo({
             component="span"
             noWrap
             sx={{ fontWeight: emphasis ? 700 : 600, lineHeight: 1.2 }}
-            variant={emphasis ? 'h5' : compact ? 'subtitle2' : 'h6'}
+            variant={emphasis ? 'h5' : 'h6'}
           >
             {displayName}
           </Typography>

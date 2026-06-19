@@ -47,7 +47,7 @@ import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { brand } from '../../theme/tokens';
 import { Role } from '../../types/auth';
 
-const drawerWidth = 240;
+const drawerWidth = 252;
 const collapsedDrawerWidth = 80;
 
 interface NavItem {
@@ -226,8 +226,8 @@ export function AppLayout() {
             spacing={1}
             sx={{ minWidth: 0, width: '100%' }}
           >
-            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden', pr: 0.5 }}>
-              <AppLogo compact logoUrl={branding.logoUrl} name={brand.name} showText />
+            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden', pr: 1 }}>
+              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
             </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
