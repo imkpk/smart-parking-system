@@ -86,7 +86,7 @@ export function AuthPageShell({
         >
           <Stack spacing={3}>
             <Stack alignItems="flex-start" spacing={1.5}>
-              <AppLogo logoUrl={branding.logoUrl} name={branding.name} />
+              <AppLogo emphasis logoUrl={branding.logoUrl} name={branding.name} />
               <Box>
                 <Typography component="h1" variant="h5">
                   {isLoading ? title : pageTitle}
