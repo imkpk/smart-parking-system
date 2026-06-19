@@ -7,6 +7,7 @@
 
 * `.grok/prompts/phase-5a-gate-multiple-matches-datagrid-fix.md`
 * `.grok/prompts/phase-5a-gate-completed-rows-fix.md`
+* `.grok/prompts/phase-5a-gate-row-height-fix.md`
 
 ## Summary
 
@@ -21,6 +22,10 @@ Follow-up UI fixes on the phone-search multiple-match flow at `/security/gate` a
 * Action column: `Use this booking` / `Use this session` / disabled `No action` (not generic `Select`).
 * Mobile 375px: stacked cards remain; no horizontal scroll.
 * Status and gate-action columns use existing chips/labels.
+
+### Standard row height
+
+* Increased gate multiple-match DataGrid row height to match other app tables (not overly compact).
 
 ### Completed rows non-actionable
 
