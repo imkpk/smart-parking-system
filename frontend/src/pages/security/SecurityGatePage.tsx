@@ -760,7 +760,7 @@ export function SecurityGatePage() {
             }}
           >
             <Box sx={{ maxWidth: { xs: 160, sm: 180 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
-              <Illustration alt="" maxWidth="100%" name="locationSearch" />
+              <Illustration alt="" maxWidth="100%" name="securityCheck" />
             </Box>
             <Stack spacing={2}>
               <TextField
@@ -829,7 +829,7 @@ export function SecurityGatePage() {
           }}
         >
           <Stack alignItems="center" spacing={2}>
-            <Illustration alt="" maxWidth={180} name="park" />
+            <Illustration alt="" maxWidth={180} name="gateEntrance" />
             <Typography variant="h6">{successMessage}</Typography>
             <Button fullWidth onClick={handleReset} size="large" variant="contained">
               Search again

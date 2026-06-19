@@ -38,6 +38,7 @@ import {
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { formatRelativeTime } from '../../lib/formatters';
+import type { IllustrationName } from '../../assets/illustrations';
 import {
   CONVERSATION_MESSAGE_MAX_LENGTH,
   ConversationStatus,
@@ -50,14 +51,20 @@ type TypeFilter = 'ALL' | ConversationType;
 
 interface StaffSupportInboxProps {
   description: string;
+  emptyInboxIllustration?: IllustrationName;
+  emptyThreadIllustration?: IllustrationName;
   lockedType?: ConversationType;
+  selectThreadIllustration?: IllustrationName;
   showTypeFilter?: boolean;
   title: string;
 }
 
 function StaffSupportInbox({
   description,
+  emptyInboxIllustration = 'customerCare',
+  emptyThreadIllustration = 'messaging',
   lockedType,
+  selectThreadIllustration = 'chatSupport',
   showTypeFilter = false,
   title,
 }: StaffSupportInboxProps) {
@@ -197,7 +204,7 @@ function StaffSupportInbox({
             {!listQuery.isLoading && (listQuery.data?.length ?? 0) === 0 ? (
               <EmptyState
                 description="Conversations from users will appear here."
-                illustration="empty"
+                illustration={emptyInboxIllustration}
                 title="No conversations"
               />
             ) : null}
@@ -268,7 +275,7 @@ function StaffSupportInbox({
             {!selectedConversation ? (
               <EmptyState
                 description="Select a conversation from the inbox to reply."
-                illustration="secureLogin"
+                illustration={selectThreadIllustration}
                 title="Select a conversation"
               />
             ) : (
@@ -341,6 +348,7 @@ function StaffSupportInbox({
                   messagesQuery.data.length === 0 ? (
                     <EmptyState
                       description="Reply to start helping the customer."
+                      illustration={emptyThreadIllustration}
                       title="No messages yet"
                     />
                   ) : null}
@@ -400,7 +408,9 @@ export function SecurityMessagesPage() {
   return (
     <StaffSupportInbox
       description="Reply to user security messages for your organization."
+      emptyInboxIllustration="securityAlert"
       lockedType="SECURITY"
+      selectThreadIllustration="securityCheck"
       title="Security Messages"
     />
   );

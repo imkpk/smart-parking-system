@@ -252,7 +252,7 @@ export function UserSupportPage() {
             {!listQuery.isLoading && (listQuery.data?.length ?? 0) === 0 ? (
               <EmptyState
                 description="Start a security or customer-care chat to get help."
-                illustration="empty"
+                illustration="customerCare"
                 title="No conversations yet"
               />
             ) : null}
@@ -323,7 +323,7 @@ export function UserSupportPage() {
             {!selectedConversation ? (
               <EmptyState
                 description="Choose a conversation from the list or start a new chat."
-                illustration="secureLogin"
+                illustration="chatSupport"
                 title="Select a conversation"
               />
             ) : (
@@ -369,6 +369,7 @@ export function UserSupportPage() {
                   {messagesQuery.data && messagesQuery.data.length === 0 ? (
                     <EmptyState
                       description="Send a message to continue the conversation."
+                      illustration="messaging"
                       title="No messages yet"
                     />
                   ) : null}
