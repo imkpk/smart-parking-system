@@ -57,6 +57,9 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-4-visual-slot-map-acceptance.md](./phase-4-visual-slot-map-acceptance.md) | Phase 4 visual slot map acceptance (FINAL LOOP) | PR #89 ✅ |
 | [phase-4e-parking-lot-management-ux.md](./phase-4e-parking-lot-management-ux.md) | Phase 4E parking lot management workspace UX polish | PR #92 ✅ |
 | [parking-lot-workspace-ux-regressions.md](./parking-lot-workspace-ux-regressions.md) | Phase 4E regression fix — header layout, visual map CTA dedup, table row navigation | `fix/parking-lot-workspace-ux-regressions` |
-| [phase-5a-gate-phone-search-history.md](./phase-5a-gate-phone-search-history.md) | Phase 5A gate phone search + vehicle visit history | PR #99 |
+| [phase-5a-gate-phone-search-history.md](./phase-5a-gate-phone-search-history.md) | Phase 5A gate phone search + vehicle visit history | PR #99 ✅ |
+| [phase-5a-gate-ui-polish.md](./phase-5a-gate-ui-polish.md) | Phase 5A gate DataGrid + completed-row fixes on PR #99 | PR #99 ✅ |
+| [phase-5a-gate-illustrations-polish.md](./phase-5a-gate-illustrations-polish.md) | Phase 5A gate + list page illustrations | PR #100 ✅ |
+| [phase-5b-in-app-chat-mvp-acceptance.md](./phase-5b-in-app-chat-mvp-acceptance.md) | Phase 5B in-app chat MVP acceptance (loops 5B-1–5B-6) | PR #101–#106 |
 
-Prompts live in [`.grok/prompts/`](../prompts/). E2E rollout prompts: `e2e-00` through `e2e-05`.
+Prompts live in [`.grok/prompts/`](../prompts/). Phase 5 prompts: `phase-5a-gate-*`, `phase-5b-in-app-chat-mvp-loop`, `phase-5b-manual-test-pr-comments`. E2E rollout prompts: `e2e-00` through `e2e-05`.
