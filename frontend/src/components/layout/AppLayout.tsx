@@ -44,10 +44,11 @@ import { formatRole } from '../../lib/formatRole';
 import { getNavLabelForRole } from '../../lib/userFacingLabels';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
+import { brand } from '../../theme/tokens';
 import { Role } from '../../types/auth';
 
-const drawerWidth = 220;
-const collapsedDrawerWidth = 80;
+const drawerWidth = 230;
+const collapsedDrawerWidth = 85;
 
 interface NavItem {
   label: string;
@@ -222,12 +223,9 @@ export function AppLayout() {
           <Stack
             alignItems="center"
             direction="row"
-            spacing={0.5}
+            spacing={0.75}
             sx={{ minWidth: 0, width: '100%' }}
           >
-            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
-              <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText />
-            </Box>
             {!isMobile ? (
               <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
                 <IconButton
@@ -240,10 +238,13 @@ export function AppLayout() {
                 </IconButton>
               </Tooltip>
             ) : null}
+            <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
+              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
+            </Box>
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
-            <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText={false} />
+            <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText={false} />
             {!isMobile ? (
               <Tooltip title="Expand sidebar">
                 <IconButton
