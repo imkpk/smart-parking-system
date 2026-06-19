@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Route, Routes } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -11,6 +12,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import {
   createMockUser,
   getDataGridRowButtons,
+  getDataGridRowContaining,
   renderWithProviders,
 } from '@/test/test-utils';
 import { ParkingLot } from '@/types/parkingLot';
@@ -121,6 +123,65 @@ describe('ParkingLotsPage', () => {
       'href',
       '/parking-lots/1',
     );
+  });
+
+  it('navigates only from parking lot name link and Manage button', async () => {
+    const user = userEvent.setup({ delay: null });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/parking-lots" element={<ParkingLotsPage />} />
+        <Route path="/parking-lots/:id" element={<div>Parking Lot Workspace</div>} />
+      </Routes>,
+      { route: '/parking-lots' },
+    );
+
+    await screen.findByText('Main Lot');
+
+    await user.click(screen.getByText('560001'));
+    expect(screen.queryByText('Parking Lot Workspace')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /^main lot$/i }));
+    expect(await screen.findByText('Parking Lot Workspace')).toBeInTheDocument();
+  });
+
+  it('does not navigate when clicking empty row space', async () => {
+    const user = userEvent.setup({ delay: null });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/parking-lots" element={<ParkingLotsPage />} />
+        <Route path="/parking-lots/:id" element={<div>Parking Lot Workspace</div>} />
+      </Routes>,
+      { route: '/parking-lots' },
+    );
+
+    await screen.findByText('Main Lot');
+
+    const row = getDataGridRowContaining('Main Lot');
+    await user.click(within(row).getByText('MALL'));
+
+    expect(screen.queryByText('Parking Lot Workspace')).not.toBeInTheDocument();
+  });
+
+  it('selects row via checkbox without navigating', async () => {
+    const user = userEvent.setup({ delay: null });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/parking-lots" element={<ParkingLotsPage />} />
+        <Route path="/parking-lots/:id" element={<div>Parking Lot Workspace</div>} />
+      </Routes>,
+      { route: '/parking-lots' },
+    );
+
+    await screen.findByText('Main Lot');
+
+    const row = getDataGridRowContaining('Main Lot');
+    await user.click(within(row).getByRole('checkbox'));
+
+    expect(within(row).getByRole('checkbox')).toBeChecked();
+    expect(screen.queryByText('Parking Lot Workspace')).not.toBeInTheDocument();
   });
 
   it('edits a parking lot via dialog', async () => {

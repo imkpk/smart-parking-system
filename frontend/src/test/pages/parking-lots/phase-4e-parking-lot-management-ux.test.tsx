@@ -79,9 +79,14 @@ describe('Phase 4E parking lot management UX', () => {
 
     expect(await screen.findByRole('heading', { name: /central garage/i })).toBeInTheDocument();
     expect(screen.getByText(/100 center rd · bengaluru, karnataka · 560001/i)).toBeInTheDocument();
-    const visualMapLinks = screen.getAllByRole('link', { name: /open visual map/i });
-    expect(visualMapLinks.length).toBeGreaterThanOrEqual(1);
-    expect(visualMapLinks[0]).toHaveAttribute('href', '/parking-lots/1/slot-map');
+    expect(screen.getAllByText('MALL').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/operational view/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /open visual map/i })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: /open visual map/i })).toHaveAttribute(
+      'href',
+      '/parking-lots/1/slot-map',
+    );
+    expect(screen.getByRole('tab', { name: /visual map/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
   });
 

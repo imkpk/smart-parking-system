@@ -136,7 +136,8 @@ describe('ParkingLotDetailsPage', () => {
     expect(screen.getByText('Total Slots')).toBeInTheDocument();
     expect(screen.getByText('Parking Lot Info')).toBeInTheDocument();
     expect(screen.getAllByText('MALL').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole('link', { name: /open visual map/i })[0]).toHaveAttribute(
+    expect(screen.queryByText(/operational view/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open visual map/i })).toHaveAttribute(
       'href',
       '/parking-lots/1/slot-map',
     );
