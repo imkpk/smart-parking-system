@@ -20,15 +20,15 @@ export class SecurityGateService {
   ) {}
 
   async search(query: string, currentUser: SafeUser): Promise<SecurityGateSearchResult | null> {
-    const trimmedQuery = query.trim();
+    const normalizedQuery = this.normalizeGateSearchQuery(query);
 
-    if (!trimmedQuery) {
+    if (!normalizedQuery) {
       throw new BadRequestException('Search query is required');
     }
 
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
-    const bookingIdFromLabel = this.parseBookingNo(trimmedQuery);
-    const searchTerm = trimmedQuery.toUpperCase();
+    const bookingIdFromLabel = this.parseBookingNo(normalizedQuery);
+    const searchTerm = normalizedQuery.toUpperCase();
     const activeEvent = await this.prisma.parkingEvent.findFirst({
       where: {
         organizationId,
@@ -145,6 +145,16 @@ export class SecurityGateService {
       },
       ...(bookingIdFromLabel ? [{ bookingId: bookingIdFromLabel }] : []),
     ];
+  }
+
+  private normalizeGateSearchQuery(query: string) {
+    let normalized = query.trim();
+
+    while (normalized.endsWith(')')) {
+      normalized = normalized.slice(0, -1).trimEnd();
+    }
+
+    return normalized;
   }
 
   private parseBookingNo(query: string) {
