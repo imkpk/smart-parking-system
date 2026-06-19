@@ -4,7 +4,7 @@ import { Role } from '../types/auth';
 export const userFacingLabels = {
   dashboard: 'My Dashboard',
   bookings: 'Parking Slots',
-  bookSlot: 'Book A Slot',
+  bookSlot: 'Book a Slot',
   parkingHistory: 'Parking History',
   paymentHistory: 'Payment History',
 } as const;

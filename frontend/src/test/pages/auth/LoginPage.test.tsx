@@ -43,7 +43,7 @@ describe('LoginPage', () => {
   it('renders email and password form fields', () => {
     renderWithProviders(<LoginPage />);
 
-    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /find\. book\. park\./i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByText('Admin Home')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /sign in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /find\. book\. park\./i })).not.toBeInTheDocument();
   });
 
   it('calls login with submitted credentials on success', async () => {

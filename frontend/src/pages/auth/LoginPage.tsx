@@ -10,6 +10,7 @@ import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
 import { useTenantSlugFromRoute } from '../../hooks/useTenantSlugFromRoute';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
+import { brand } from '../../theme/tokens';
 import { authTextFieldProps } from './authFieldProps';
 import { AuthPageShell } from './AuthPageShell';
 
@@ -42,7 +43,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthPageShell title="Sign in">
+    <AuthPageShell title={brand.loginHero}>
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField

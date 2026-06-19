@@ -8,7 +8,9 @@ import { alpha, PaletteMode } from '@mui/material';
  */
 export const brand = {
   name: 'Smart Parking',
-  tagline: 'Management System',
+  loginHero: 'Find. Book. Park.',
+  tagline:
+    'Reserve parking spots in real time, manage bookings, and make payments from one simple dashboard.',
 } as const;
 
 export const shapeTokens = {

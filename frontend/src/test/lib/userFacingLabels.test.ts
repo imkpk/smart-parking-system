@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { getNavLabelForRole, userFacingLabels } from '@/lib/userFacingLabels';
 
 describe('userFacingLabels', () => {
-  it('uses Book A Slot for the user booking action label', () => {
-    expect(userFacingLabels.bookSlot).toBe('Book A Slot');
+  it('uses Book a Slot for the user booking action label', () => {
+    expect(userFacingLabels.bookSlot).toBe('Book a Slot');
   });
 
   it('returns plain-language nav labels for USER role', () => {
