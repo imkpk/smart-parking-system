@@ -499,7 +499,6 @@ function MultipleMatchesPanel({
         <AppDataGrid
           checkboxSelection={false}
           columns={columns}
-          density="compact"
           emptyState={{
             description: 'Try a booking no, customer, phone, vehicle, lot, or slot.',
             illustration: 'empty',
