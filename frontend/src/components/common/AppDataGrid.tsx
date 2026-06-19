@@ -1,4 +1,4 @@
-import { Paper } from '@mui/material';
+import { Paper, SxProps, Theme } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
@@ -101,6 +101,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   density = 'standard',
   emptyState,
   getRowId,
+  gridSx,
   loading = false,
   noRowsLabel = 'No rows',
   onRowSelectionModelChange,
@@ -113,6 +114,7 @@ export function AppDataGrid<Row extends GridValidRowModel>({
   density?: GridDensity;
   emptyState?: { description?: string; illustration?: IllustrationName; title: string };
   getRowId?: (row: Row) => GridRowId;
+  gridSx?: SxProps<Theme>;
   loading?: boolean;
   noRowsLabel?: string;
   onRowSelectionModelChange?: (ids: GridRowId[]) => void;
@@ -182,35 +184,36 @@ export function AppDataGrid<Row extends GridValidRowModel>({
             showToolbar
             slots={gridSlots}
             sx={{
-          border: 0,
-          height: gridHeight,
-          width: '100%',
-          '& .MuiDataGrid-columnHeaders': {
-            bgcolor: 'background.default',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 700,
-          },
-          '& .MuiDataGrid-cell': {
-            alignItems: 'center',
-            display: 'flex',
-          },
-          '& .MuiDataGrid-footerContainer': {
-            bgcolor: 'background.paper',
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-toolbarContainer': {
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            p: 0,
-          },
-          '& .MuiDataGrid-virtualScroller': {
-            overflowX: 'auto',
-            overflowY: 'hidden',
-          },
+              border: 0,
+              height: gridHeight,
+              width: '100%',
+              '& .MuiDataGrid-columnHeaders': {
+                bgcolor: 'background.default',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              },
+              '& .MuiDataGrid-columnHeaderTitle': {
+                fontWeight: 700,
+              },
+              '& .MuiDataGrid-cell': {
+                alignItems: 'center',
+                display: 'flex',
+              },
+              '& .MuiDataGrid-footerContainer': {
+                bgcolor: 'background.paper',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              },
+              '& .MuiDataGrid-toolbarContainer': {
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                p: 0,
+              },
+              '& .MuiDataGrid-virtualScroller': {
+                overflowX: 'auto',
+                overflowY: 'hidden',
+              },
+              ...(gridSx ?? {}),
             }}
           />
         </Paper>
