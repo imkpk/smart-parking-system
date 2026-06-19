@@ -16,6 +16,7 @@ import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
 import { PaymentsPage } from './pages/payments/PaymentsPage';
 import { BrandingSettingsPage } from './pages/settings/BrandingSettingsPage';
+import { SecurityGatePage } from './pages/security/SecurityGatePage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
 export const router = createBrowserRouter([
@@ -57,6 +58,15 @@ export const router = createBrowserRouter([
               {
                 path: 'security/dashboard',
                 element: <SecurityDashboardPage />,
+              },
+            ],
+          },
+          {
+            element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY']} />,
+            children: [
+              {
+                path: 'security/gate',
+                element: <SecurityGatePage />,
               },
             ],
           },

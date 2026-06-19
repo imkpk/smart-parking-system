@@ -12,6 +12,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SecurityModule } from './security/security.module';
 import { SlotsModule } from './slots/slots.module';
 import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -34,6 +35,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     OrganizationsModule,
     ParkingEventsModule,
     DashboardModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

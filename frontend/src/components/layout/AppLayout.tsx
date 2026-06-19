@@ -28,6 +28,7 @@ import {
   MenuOpen,
   Palette,
   Security,
+  SensorDoor,
   SensorOccupied,
   SvgIconComponent,
 } from '@mui/icons-material';
@@ -66,6 +67,12 @@ const navItems: NavItem[] = [
     to: '/security/dashboard',
     icon: Security,
     roles: ['SECURITY'],
+  },
+  {
+    label: 'Security Gate',
+    to: '/security/gate',
+    icon: SensorDoor,
+    roles: ['TENANT_ADMIN', 'ADMIN', 'SECURITY'],
   },
   {
     label: 'User Dashboard',
