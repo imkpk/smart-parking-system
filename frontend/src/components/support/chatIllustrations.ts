@@ -12,7 +12,7 @@ export function getChatIllustration(
     | 'startCustomerCare',
 ): IllustrationName {
   if (placement === 'startSecurity') {
-    return 'securityCheck';
+    return 'securityChat';
   }
 
   if (placement === 'startCustomerCare') {
@@ -20,16 +20,16 @@ export function getChatIllustration(
   }
 
   if (placement === 'emptyMessages') {
-    return 'messaging';
+    return type === 'SECURITY' ? 'securityMessages' : 'messaging';
   }
 
   if (placement === 'selectThread') {
-    return type === 'SECURITY' ? 'securityCheck' : 'chatSupport';
+    return type === 'SECURITY' ? 'securitySurveillance' : 'chatSupport';
   }
 
   if (placement === 'emptyInbox') {
-    return type === 'SECURITY' ? 'securityAlert' : 'customerCare';
+    return type === 'SECURITY' ? 'securityInbox' : 'customerCare';
   }
 
-  return type === 'SECURITY' ? 'securityCheck' : 'customerCare';
+  return type === 'SECURITY' ? 'securityChat' : 'customerCare';
 }

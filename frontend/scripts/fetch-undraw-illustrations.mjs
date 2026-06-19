@@ -11,8 +11,12 @@ const outDir = join(__dirname, '../src/assets/illustrations');
 
 /** @type {Array<{ file: string; slug: string; title: string }>} */
 const picks = [
-  // security-check: user-supplied Magnific JPG (security-check.jpg) — not fetched from unDraw
+  // security-check.jpg: user-supplied Magnific preview — not fetched from unDraw
   { file: 'security-alert.svg', slug: 'motion-alert_pr1a', title: 'Security alert' },
+  { file: 'security-chat.svg', slug: 'security-on_3ykb', title: 'Security chat' },
+  { file: 'security-inbox.svg', slug: 'new-message_qvv6', title: 'Security inbox' },
+  { file: 'security-messages.svg', slug: 'messages_okui', title: 'Security messages' },
+  { file: 'security-surveillance.svg', slug: 'home-cameras_hbw3', title: 'Security surveillance' },
   { file: 'gate-entrance.svg', slug: 'knocking-on-the-door_vgly', title: 'Gate entrance' },
   { file: 'chat-support.svg', slug: 'work-chat_kw8x', title: 'Work chat' },
   { file: 'customer-care.svg', slug: 'contact-us_s4jn', title: 'Customer care' },

@@ -416,9 +416,10 @@ export function SecurityMessagesPage() {
   return (
     <StaffSupportInbox
       description="Reply to user security messages for your organization."
-      emptyInboxIllustration="securityAlert"
+      emptyInboxIllustration="securityInbox"
+      emptyThreadIllustration="securityMessages"
       lockedType="SECURITY"
-      selectThreadIllustration="securityCheck"
+      selectThreadIllustration="securitySurveillance"
       title="Security Messages"
     />
   );

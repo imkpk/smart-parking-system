@@ -16,8 +16,12 @@ import payments from './payments.svg?url';
 import receipt from './receipt.svg?url';
 import secureLogin from './secure-login.svg?url';
 import securityAlert from './security-alert.svg?url';
+import securityChat from './security-chat.svg?url';
 import securityCheck from './security-check.jpg?url';
 import securityGateCheck from './security-gate-check.jpg?url';
+import securityInbox from './security-inbox.svg?url';
+import securityMessages from './security-messages.svg?url';
+import securitySurveillance from './security-surveillance.svg?url';
 
 /** Free unDraw illustrations (MIT). Primary accent uses --primary-svg-color. */
 export const illustrations = {
@@ -39,8 +43,12 @@ export const illustrations = {
   receipt,
   secureLogin,
   securityAlert,
+  securityChat,
   securityCheck,
   securityGateCheck,
+  securityInbox,
+  securityMessages,
+  securitySurveillance,
 } as const;
 
 export type IllustrationName = keyof typeof illustrations;
