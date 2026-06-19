@@ -1,46 +1,140 @@
-import { Box, Paper, Stack, Typography } from '@mui/material';
-import { formatDateTime } from '../../lib/formatters';
+import { Box, Stack, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { formatChatTime } from '../../lib/formatters';
 import { formatRole } from '../../lib/formatRole';
 import { ConversationMessage } from '../../types/conversation';
 
-export function ChatMessageBubble({ message }: { message: ConversationMessage }) {
+function isGroupedWithPrevious(
+  message: ConversationMessage,
+  previous: ConversationMessage | undefined,
+) {
+  if (!previous) {
+    return false;
+  }
+
+  return previous.isMine === message.isMine && previous.sender.name === message.sender.name;
+}
+
+export function ChatMessageBubble({
+  message,
+  showSender = true,
+}: {
+  message: ConversationMessage;
+  showSender?: boolean;
+}) {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const isMine = message.isMine;
+
+  const receivedBg = isLight
+    ? theme.palette.background.paper
+    : alpha(theme.palette.common.white, 0.08);
 
   return (
     <Box
       sx={{
+        alignItems: isMine ? 'flex-end' : 'flex-start',
         display: 'flex',
-        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        flexDirection: 'column',
         width: '100%',
       }}
     >
-      <Paper
-        elevation={0}
+      {!isMine && showSender ? (
+        <Typography
+          color="text.secondary"
+          sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 0.25, px: 0.5 }}
+          variant="caption"
+        >
+          {message.sender.name} · {formatRole(message.sender.role)}
+        </Typography>
+      ) : null}
+      <Box
         sx={{
-          bgcolor: isMine ? 'primary.main' : 'background.default',
-          border: '1px solid',
-          borderColor: isMine ? 'primary.main' : 'divider',
+          bgcolor: isMine ? 'primary.main' : receivedBg,
+          border: isLight && !isMine ? '1px solid' : 'none',
+          borderColor: isLight && !isMine ? alpha(theme.palette.text.primary, 0.08) : undefined,
+          borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          boxShadow:
+            isLight && !isMine ? `0 1px 2px ${alpha(theme.palette.text.primary, 0.08)}` : 'none',
           color: isMine ? 'primary.contrastText' : 'text.primary',
-          maxWidth: { xs: '88%', sm: '72%' },
+          maxWidth: { xs: '85%', sm: '68%' },
+          minWidth: 72,
           px: 1.5,
-          py: 1.25,
+          py: 1,
         }}
       >
-        <Stack spacing={0.5}>
-          <Typography sx={{ fontWeight: 700, opacity: isMine ? 0.92 : 1 }} variant="caption">
-            {message.sender.name} · {formatRole(message.sender.role)}
-          </Typography>
-          <Typography sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }} variant="body2">
+        <Box
+          sx={{
+            alignItems: 'flex-end',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 0.75,
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Typography
+            sx={{
+              flex: '1 1 auto',
+              fontSize: '0.9375rem',
+              lineHeight: 1.45,
+              minWidth: 0,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+            variant="body2"
+          >
             {message.body}
           </Typography>
           <Typography
-            sx={{ opacity: 0.8, textAlign: isMine ? 'right' : 'left' }}
+            component="span"
+            sx={{
+              color: isMine
+                ? alpha(theme.palette.primary.contrastText, 0.78)
+                : isLight
+                  ? alpha(theme.palette.text.secondary, 0.9)
+                  : 'text.secondary',
+              flexShrink: 0,
+              fontSize: '0.6875rem',
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+            }}
             variant="caption"
           >
-            {formatDateTime(message.createdAt)}
+            {formatChatTime(message.createdAt)}
           </Typography>
-        </Stack>
-      </Paper>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+export function ChatMessageList({ messages }: { messages: ConversationMessage[] }) {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+
+  return (
+    <Box
+      sx={{
+        bgcolor: isLight ? 'background.default' : 'transparent',
+        minHeight: '100%',
+        mx: -2,
+        my: -2,
+        px: 2,
+        py: 2,
+      }}
+    >
+      <Stack spacing={0}>
+        {messages.map((message, index) => {
+          const previous = index > 0 ? messages[index - 1] : undefined;
+          const grouped = isGroupedWithPrevious(message, previous);
+
+          return (
+            <Box key={message.id} sx={{ mt: grouped ? 0.25 : 1 }}>
+              <ChatMessageBubble message={message} showSender={!grouped && !message.isMine} />
+            </Box>
+          );
+        })}
+      </Stack>
     </Box>
   );
 }

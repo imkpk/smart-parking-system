@@ -725,13 +725,14 @@ export function SecurityGatePage() {
   const confirmDescription = result ? buildGateConfirmDescription(result) : '';
 
   const useWideLayout = step === 'matches';
+  const useSearchWideLayout = step === 'search';
 
   return (
     <Stack
       spacing={3}
       sx={{
-        maxWidth: useWideLayout ? 'none' : 720,
-        mx: useWideLayout ? 0 : 'auto',
+        maxWidth: useWideLayout ? 'none' : useSearchWideLayout ? '100%' : 720,
+        mx: useWideLayout || useSearchWideLayout ? 0 : 'auto',
         width: '100%',
       }}
     >
@@ -748,19 +749,29 @@ export function SecurityGatePage() {
           sx={{
             border: '1px solid',
             borderColor: 'divider',
-            p: { xs: 2, sm: 2.5 },
+            p: { xs: 2, sm: 3, md: 4 },
+            width: '100%',
           }}
         >
           <Box
             sx={{
               alignItems: 'center',
               display: 'grid',
-              gap: 2,
-              gridTemplateColumns: { xs: '1fr', sm: 'minmax(140px, 200px) 1fr' },
+              gap: { xs: 2, sm: 3, md: 4 },
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'minmax(300px, 420px) 1fr',
+                md: 'minmax(360px, 480px) 1fr',
+                lg: 'minmax(400px, 520px) 1fr',
+              },
             }}
           >
-            <Box sx={{ maxWidth: { xs: 160, sm: 180 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
-              <Illustration alt="" maxWidth="100%" name="locationSearch" />
+            <Box sx={{ maxWidth: { xs: 360, sm: 420, md: 480, lg: 520 }, mx: { xs: 'auto', sm: 0 }, width: '100%' }}>
+              <Illustration
+                alt="Security guard checking a vehicle at the parking gate"
+                maxWidth="100%"
+                name="securityGateCheck"
+              />
             </Box>
             <Stack spacing={2}>
               <TextField
@@ -829,7 +840,7 @@ export function SecurityGatePage() {
           }}
         >
           <Stack alignItems="center" spacing={2}>
-            <Illustration alt="" maxWidth={180} name="park" />
+            <Illustration alt="" maxWidth={180} name="gateEntrance" />
             <Typography variant="h6">{successMessage}</Typography>
             <Button fullWidth onClick={handleReset} size="large" variant="contained">
               Search again

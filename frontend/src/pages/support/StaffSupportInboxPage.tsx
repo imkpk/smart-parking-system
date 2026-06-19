@@ -21,10 +21,12 @@ import { ArrowBack } from '@mui/icons-material';
 import { FormEvent, useMemo, useState } from 'react';
 import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Illustration } from '../../components/common/Illustration';
 import { PageHeader } from '../../components/common/PageHeader';
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatusChip } from '../../components/common/StatusChip';
-import { ChatMessageBubble } from '../../components/support/ChatMessageBubble';
+import { ChatMessageList } from '../../components/support/ChatMessageBubble';
+import { getChatIllustration } from '../../components/support/chatIllustrations';
 import {
   formatConversationType,
   getConversationContextLabel,
@@ -38,6 +40,7 @@ import {
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { formatRelativeTime } from '../../lib/formatters';
+import type { IllustrationName } from '../../assets/illustrations';
 import {
   CONVERSATION_MESSAGE_MAX_LENGTH,
   ConversationStatus,
@@ -50,14 +53,20 @@ type TypeFilter = 'ALL' | ConversationType;
 
 interface StaffSupportInboxProps {
   description: string;
+  emptyInboxIllustration?: IllustrationName;
+  emptyThreadIllustration?: IllustrationName;
   lockedType?: ConversationType;
+  selectThreadIllustration?: IllustrationName;
   showTypeFilter?: boolean;
   title: string;
 }
 
 function StaffSupportInbox({
   description,
+  emptyInboxIllustration = 'customerCare',
+  emptyThreadIllustration = 'messaging',
   lockedType,
+  selectThreadIllustration = 'chatSupport',
   showTypeFilter = false,
   title,
 }: StaffSupportInboxProps) {
@@ -197,7 +206,8 @@ function StaffSupportInbox({
             {!listQuery.isLoading && (listQuery.data?.length ?? 0) === 0 ? (
               <EmptyState
                 description="Conversations from users will appear here."
-                illustration="empty"
+                illustration={emptyInboxIllustration}
+                illustrationMaxWidth={260}
                 title="No conversations"
               />
             ) : null}
@@ -268,13 +278,14 @@ function StaffSupportInbox({
             {!selectedConversation ? (
               <EmptyState
                 description="Select a conversation from the inbox to reply."
-                illustration="secureLogin"
+                illustration={selectThreadIllustration}
+                illustrationMaxWidth={280}
                 title="Select a conversation"
               />
             ) : (
               <>
                 <Stack spacing={1} sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 2 }}>
-                  <Stack alignItems="center" direction="row" spacing={1}>
+                  <Stack alignItems="center" direction="row" spacing={1.5}>
                     {isMobile ? (
                       <Button
                         onClick={() => setSelectedConversationId(null)}
@@ -284,6 +295,13 @@ function StaffSupportInbox({
                         Back
                       </Button>
                     ) : null}
+                    <Box sx={{ display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+                      <Illustration
+                        alt=""
+                        maxWidth={80}
+                        name={getChatIllustration(selectedConversation.type, 'threadHeader')}
+                      />
+                    </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="h6">{selectedConversation.createdBy.name}</Typography>
                       <Typography color="text.secondary" variant="body2">
@@ -341,15 +359,13 @@ function StaffSupportInbox({
                   messagesQuery.data.length === 0 ? (
                     <EmptyState
                       description="Reply to start helping the customer."
+                      illustration={emptyThreadIllustration}
+                      illustrationMaxWidth={260}
                       title="No messages yet"
                     />
                   ) : null}
                   {messagesQuery.data && messagesQuery.data.length > 0 ? (
-                    <Stack spacing={1.5}>
-                      {messagesQuery.data.map((message) => (
-                        <ChatMessageBubble key={message.id} message={message} />
-                      ))}
-                    </Stack>
+                    <ChatMessageList messages={messagesQuery.data} />
                   ) : null}
                 </Box>
 
@@ -400,7 +416,10 @@ export function SecurityMessagesPage() {
   return (
     <StaffSupportInbox
       description="Reply to user security messages for your organization."
+      emptyInboxIllustration="securityGuardChat"
+      emptyThreadIllustration="securityGuardChat"
       lockedType="SECURITY"
+      selectThreadIllustration="securityGuardChat"
       title="Security Messages"
     />
   );
@@ -410,6 +429,9 @@ export function AdminSupportInboxPage() {
   return (
     <StaffSupportInbox
       description="Handle customer-care requests and monitor security conversations."
+      emptyInboxIllustration="adminSupportChat"
+      emptyThreadIllustration="adminSupportChat"
+      selectThreadIllustration="adminSupportChat"
       showTypeFilter
       title="Support Inbox"
     />
