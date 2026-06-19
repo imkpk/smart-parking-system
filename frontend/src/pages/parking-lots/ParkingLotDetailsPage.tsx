@@ -1057,65 +1057,110 @@ function SlotsSection({
     () => [
       {
         field: 'slotNumber',
+        flex: 0,
         headerName: 'Slot Number',
-        maxWidth: 150,
-        minWidth: 120,
-        width: 140,
+        maxWidth: 140,
+        minWidth: 110,
+        width: 128,
       },
       {
         field: 'floorId',
+        flex: 1,
         headerName: 'Floor',
-        maxWidth: 220,
-        minWidth: 180,
-        width: 200,
+        maxWidth: 280,
+        minWidth: 140,
+        width: 180,
         valueGetter: (_value, row) => floorNameById.get(row.floorId) ?? `Floor #${row.floorId}`,
       },
       {
         field: 'slotType',
+        flex: 0,
         headerName: 'Vehicle Type',
-        maxWidth: 170,
-        minWidth: 140,
-        width: 155,
+        maxWidth: 150,
+        minWidth: 120,
+        width: 132,
       },
       {
         field: 'status',
+        flex: 0,
         headerName: 'Status',
-        maxWidth: 180,
-        minWidth: 150,
-        width: 165,
-        renderCell: ({ row }) => <SlotStatusChip status={row.status} />,
+        maxWidth: canManage ? 156 : 140,
+        minWidth: canManage ? 148 : 120,
+        width: canManage ? 152 : 132,
+        renderCell: ({ row }) =>
+          canManage ? (
+            <SlotInlineStatusSelect onChange={onStatusChange} slot={row} />
+          ) : (
+            <SlotStatusChip status={row.status} />
+          ),
       },
       {
-        ...createDetailsColumn<Slot>(setDetailsSlot),
+        field: 'details',
         align: 'center',
+        filterable: false,
+        flex: 0,
         headerAlign: 'center',
-        maxWidth: 110,
-        minWidth: 90,
-        width: 100,
+        headerName: 'Details',
+        maxWidth: 72,
+        minWidth: 72,
+        sortable: false,
+        width: 72,
         renderCell: ({ row }) => (
-          <Stack alignItems="center" direction="row" justifyContent="center" width="100%">
+          <Box
+            onClick={(event) => event.stopPropagation()}
+            sx={{
+              alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'center',
+              width: '100%',
+            }}
+          >
             <Tooltip title="View Details">
-              <IconButton onClick={() => setDetailsSlot(row)}>
-                <Visibility />
+              <IconButton
+                aria-label={`View details for slot ${row.slotNumber}`}
+                onClick={() => setDetailsSlot(row)}
+                size="small"
+              >
+                <Visibility fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Stack>
+          </Box>
         ),
       },
       ...(canManage
         ? [
             {
               field: 'actions',
-              align: 'right' as const,
+              align: 'center' as const,
               filterable: false,
-              headerAlign: 'right' as const,
+              flex: 0,
+              headerAlign: 'center' as const,
               headerName: 'Actions',
-              maxWidth: 196,
-              minWidth: 176,
+              maxWidth: 72,
+              minWidth: 72,
               sortable: false,
-              width: 188,
+              width: 72,
               renderCell: ({ row }: { row: Slot }) => (
-                <SlotRowActions onDelete={onDelete} onStatusChange={onStatusChange} slot={row} />
+                <Box
+                  onClick={(event) => event.stopPropagation()}
+                  sx={{
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    width: '100%',
+                  }}
+                >
+                  <Tooltip title="Delete">
+                    <IconButton
+                      aria-label={`Delete slot ${row.slotNumber}`}
+                      color="error"
+                      onClick={() => onDelete(row)}
+                      size="small"
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               ),
             },
           ]
@@ -1247,14 +1292,19 @@ function SlotsSection({
             minWidth: 52,
             width: 52,
           },
-          '& .MuiDataGrid-cell[data-field="actions"]': {
-            justifyContent: 'flex-end',
+          '& .MuiDataGrid-cell[data-field="details"], & .MuiDataGrid-cell[data-field="actions"]': {
+            justifyContent: 'center',
+            overflow: 'hidden',
+            px: 0.5,
+          },
+          '& .MuiDataGrid-cell[data-field="status"]': {
             overflow: 'hidden',
             px: 1,
           },
-          '& .MuiDataGrid-columnHeader[data-field="actions"] .MuiDataGrid-columnHeaderTitleContainer': {
-            justifyContent: 'flex-end',
-          },
+          '& .MuiDataGrid-columnHeader[data-field="details"] .MuiDataGrid-columnHeaderTitleContainer, & .MuiDataGrid-columnHeader[data-field="actions"] .MuiDataGrid-columnHeaderTitleContainer':
+            {
+              justifyContent: 'center',
+            },
         }}
         onRowSelectionModelChange={onSelectionChange}
         rowSelectionModel={selectedSlotIds}
@@ -1287,36 +1337,24 @@ function SlotsSection({
   );
 }
 
-function SlotRowActions({
-  onDelete,
-  onStatusChange,
+function SlotInlineStatusSelect({
+  onChange,
   slot,
 }: {
-  onDelete: (slot: Slot) => void;
-  onStatusChange: (slotId: number, status: SlotStatus) => void;
+  onChange: (slotId: number, status: SlotStatus) => void;
   slot: Slot;
 }) {
   return (
-    <Box
-      onClick={(event) => event.stopPropagation()}
-      sx={{
-        alignItems: 'center',
-        display: 'flex',
-        flexShrink: 0,
-        gap: 0.5,
-        justifyContent: 'flex-end',
-        width: '100%',
-      }}
-    >
+    <Box onClick={(event) => event.stopPropagation()} sx={{ maxWidth: '100%', width: 140 }}>
       <Select
-        onChange={(event) => onStatusChange(slot.id, event.target.value as SlotStatus)}
+        onChange={(event) => onChange(slot.id, event.target.value as SlotStatus)}
         renderValue={(value) => <SlotStatusChip status={value as SlotStatus} />}
         size="small"
         value={slot.status}
         sx={{
-          flexShrink: 0,
           height: 32,
-          width: 136,
+          maxWidth: '100%',
+          width: 140,
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: 'divider',
           },
@@ -1329,8 +1367,8 @@ function SlotRowActions({
         }}
         MenuProps={{
           PaperProps: { sx: { minWidth: 168 } },
-          anchorOrigin: { horizontal: 'right', vertical: 'bottom' },
-          transformOrigin: { horizontal: 'right', vertical: 'top' },
+          anchorOrigin: { horizontal: 'left', vertical: 'bottom' },
+          transformOrigin: { horizontal: 'left', vertical: 'top' },
         }}
       >
         {slotStatusOptions.map((status) => (
@@ -1339,17 +1377,6 @@ function SlotRowActions({
           </MenuItem>
         ))}
       </Select>
-      <Tooltip title="Delete">
-        <IconButton
-          aria-label={`Delete slot ${slot.slotNumber}`}
-          color="error"
-          onClick={() => onDelete(slot)}
-          size="small"
-          sx={{ flexShrink: 0 }}
-        >
-          <Delete fontSize="small" />
-        </IconButton>
-      </Tooltip>
     </Box>
   );
 }
