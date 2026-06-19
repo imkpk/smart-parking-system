@@ -43,28 +43,13 @@ DB_USERNAME=parking_user
 DB_PASSWORD=parking_password
 ```
 
-**Neon (hosted / Render):**
-
-Neon’s copied URL uses `postgresql://`. Payment-service accepts that **or** JDBC format:
+**Neon (hosted):**
 
 ```env
-# Either format works (Neon dashboard copy-paste is OK):
-DB_URL=postgresql://HOST/DB?sslmode=require
-# DB_URL=jdbc:postgresql://HOST/DB?sslmode=require
-
+DB_URL=jdbc:postgresql://HOST/DB?sslmode=require
 DB_USERNAME=USER
 DB_PASSWORD=PASSWORD
-JWT_SECRET=<same secret as NestJS backend, 32+ chars>
 ```
-
-**Render Docker Web Service:**
-
-| Setting | Value |
-|---------|-------|
-| Root Directory | `payment-service` |
-| Dockerfile | `Dockerfile` |
-
-Render sets `PORT` automatically — do not hardcode `8081` in env. Health check: `/actuator/health` or `/api/payments/health`.
 
 Hibernate `ddl-auto=update` creates payment tables on first start. No MySQL is required after Phase 6A-2.
 
