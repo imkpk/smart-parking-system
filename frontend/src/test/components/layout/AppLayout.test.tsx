@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SIDEBAR_AUTO_COLLAPSE_MS } from '@/hooks/useSidebarAutoCollapse';
 import { Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
+import { userFacingLabels } from '@/lib/userFacingLabels';
 import { createMockUser, renderWithProviders } from '@/test/test-utils';
 
 const useMediaQueryMock = vi.hoisted(() => vi.fn(() => false));
@@ -102,7 +103,7 @@ describe('AppLayout', () => {
     expect(screen.getByRole('link', { name: /payments/i })).toBeInTheDocument();
 
     expect(screen.queryByRole('link', { name: /security dashboard/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /user dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: userFacingLabels.dashboard })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^branding$/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /logout/i }));
@@ -161,10 +162,12 @@ describe('AppLayout', () => {
 
     renderAppLayout('/user/dashboard');
 
-    expect(screen.getByRole('link', { name: /user dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: userFacingLabels.dashboard })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^support$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^vehicles$/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /bookings/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: userFacingLabels.bookings })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: userFacingLabels.parkingHistory })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: userFacingLabels.paymentHistory })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /admin dashboard/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /security dashboard/i })).not.toBeInTheDocument();
   });

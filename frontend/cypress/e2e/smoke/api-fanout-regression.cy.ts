@@ -6,7 +6,7 @@ describe('API fan-out regression', () => {
   it('does not fan out slots API on Bookings initial load', () => {
     cy.loginAs('USER');
     cy.visit('/bookings');
-    cy.contains('Bookings').should('be.visible');
+    cy.contains('Parking Slots').should('be.visible');
     cy.get('@slotsFanout.all').should('have.length', 0);
   });
 

@@ -20,6 +20,7 @@ import {
   renderWithProviders,
   selectMuiOption,
 } from '@/test/test-utils';
+import { userFacingLabels } from '@/lib/userFacingLabels';
 import { Booking } from '@/types/booking';
 import { BookingsPage } from '@/pages/bookings/BookingsPage';
 
@@ -143,7 +144,9 @@ describe('BookingsPage', () => {
 
     expect(getBookings).not.toHaveBeenCalled();
     expect(await screen.findByText('BK-001')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create booking/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: userFacingLabels.bookSlot }),
+    ).toBeInTheDocument();
   });
 
   it('creates booking only after form selections and loads available slots then', async () => {
@@ -188,9 +191,11 @@ describe('BookingsPage', () => {
 
     expect(getAvailableSlotsForBooking).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /create booking/i }));
+    await user.click(
+      await screen.findByRole('button', { name: userFacingLabels.bookSlot }),
+    );
 
-    const dialog = screen.getByRole('dialog', { name: /create booking/i });
+    const dialog = screen.getByRole('dialog', { name: userFacingLabels.bookSlot });
     const comboboxes = within(dialog).getAllByRole('combobox');
 
     await selectMuiOption(user, comboboxes[0], /ka01ab1234/i);

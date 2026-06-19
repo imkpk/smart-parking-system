@@ -49,6 +49,7 @@ import {
 } from '../../lib/bookingDisplay';
 import { formatBookingNo, formatDateTime } from '../../lib/formatters';
 import { filterBookings } from '../../lib/searchFilters';
+import { userFacingLabels } from '../../lib/userFacingLabels';
 import { Booking } from '../../types/booking';
 import { VehicleType } from '../../types/vehicle';
 
@@ -311,14 +312,17 @@ export function BookingsPage() {
     });
   };
 
+  const pageTitle = isUser ? userFacingLabels.bookings : 'Bookings';
+  const bookSlotLabel = userFacingLabels.bookSlot;
+
   return (
     <Stack spacing={3}>
       <PageHeader
-        title="Bookings"
+        title={pageTitle}
         action={
           isUser ? (
             <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
-              Create Booking
+              {bookSlotLabel}
             </HeaderActionButton>
           ) : null
         }
@@ -338,10 +342,14 @@ export function BookingsPage() {
           description: search
             ? 'Try a booking code, vehicle number, parking lot, or status.'
             : isUser
-              ? 'Create a booking to reserve a parking slot.'
+              ? 'Book a slot to reserve parking before you arrive.'
               : 'Bookings will appear here when customers reserve slots.',
           illustration: search ? 'empty' : 'booking',
-          title: search ? 'No matching bookings' : 'No bookings found',
+          title: search
+            ? 'No matching bookings'
+            : isUser
+              ? 'No parking slots booked yet'
+              : 'No bookings found',
         }}
         loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
         rows={bookingRows}
@@ -356,7 +364,7 @@ export function BookingsPage() {
 
       <Dialog fullWidth maxWidth="sm" onClose={() => setFormOpen(false)} open={formOpen}>
         <Box component="form" onSubmit={handleSubmit}>
-          <DialogTitle>Create Booking</DialogTitle>
+          <DialogTitle>{isUser ? bookSlotLabel : 'Create Booking'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <FormControl required>

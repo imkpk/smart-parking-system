@@ -60,6 +60,7 @@ import {
   formatReceiptNo,
   formatStatusLabel,
 } from '../../lib/formatters';
+import { userFacingLabels } from '../../lib/userFacingLabels';
 import { Payment } from '../../types/payment';
 
 type PaymentAction = { type: 'success' | 'failure'; payment: Payment } | null;
@@ -414,7 +415,7 @@ export function PaymentsPage() {
 
   return (
     <Stack spacing={1}>
-      <PageHeader title="Payments" />
+      <PageHeader title={isUser ? userFacingLabels.paymentHistory : 'Payments'} />
 
       <QueryErrorAlert
         error={summaryQuery.error}

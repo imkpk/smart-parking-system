@@ -6,7 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Paper,
   Stack,
   Tab,
@@ -55,6 +54,7 @@ import {
   getParkingEventVehicleLabel,
 } from '../../lib/parkingEventDisplay';
 import { filterParkingEvents } from '../../lib/searchFilters';
+import { userFacingLabels } from '../../lib/userFacingLabels';
 import {
   formatCurrency,
   formatDateTime,
@@ -438,8 +438,11 @@ export function ParkingEventsPage() {
   const historyError = historyQuery.error;
 
   return (
-    <Stack spacing={3}>
-      <PageHeader title="Parking Events" />
+    <Stack spacing={isUser ? 2 : 3}>
+      <PageHeader
+        compact={isUser}
+        title={isUser ? userFacingLabels.parkingHistory : 'Parking Events'}
+      />
 
       {canOperateParkingEvents ? (
         <Paper
@@ -541,13 +544,7 @@ export function ParkingEventsPage() {
       ) : null}
 
       {isUser || (isAdmin && activeTab === 'history') ? (
-        <Stack spacing={2}>
-          {isUser ? (
-            <>
-              <Typography variant="subtitle1">My Parking History</Typography>
-              <Divider />
-            </>
-          ) : null}
+        <Stack spacing={isUser ? 0 : 2}>
           {historyError ? (
             <QueryErrorAlert
               error={historyError}
