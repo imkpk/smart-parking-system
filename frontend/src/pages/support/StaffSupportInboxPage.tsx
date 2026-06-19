@@ -335,18 +335,22 @@ function StaffSupportInbox({
                       fallbackMessage="Could not load messages."
                     />
                   ) : null}
+                  {!messagesQuery.isLoading &&
+                  !messagesQuery.error &&
+                  messagesQuery.data &&
+                  messagesQuery.data.length === 0 ? (
+                    <EmptyState
+                      description="Reply to start helping the customer."
+                      title="No messages yet"
+                    />
+                  ) : null}
                   {messagesQuery.data && messagesQuery.data.length > 0 ? (
                     <Stack spacing={1.5}>
                       {messagesQuery.data.map((message) => (
                         <ChatMessageBubble key={message.id} message={message} />
                       ))}
                     </Stack>
-                  ) : (
-                    <EmptyState
-                      description="Reply to start helping the customer."
-                      title="No messages yet"
-                    />
-                  )}
+                  ) : null}
                 </Box>
 
                 <Box

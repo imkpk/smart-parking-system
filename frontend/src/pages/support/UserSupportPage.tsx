@@ -25,7 +25,9 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { ArrowBack, Forum, Security } from '@mui/icons-material';
+import { ArrowBack } from '@mui/icons-material';
+import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
+import SecurityIcon from '@mui/icons-material/Security';
 import { useQuery } from '@tanstack/react-query';
 import { FormEvent, useMemo, useState } from 'react';
 import { getMyBookings } from '../../api/bookingsApi';
@@ -36,6 +38,10 @@ import { HeaderActionButton, PageHeader } from '../../components/common/PageHead
 import { QueryErrorAlert } from '../../components/common/QueryErrorAlert';
 import { StatusChip } from '../../components/common/StatusChip';
 import { ChatMessageBubble } from '../../components/support/ChatMessageBubble';
+import {
+  formatConversationType,
+  getConversationContextLabel,
+} from '../../components/support/conversationDisplay';
 import {
   useConversationMessages,
   useConversations,
@@ -48,29 +54,11 @@ import { getApiErrorMessage } from '../../lib/apiError';
 import { formatBookingNo, formatRelativeTime } from '../../lib/formatters';
 import {
   CONVERSATION_MESSAGE_MAX_LENGTH,
-  ConversationListItem,
   ConversationStatus,
-  ConversationType,
 } from '../../types/conversation';
 
 type StatusFilter = 'ALL' | ConversationStatus;
 type SecurityLinkType = 'parkingLot' | 'booking';
-
-function formatConversationType(type: ConversationType) {
-  return type === 'SECURITY' ? 'Security' : 'Customer Care';
-}
-
-function getConversationContextLabel(conversation: ConversationListItem) {
-  if (conversation.booking) {
-    return `${conversation.booking.bookingNo} · ${conversation.booking.bookingCode}`;
-  }
-
-  if (conversation.parkingLot) {
-    return conversation.parkingLot.name;
-  }
-
-  return null;
-}
 
 export function UserSupportPage() {
   const theme = useTheme();
@@ -206,14 +194,14 @@ export function UserSupportPage() {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <HeaderActionButton
               onClick={() => setSecurityDialogOpen(true)}
-              startIcon={<Security />}
+              startIcon={<SecurityIcon />}
               variant="outlined"
             >
               Message Security
             </HeaderActionButton>
             <HeaderActionButton
               onClick={() => setCustomerCareDialogOpen(true)}
-              startIcon={<Forum />}
+              startIcon={<ContactSupportOutlinedIcon />}
             >
               Customer Care
             </HeaderActionButton>
