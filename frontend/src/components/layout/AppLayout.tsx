@@ -30,6 +30,7 @@ import {
   Palette,
   Security,
   SensorOccupied,
+  SupportAgent,
   SvgIconComponent,
 } from '@mui/icons-material';
 import { useCallback, useState } from 'react';
@@ -78,6 +79,12 @@ const navItems: NavItem[] = [
     label: 'User Dashboard',
     to: '/user/dashboard',
     icon: Dashboard,
+    roles: ['USER'],
+  },
+  {
+    label: 'Support',
+    to: '/support',
+    icon: SupportAgent,
     roles: ['USER'],
   },
   {
