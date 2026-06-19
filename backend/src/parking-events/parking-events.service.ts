@@ -7,6 +7,8 @@ import {
 import {
   BookingStatus,
   ParkingEventStatus,
+  Prisma,
+  SlotStatus,
 } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
@@ -60,8 +62,21 @@ export class ParkingEventsService {
           throw new NotFoundException('Booking not found');
         }
 
-        if (booking.status !== BookingStatus.CONFIRMED) {
+        const existingEvent = await tx.parkingEvent.findUnique({
+          where: { bookingId: booking.id },
+        });
+        const isReturnVisit = existingEvent?.status === ParkingEventStatus.COMPLETED;
+
+        if (!isReturnVisit && booking.status !== BookingStatus.CONFIRMED) {
           throw new BadRequestException('Only CONFIRMED bookings can be checked in');
+        }
+
+        if (
+          isReturnVisit &&
+          booking.status !== BookingStatus.CONFIRMED &&
+          booking.status !== BookingStatus.COMPLETED
+        ) {
+          throw new BadRequestException('This booking cannot be checked in again');
         }
 
         const activeEvent = await tx.parkingEvent.findFirst({
@@ -75,12 +90,22 @@ export class ParkingEventsService {
           throw new ConflictException('Booking is already checked in');
         }
 
-        const existingEvent = await tx.parkingEvent.findUnique({
-          where: { bookingId: booking.id },
-        });
+        if (isReturnVisit && existingEvent) {
+          await this.ensureSlotReadyForReturnCheckIn(
+            booking.slotId,
+            booking.organizationId,
+            tx,
+          );
 
-        if (existingEvent?.status === ParkingEventStatus.COMPLETED) {
-          await this.slotLifecycleService.occupyAvailableSlot(booking.slotId, tx);
+          if (booking.status === BookingStatus.COMPLETED) {
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: {
+                status: BookingStatus.CONFIRMED,
+                endTime: null,
+              },
+            });
+          }
 
           const reactivatedEvent = await tx.parkingEvent.update({
             where: { id: existingEvent.id },
@@ -192,6 +217,14 @@ export class ParkingEventsService {
         throw new NotFoundException('Parking event not found');
       }
 
+      await tx.booking.update({
+        where: { id: existingEvent.bookingId },
+        data: {
+          status: BookingStatus.CONFIRMED,
+          endTime: null,
+        },
+      });
+
       await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
 
       return completedEvent;
@@ -277,6 +310,42 @@ export class ParkingEventsService {
     );
 
     return presentParkingEvent(parkingEvent);
+  }
+
+  private async ensureSlotReadyForReturnCheckIn(
+    slotId: number,
+    organizationId: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+    });
+
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    if (slot.status === SlotStatus.AVAILABLE) {
+      await this.slotLifecycleService.occupyAvailableSlot(slotId, tx);
+      return;
+    }
+
+    if (slot.status === SlotStatus.OCCUPIED) {
+      const activeEventOnSlot = await tx.parkingEvent.findFirst({
+        where: {
+          organizationId,
+          slotId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
+      });
+
+      if (!activeEventOnSlot) {
+        return;
+      }
+    }
+
+    throw new ConflictException('Slot is not available');
   }
 
   private calculateFee(durationMinutes: number) {

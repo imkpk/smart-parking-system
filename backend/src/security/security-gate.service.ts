@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus, SlotStatus } from '@prisma/client';
+import { BookingStatus, ParkingEventStatus, Prisma, SlotStatus } from '@prisma/client';
 import { bookingListInclude, presentBooking } from '../bookings/booking.presenter';
 import { AccessPolicyService } from '../common/access-policy.service';
 import {
@@ -28,6 +28,10 @@ const gateBookingInclude = {
     },
   },
 } as const;
+
+type GateBooking = Parameters<typeof presentBooking>[0] & {
+  slot: { status: SlotStatus };
+};
 
 @Injectable()
 export class SecurityGateService {
@@ -94,12 +98,12 @@ export class SecurityGateService {
       if (eventCount === 0) {
         return this.buildCheckInResult(booking);
       }
+    }
 
-      const returnCheckIn = await this.buildReturnCheckInResult(booking);
+    const returnCheckIn = await this.buildReturnCheckInResult(booking);
 
-      if (returnCheckIn) {
-        return returnCheckIn;
-      }
+    if (returnCheckIn) {
+      return returnCheckIn;
     }
 
     const lastCheckOutTime = await this.getLastCheckOutTime(organizationId, booking.id);
@@ -138,16 +142,15 @@ export class SecurityGateService {
       }
     }
 
-    const returnCheckInBooking = await this.findReturnCheckInBooking(organizationId, {
+    const returnSession = await this.findLatestReturnCheckInSession(organizationId, {
       vehicle: { vehicleNumber },
     });
 
-    if (returnCheckInBooking) {
-      const returnCheckIn = await this.buildReturnCheckInResult(returnCheckInBooking);
-
-      if (returnCheckIn) {
-        return returnCheckIn;
-      }
+    if (returnSession) {
+      return this.buildCheckInResult(
+        returnSession.booking,
+        returnSession.lastCheckOutTime.toISOString(),
+      );
     }
 
     const firstVisitBooking = await this.prisma.booking.findFirst({
@@ -163,6 +166,28 @@ export class SecurityGateService {
 
     if (firstVisitBooking) {
       return this.buildCheckInResult(firstVisitBooking);
+    }
+
+    const latestCompletedSession = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId,
+        vehicle: { vehicleNumber },
+        status: ParkingEventStatus.COMPLETED,
+        checkOutTime: { not: null },
+      },
+      orderBy: { checkOutTime: 'desc' },
+      include: {
+        booking: {
+          include: gateBookingInclude,
+        },
+      },
+    });
+
+    if (latestCompletedSession?.booking && latestCompletedSession.checkOutTime) {
+      return this.buildNoneResult(
+        latestCompletedSession.booking,
+        latestCompletedSession.checkOutTime.toISOString(),
+      );
     }
 
     const latestBooking = await this.prisma.booking.findFirst({
@@ -183,47 +208,123 @@ export class SecurityGateService {
     return this.buildNoneResult(latestBooking, lastCheckOutTime);
   }
 
-  private async findReturnCheckInBooking(
+  private async findLatestReturnCheckInSession(
     organizationId: number,
-    bookingFilter: Record<string, unknown>,
+    filters: {
+      vehicle?: { vehicleNumber: string };
+      booking?: Prisma.BookingWhereInput;
+    },
   ) {
-    return this.prisma.booking.findFirst({
+    const completedSession = await this.prisma.parkingEvent.findFirst({
       where: {
         organizationId,
-        status: BookingStatus.CONFIRMED,
-        slot: { status: SlotStatus.AVAILABLE },
-        parkingEvents: {
-          some: {
-            status: ParkingEventStatus.COMPLETED,
-            checkOutTime: { not: null },
+        status: ParkingEventStatus.COMPLETED,
+        checkOutTime: { not: null },
+        ...(filters.vehicle ? { vehicle: filters.vehicle } : {}),
+        booking: {
+          organizationId,
+          parkingEvents: {
+            none: {
+              status: ParkingEventStatus.ACTIVE,
+            },
           },
-          none: {
-            status: ParkingEventStatus.ACTIVE,
-          },
+          ...(filters.booking ?? {}),
         },
-        ...bookingFilter,
       },
-      orderBy: { id: 'desc' },
-      include: gateBookingInclude,
+      orderBy: { checkOutTime: 'desc' },
+      include: {
+        booking: {
+          include: gateBookingInclude,
+        },
+      },
     });
-  }
 
-  private async buildReturnCheckInResult(
-    booking: {
-      id: number;
-      slot: { status: SlotStatus };
-    } & Parameters<typeof presentBooking>[0],
-  ): Promise<SecurityGateSearchResult | null> {
-    if (booking.slot.status !== SlotStatus.AVAILABLE) {
+    if (!completedSession?.booking || !completedSession.checkOutTime) {
       return null;
     }
 
-    const lastCheckOutTime = await this.getLastCheckOutTime(
-      booking.organizationId,
-      booking.id,
+    const slotReadyForReturn = await this.isSlotReadyForReturnCheckIn(
+      organizationId,
+      completedSession.booking.slot.id,
+      completedSession.booking.slot.status,
     );
 
-    return this.buildCheckInResult(booking, lastCheckOutTime);
+    if (!slotReadyForReturn) {
+      return null;
+    }
+
+    return {
+      booking: completedSession.booking as GateBooking,
+      lastCheckOutTime: completedSession.checkOutTime,
+    };
+  }
+
+  private async isSlotReadyForReturnCheckIn(
+    organizationId: number,
+    slotId: number,
+    slotStatus: SlotStatus,
+  ) {
+    if (slotStatus === SlotStatus.AVAILABLE) {
+      return true;
+    }
+
+    if (slotStatus !== SlotStatus.OCCUPIED) {
+      return false;
+    }
+
+    const activeEventOnSlot = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId,
+        slotId,
+        status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
+      },
+    });
+
+    return activeEventOnSlot === null;
+  }
+
+  private async buildReturnCheckInResult(
+    booking: GateBooking,
+  ): Promise<SecurityGateSearchResult | null> {
+    const slotReadyForReturn = await this.isSlotReadyForReturnCheckIn(
+      booking.organizationId,
+      booking.slot.id,
+      booking.slot.status,
+    );
+
+    if (!slotReadyForReturn) {
+      return null;
+    }
+
+    const completedEvent = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId: booking.organizationId,
+        bookingId: booking.id,
+        status: ParkingEventStatus.COMPLETED,
+        checkOutTime: { not: null },
+      },
+      orderBy: { checkOutTime: 'desc' },
+      select: { checkOutTime: true },
+    });
+
+    if (!completedEvent?.checkOutTime) {
+      return null;
+    }
+
+    const activeEvent = await this.prisma.parkingEvent.findFirst({
+      where: {
+        organizationId: booking.organizationId,
+        bookingId: booking.id,
+        status: ParkingEventStatus.ACTIVE,
+      },
+    });
+
+    if (activeEvent) {
+      return null;
+    }
+
+    return this.buildCheckInResult(booking, completedEvent.checkOutTime.toISOString());
   }
 
   private async getLastCheckOutTime(organizationId: number, bookingId: number) {
@@ -360,7 +461,7 @@ export class SecurityGateService {
         return 'This booking was cancelled.';
       case BookingStatus.COMPLETED:
         return lastCheckOutTime
-          ? 'Already checked out. Slot is available when the customer returns.'
+          ? 'Already checked out. Slot is not available for check-in right now.'
           : 'Already checked out.';
       case BookingStatus.EXPIRED:
         return 'This booking has expired.';

@@ -176,17 +176,20 @@ describe('SecurityGateService', () => {
     };
     const lastCheckOutTime = new Date('2026-06-19T10:00:00.000Z');
 
-    prisma.booking.findFirst.mockResolvedValueOnce({
-      ...confirmedBooking,
-      slot: {
-        ...confirmedBooking.slot,
-        status: SlotStatus.AVAILABLE,
-      },
-    });
     prisma.parkingEvent.findFirst
       .mockResolvedValueOnce(staleActiveEvent)
       .mockResolvedValueOnce({ checkOutTime: lastCheckOutTime })
-      .mockResolvedValueOnce({ checkOutTime: lastCheckOutTime });
+      .mockResolvedValueOnce({
+        checkOutTime: lastCheckOutTime,
+        booking: {
+          ...confirmedBooking,
+          status: BookingStatus.COMPLETED,
+          slot: {
+            ...confirmedBooking.slot,
+            status: SlotStatus.AVAILABLE,
+          },
+        },
+      });
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
@@ -202,9 +205,7 @@ describe('SecurityGateService', () => {
       bookingCode: 'BK-DEMO-010',
     };
 
-    prisma.booking.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(nextBooking);
+    prisma.booking.findFirst.mockResolvedValueOnce(nextBooking);
     prisma.parkingEvent.findFirst
       .mockResolvedValueOnce({
         ...activeEvent,
@@ -213,12 +214,37 @@ describe('SecurityGateService', () => {
       .mockResolvedValueOnce({
         id: 301,
         checkOutTime: new Date('2026-06-19T09:30:00.000Z'),
-      });
+      })
+      .mockResolvedValueOnce(null);
 
     const result = await service.search(org1.vehicle.vehicleNumber, securityUser);
 
     expect(result?.action).toBe('CHECK_IN');
     expect(result?.booking.bookingCode).toBe('BK-DEMO-010');
+  });
+
+  it('returns check-in for a completed booking when the slot is available again', async () => {
+    const lastCheckOutTime = new Date('2026-06-19T10:00:00.000Z');
+
+    prisma.booking.findFirst.mockResolvedValueOnce({
+      ...confirmedBooking,
+      status: BookingStatus.COMPLETED,
+      slot: {
+        ...confirmedBooking.slot,
+        status: SlotStatus.AVAILABLE,
+      },
+    });
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        checkOutTime: lastCheckOutTime,
+      })
+      .mockResolvedValueOnce(null);
+
+    const result = await service.search(org1.booking.bookingCode, securityUser);
+
+    expect(result?.action).toBe('CHECK_IN');
+    expect(result?.lastCheckOutTime).toBe(lastCheckOutTime.toISOString());
   });
 
   it('scopes search to the current user organization', async () => {

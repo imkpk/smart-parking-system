@@ -284,6 +284,7 @@ describe('ParkingEventsService', () => {
 
     prisma.booking.findFirst.mockResolvedValue({
       ...booking,
+      status: BookingStatus.COMPLETED,
       slot: { id: booking.slotId, status: SlotStatus.AVAILABLE },
     });
     prisma.parkingEvent.findFirst.mockResolvedValue(null);
@@ -291,10 +292,21 @@ describe('ParkingEventsService', () => {
       id: 100,
       status: ParkingEventStatus.COMPLETED,
     });
+    prisma.slot.findUnique.mockResolvedValue({
+      id: booking.slotId,
+      status: SlotStatus.AVAILABLE,
+    });
     prisma.parkingEvent.update.mockResolvedValue(reactivatedEvent);
 
     const result = await service.checkIn({ bookingId: booking.id }, securityUser);
 
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: booking.id },
+      data: {
+        status: BookingStatus.CONFIRMED,
+        endTime: null,
+      },
+    });
     expect(prisma.slot.updateMany).toHaveBeenCalledWith({
       where: { id: booking.slotId, status: SlotStatus.AVAILABLE },
       data: { status: SlotStatus.OCCUPIED },
@@ -386,7 +398,13 @@ describe('ParkingEventsService', () => {
         feeAmount: 110,
       }),
     });
-    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: booking.id },
+      data: {
+        status: BookingStatus.CONFIRMED,
+        endTime: null,
+      },
+    });
     expect(prisma.slot.updateMany).toHaveBeenCalledWith({
       where: { id: booking.slotId, status: SlotStatus.OCCUPIED },
       data: { status: SlotStatus.AVAILABLE },
