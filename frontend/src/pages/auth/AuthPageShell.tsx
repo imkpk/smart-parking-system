@@ -63,6 +63,9 @@ export function AuthPageShell({
           sx={{ display: { xs: 'none', md: 'flex' }, px: 2, py: 1 }}
         >
           <Illustration maxWidth={300} name={illustration} />
+          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <LoginBrandBlock logoUrl={branding.logoUrl} name={branding.name} />
+          </Box>
         </Stack>
 
         <Paper

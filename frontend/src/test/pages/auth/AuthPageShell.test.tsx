@@ -23,8 +23,8 @@ describe('AuthPageShell', () => {
     );
 
     expect(screen.getByRole('heading', { name: /welcome back/i })).toBeInTheDocument();
-    expect(screen.getAllByText('Smart Parking').length).toBeGreaterThan(0);
-    expect(screen.getByText('Find • Book • Park')).toBeInTheDocument();
+    expect(screen.getAllByText('Smart Parking').length).toBeGreaterThan(1);
+    expect(screen.getAllByText('Find • Book • Park').length).toBeGreaterThan(1);
     expect(screen.getByText(/sign in to continue/i)).toBeInTheDocument();
     expect(screen.getByText('Form content')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();
