@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { isEmailIdentifier, normalizeIndianPhone } from '../common/phone.util';
 import { resolveUniqueOrganizationSlug } from '../organizations/organization-slug.util';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -91,10 +92,10 @@ export class AuthService {
     }
   }
 
+  // Future login options (not in MVP): mobile OTP, email OTP, password reset via OTP.
+  // Requires SMS/email provider, OTP expiry, resend limits, and rate limiting.
   async login(loginDto: LoginDto) {
-    const candidates = await this.usersService.findActiveLoginCandidatesByEmail(
-      loginDto.email,
-    );
+    const candidates = await this.resolveLoginCandidates(loginDto.email.trim());
 
     if (candidates.length === 0) {
       throw new UnauthorizedException('Invalid email or password');
@@ -119,7 +120,7 @@ export class AuthService {
 
     if (matches.length > 1) {
       throw new ConflictException(
-        'Multiple accounts match this email. Contact support to resolve access.',
+        'Multiple accounts match this login. Contact support to resolve access.',
       );
     }
 
@@ -133,6 +134,20 @@ export class AuthService {
       user,
       accessToken: this.signToken(user),
     };
+  }
+
+  private async resolveLoginCandidates(identifier: string) {
+    const normalizedPhone = normalizeIndianPhone(identifier);
+
+    if (normalizedPhone) {
+      return this.usersService.findActiveLoginCandidatesByPhone(normalizedPhone);
+    }
+
+    if (isEmailIdentifier(identifier)) {
+      return this.usersService.findActiveLoginCandidatesByEmail(identifier);
+    }
+
+    return [];
   }
 
   private async assertSignupEmailAvailable(email: string) {
@@ -159,13 +174,14 @@ export class AuthService {
 
   private signToken(user: {
     id: number;
-    email: string;
+    email: string | null;
+    phone?: string | null;
     role: JwtPayload['role'];
     organizationId?: number | null;
   }) {
     return this.jwtService.sign({
       sub: user.id,
-      email: user.email,
+      email: user.email ?? user.phone ?? '',
       role: user.role,
       organizationId: user.organizationId ?? null,
     });

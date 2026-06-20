@@ -142,7 +142,7 @@ export function ParkingLotDetailsPage() {
   const { id } = useParams();
   const parkingLotId = Number(id);
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const { isOperationalAdmin, isTenantAdmin } = useUserRole();
@@ -420,6 +420,31 @@ export function ParkingLotDetailsPage() {
     setBulkForm({ ...emptyBulkForm, floorId: floors[0]?.id ?? 0 });
     setBulkFormOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !canManageLot) {
+      return;
+    }
+
+    if (activeTab === 'floors') {
+      openCreateFloorForm();
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+      return;
+    }
+
+    if (activeTab === 'slots' && floors.length > 0) {
+      openCreateSlotForm();
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+    }
+  }, [activeTab, canManageLot, floors.length, searchParams, setSearchParams]);
 
   const handleCreateSlotSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1234,17 +1259,29 @@ function SlotsSection({
             >
               Delete Selected
             </ToolbarButton>
-            <ToolbarButton
-              disabled={floors.length === 0}
-              onClick={onCreate}
-              startIcon={<Add />}
-              variant="contained"
-            >
-              Create Slot
-            </ToolbarButton>
-            <ToolbarButton disabled={floors.length === 0} onClick={onBulkCreate} variant="outlined">
-              Bulk Create
-            </ToolbarButton>
+            <Tooltip title={floors.length === 0 ? 'Create floor first' : ''}>
+              <span>
+                <ToolbarButton
+                  disabled={floors.length === 0}
+                  onClick={onCreate}
+                  startIcon={<Add />}
+                  variant="contained"
+                >
+                  Create Slot
+                </ToolbarButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={floors.length === 0 ? 'Create floor first' : ''}>
+              <span>
+                <ToolbarButton
+                  disabled={floors.length === 0}
+                  onClick={onBulkCreate}
+                  variant="outlined"
+                >
+                  Bulk Create
+                </ToolbarButton>
+              </span>
+            </Tooltip>
           </Stack>
         ) : null}
       </Stack>

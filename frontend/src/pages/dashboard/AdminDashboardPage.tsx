@@ -5,6 +5,7 @@ import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashb
 import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
 import { SlotStatusDonutChart } from '../../components/dashboard/SlotStatusDonutChart';
 import { TenantOperatorDashboardLayout } from '../../components/dashboard/TenantOperatorDashboardLayout';
+import { TenantAdminQuickActions } from '../../components/dashboard/TenantAdminQuickActions';
 import { UserSummaryCard } from '../../components/dashboard/UserSummaryCard';
 import {
   buildPlatformHeroKpis,
@@ -36,12 +37,15 @@ export function AdminDashboardPage() {
             )}
           </Fragment>
         ) : (
-          <TenantOperatorDashboardLayout
-            extraContent={<UserSummaryCard />}
-            heroMetrics={buildTenantHeroKpis(metrics)}
-            lotUtilization={metrics.lotUtilization}
-            occupancy={metrics.occupancy}
-          />
+          <Fragment>
+            <TenantAdminQuickActions />
+            <TenantOperatorDashboardLayout
+              extraContent={<UserSummaryCard />}
+              heroMetrics={buildTenantHeroKpis(metrics)}
+              lotUtilization={metrics.lotUtilization}
+              occupancy={metrics.occupancy}
+            />
+          </Fragment>
         )
       }
     </OperatorDashboardShell>

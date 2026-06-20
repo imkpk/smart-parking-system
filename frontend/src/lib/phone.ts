@@ -13,3 +13,8 @@ export function normalizeIndianPhone(digits: string) {
 export function isValidIndianPhoneDigits(digits: string) {
   return INDIAN_MOBILE_DIGITS.test(digits.replace(/\D/g, '').slice(0, 10));
 }
+
+export function toApiIndianPhone(input: string) {
+  const digits = input.replace(/\D/g, '').slice(-10);
+  return normalizeIndianPhone(digits);
+}

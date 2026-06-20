@@ -112,7 +112,7 @@ model User {
   id                       Int                   @id @default(autoincrement())
   organizationId           Int?
   name                     String
-  email                    String
+  email                    String?
   phone                    String?
   passwordHash             String
   role                     Role                  @default(USER)

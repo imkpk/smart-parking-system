@@ -7,6 +7,7 @@ import {
 import { Prisma, Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AccessPolicyService } from '../common/access-policy.service';
+import { normalizeIndianPhone } from '../common/phone.util';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -52,13 +53,20 @@ export class UsersService {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
+    const normalizedPhone = normalizeIndianPhone(dto.phone);
+    if (!normalizedPhone) {
+      throw new ConflictException('phone must be a valid Indian mobile number (+91XXXXXXXXXX)');
+    }
+
+    const normalizedEmail = dto.email?.trim().toLowerCase();
+
     try {
       const user = await this.prisma.user.create({
         data: {
           organizationId,
           name: dto.name.trim(),
-          email: dto.email.toLowerCase(),
-          phone: dto.phone,
+          email: normalizedEmail || null,
+          phone: normalizedPhone,
           passwordHash,
           role: dto.role,
           isActive: dto.isActive ?? true,
@@ -120,6 +128,15 @@ export class UsersService {
     return this.prisma.user.findMany({
       where: {
         email: email.toLowerCase(),
+        isActive: true,
+      },
+    });
+  }
+
+  findActiveLoginCandidatesByPhone(phone: string): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: {
+        phone,
         isActive: true,
       },
     });

@@ -16,6 +16,7 @@ describe('AuthService', () => {
   let jwtService: { sign: jest.Mock };
   let usersService: {
     findActiveLoginCandidatesByEmail: jest.Mock;
+    findActiveLoginCandidatesByPhone: jest.Mock;
     findActiveById: jest.Mock;
   };
   let prisma: {
@@ -28,6 +29,7 @@ describe('AuthService', () => {
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
     usersService = {
       findActiveLoginCandidatesByEmail: jest.fn(),
+      findActiveLoginCandidatesByPhone: jest.fn(),
       findActiveById: jest.fn(),
     };
     prisma = {
@@ -87,13 +89,13 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     await service.login({
-      email: normalUser.email,
+      email: normalUser.email!,
       password: 'password123',
     });
 
     expect(jwtService.sign).toHaveBeenCalledWith({
       sub: normalUser.id,
-      email: normalUser.email,
+      email: normalUser.email!,
       role: normalUser.role,
       organizationId: normalUser.organizationId,
     });
@@ -107,7 +109,7 @@ describe('AuthService', () => {
         organizationName: 'Sunrise Apts',
         organizationType: ParkingLotType.APARTMENT,
         name: 'Owner',
-        email: normalUser.email,
+        email: normalUser.email!,
         password: 'password123',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
@@ -119,7 +121,7 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     const result = await service.login({
-      email: normalUser.email,
+      email: normalUser.email!,
       password: 'password123',
     });
 
@@ -132,7 +134,7 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     const result = await service.login({
-      email: adminUser.email,
+      email: adminUser.email!,
       password: 'password123',
     });
 
@@ -147,7 +149,7 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     await expect(
-      service.login({ email: normalUser.email, password: 'password123' }),
+      service.login({ email: normalUser.email!, password: 'password123' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -158,13 +160,13 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
     await service.login({
-      email: normalUser.email,
+      email: normalUser.email!,
       password: 'password123',
     });
 
     expect(jwtService.sign).toHaveBeenCalledWith({
       sub: normalUser.id,
-      email: normalUser.email,
+      email: normalUser.email!,
       role: normalUser.role,
       organizationId: null,
     });
@@ -175,7 +177,33 @@ describe('AuthService', () => {
     jest.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
     await expect(
-      service.login({ email: normalUser.email, password: 'wrong-password' }),
+      service.login({ email: normalUser.email!, password: 'wrong-password' }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('logs in with a normalized 10-digit mobile number', async () => {
+    usersService.findActiveLoginCandidatesByPhone.mockResolvedValue([userRecord]);
+    usersService.findActiveById.mockResolvedValue(normalUser);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    const result = await service.login({
+      email: '9876543210',
+      password: 'password123',
+    });
+
+    expect(usersService.findActiveLoginCandidatesByPhone).toHaveBeenCalledWith('+919876543210');
+    expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
+  });
+
+  it('rejects login when multiple active accounts match the same phone', async () => {
+    usersService.findActiveLoginCandidatesByPhone.mockResolvedValue([
+      userRecord,
+      { ...userRecord, id: 99, organizationId: 2 },
+    ]);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    await expect(
+      service.login({ email: '+919876543210', password: 'password123' }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

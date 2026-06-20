@@ -19,6 +19,41 @@ vi.mock('@/api/dashboardApi', () => ({
   getRecentActivity: vi.fn(),
 }));
 
+vi.mock('@/api/parkingLotsApi', () => ({
+  getParkingLots: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/api/floorsApi', () => ({
+  getFloors: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/api/usersApi', () => ({
+  getUserSummary: vi.fn().mockResolvedValue({
+    totalUsers: 1,
+    activeUsers: 1,
+    inactiveUsers: 0,
+    tenantAdmins: 1,
+    admins: 0,
+    security: 0,
+    users: 0,
+  }),
+  createUser: vi.fn(),
+}));
+
+vi.mock('@/hooks/useUserRole', () => ({
+  useUserRole: vi.fn(() => ({
+    user: { role: 'TENANT_ADMIN' },
+    isTenantAdmin: true,
+    isOperationalAdmin: true,
+    isAdmin: false,
+    isSecurity: false,
+    isUser: false,
+    isSuperAdmin: false,
+    canOperateParkingEvents: true,
+    canViewOperationalPayments: true,
+  })),
+}));
+
 vi.mock('@/providers/TenantBrandingProvider', () => ({
   useTenantBranding: () => ({
     branding: { name: 'Smart Parking' },

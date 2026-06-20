@@ -44,7 +44,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email or mobile number/i)).toBeInTheDocument();
     expect(screen.getByTestId('login-password')).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
@@ -56,11 +56,11 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByLabelText(/email/i), 'user@example.com');
+    await user.type(screen.getByLabelText(/email or mobile number/i), 'user@example.com');
     await user.type(screen.getByTestId('login-password'), 'wrong-password');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/invalid email or password/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/invalid email, mobile number, or password/i);
     expect(loginMock).toHaveBeenCalledWith({
       email: 'user@example.com',
       password: 'wrong-password',

@@ -1,5 +1,13 @@
-import { User } from '../types/auth';
+import { Role, User } from '../types/auth';
 import { apiClient } from './client';
+
+export interface CreateUserPayload {
+  name: string;
+  email?: string;
+  phone: string;
+  password: string;
+  role: Role;
+}
 
 export interface UserSummary {
   totalUsers: number;
@@ -18,5 +26,10 @@ export async function getUsers() {
 
 export async function getUserSummary() {
   const response = await apiClient.get<UserSummary>('/users/summary');
+  return response.data;
+}
+
+export async function createUser(payload: CreateUserPayload) {
+  const response = await apiClient.post<User>('/users', payload);
   return response.data;
 }

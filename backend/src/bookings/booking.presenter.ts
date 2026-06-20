@@ -59,7 +59,7 @@ export function presentBooking(booking: BookingWithRelations): BookingListItem {
   return {
     ...core,
     customerName: user.name,
-    customerEmail: user.email,
+    customerEmail: user.email ?? '',
     customerPhone: user.phone,
     vehicleNumber: vehicle.vehicleNumber,
     parkingLotName: parkingLot.name,

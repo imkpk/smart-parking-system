@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -14,14 +15,15 @@ export class CreateUserDto {
   @MinLength(2)
   name: string;
 
-  @IsEmail()
-  email: string;
-
   @IsOptional()
+  @ValidateIf((_, value) => value != null && String(value).trim() !== '')
+  @IsEmail()
+  email?: string;
+
   @Matches(/^\+91[6-9]\d{9}$/, {
     message: 'phone must be a valid Indian mobile number (+91XXXXXXXXXX)',
   })
-  phone?: string;
+  phone: string;
 
   @IsString()
   @MinLength(6)

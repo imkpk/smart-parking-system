@@ -72,12 +72,12 @@ export function presentConversationListItem(
     subject: conversation.subject,
     createdBy: {
       name: conversation.createdByUser.name,
-      email: conversation.createdByUser.email,
+      email: conversation.createdByUser.email ?? '',
     },
     assignedTo: conversation.assignedToUser
       ? {
           name: conversation.assignedToUser.name,
-          email: conversation.assignedToUser.email,
+          email: conversation.assignedToUser.email ?? '',
         }
       : undefined,
     parkingLot: conversation.parkingLot

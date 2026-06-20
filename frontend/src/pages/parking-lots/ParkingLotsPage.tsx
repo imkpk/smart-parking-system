@@ -23,8 +23,8 @@ import {
 import { Add, Delete, Edit, OpenInNew, Visibility } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
-import { FormEvent, useMemo, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import {
   createParkingLot,
   deleteParkingLot,
@@ -87,6 +87,7 @@ export function ParkingLotsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null);
   const [search, setSearch] = useState('');
   const [detailsParkingLot, setDetailsParkingLot] = useState<ParkingLot | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
@@ -284,6 +285,15 @@ export function ParkingLotsPage() {
     setForm(emptyForm);
     setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !canManageLots) {
+      return;
+    }
+
+    openCreateForm();
+    setSearchParams({}, { replace: true });
+  }, [canManageLots, searchParams, setSearchParams]);
 
   const openEditForm = (parkingLot: ParkingLot) => {
     setEditingParkingLot(parkingLot);

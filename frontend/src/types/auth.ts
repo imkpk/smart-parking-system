@@ -16,7 +16,7 @@ export interface User {
   organizationId: number | null;
   organization?: OrganizationSummary | null;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   role: Role;
   isActive: boolean;
@@ -30,6 +30,7 @@ export interface AuthResponse {
 }
 
 export interface LoginPayload {
+  /** Email address or Indian mobile number (sent as `email` for API compatibility). */
   email: string;
   password: string;
 }
