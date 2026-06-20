@@ -100,6 +100,7 @@ describe('AdminDashboardPage', () => {
       expect(screen.getByText('Utilization')).toBeInTheDocument();
     });
 
+    expect(screen.getByText('Add a new parking area for this property.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create parking lot/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create admin/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
@@ -236,6 +237,7 @@ describe('SecurityDashboardPage', () => {
     renderWithProviders(<SecurityDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText('Search booking or vehicle and start parking session.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
@@ -268,6 +270,7 @@ describe('UserDashboardPage', () => {
     renderWithProviders(<UserDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText('Register your vehicle to book parking.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();

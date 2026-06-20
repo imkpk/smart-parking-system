@@ -1,22 +1,21 @@
-import { Button, Stack, Tooltip } from '@mui/material';
+import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
+import Layers from '@mui/icons-material/Layers';
+import LocalParking from '@mui/icons-material/LocalParking';
+import PersonAdd from '@mui/icons-material/PersonAdd';
+import Security from '@mui/icons-material/Security';
+import ViewModule from '@mui/icons-material/ViewModule';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFloors } from '../../api/floorsApi';
 import { getParkingLots } from '../../api/parkingLotsApi';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
+import { statusStyles } from '../../lib/statusStyles';
 import { Role } from '../../types/auth';
 import { CreateUserDialog } from '../users/CreateUserDialog';
+import { DashboardQuickActionGrid, DashboardQuickActionGridItem } from './DashboardQuickActionGrid';
 import { DashboardQuickActionsPanel } from './DashboardQuickActionsPanel';
-
-type QuickAction = {
-  label: string;
-  disabled?: boolean;
-  helperText?: string;
-  hidden?: boolean;
-  onClick: () => void;
-};
 
 export function TenantAdminQuickActions() {
   const navigate = useNavigate();
@@ -47,64 +46,83 @@ export function TenantAdminQuickActions() {
     setCreateUserOpen(true);
   };
 
-  const actions: QuickAction[] = [
-    {
-      label: 'Create Parking Lot',
-      onClick: () => navigate('/parking-lots?create=1'),
-    },
-    {
-      label: 'Create Floor',
-      disabled: !hasLot,
-      helperText: 'Create parking lot first',
-      onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'floors')}?create=1`),
-    },
-    {
-      label: 'Create Slot',
-      disabled: !hasFloor,
-      helperText: 'Create floor first',
-      onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'slots')}?create=1`),
-    },
-    {
-      label: 'Create User',
-      hidden: !isOperationalAdmin,
-      onClick: () => openCreateUser('USER'),
-    },
-    {
-      label: 'Create Admin',
-      hidden: !isTenantAdmin,
-      onClick: () => openCreateUser('ADMIN'),
-    },
-    {
-      label: 'Create Security',
-      hidden: !isOperationalAdmin,
-      onClick: () => openCreateUser('SECURITY'),
-    },
-  ];
+  const actions = useMemo<DashboardQuickActionGridItem[]>(
+    () => [
+      {
+        id: 'create-parking-lot',
+        title: 'Create Parking Lot',
+        description: 'Add a new parking area for this property.',
+        ctaLabel: 'Create parking lot',
+        icon: <LocalParking />,
+        accentColor: statusStyles.CONFIRMED.borderColor,
+        iconBgcolor: statusStyles.CONFIRMED.bgcolor,
+        onClick: () => navigate('/parking-lots?create=1'),
+      },
+      {
+        id: 'create-floor',
+        title: 'Create Floor',
+        description: 'Add floor or level details before adding slots.',
+        ctaLabel: 'Create floor',
+        icon: <Layers />,
+        accentColor: statusStyles.PENDING.borderColor,
+        iconBgcolor: statusStyles.PENDING.bgcolor,
+        disabled: !hasLot,
+        disabledReason: 'Create a parking lot first.',
+        onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'floors')}?create=1`),
+      },
+      {
+        id: 'create-slot',
+        title: 'Create Slot',
+        description: 'Add individual parking slots for vehicles.',
+        ctaLabel: 'Create slot',
+        icon: <ViewModule />,
+        accentColor: statusStyles.RESERVED.borderColor,
+        iconBgcolor: statusStyles.RESERVED.bgcolor,
+        disabled: !hasFloor,
+        disabledReason: 'Create a floor first.',
+        onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'slots')}?create=1`),
+      },
+      {
+        id: 'create-user',
+        title: 'Create User',
+        description: 'Add a resident or customer account.',
+        ctaLabel: 'Create user',
+        icon: <PersonAdd fontSize="small" />,
+        accentColor: statusStyles.PENDING.borderColor,
+        iconBgcolor: statusStyles.PENDING.bgcolor,
+        hidden: !isOperationalAdmin,
+        onClick: () => openCreateUser('USER'),
+      },
+      {
+        id: 'create-admin',
+        title: 'Create Admin',
+        description: 'Add a manager for this property.',
+        ctaLabel: 'Create admin',
+        icon: <AdminPanelSettings />,
+        accentColor: statusStyles.COMPLETED.borderColor,
+        iconBgcolor: statusStyles.COMPLETED.bgcolor,
+        hidden: !isTenantAdmin,
+        onClick: () => openCreateUser('ADMIN'),
+      },
+      {
+        id: 'create-security',
+        title: 'Create Security',
+        description: 'Add a gate operator for check-in and check-out.',
+        ctaLabel: 'Create security',
+        icon: <Security />,
+        accentColor: statusStyles.ACTIVE.borderColor,
+        iconBgcolor: statusStyles.ACTIVE.bgcolor,
+        hidden: !isOperationalAdmin,
+        onClick: () => openCreateUser('SECURITY'),
+      },
+    ],
+    [firstLot, hasFloor, hasLot, isOperationalAdmin, isTenantAdmin, navigate],
+  );
 
   return (
     <>
-      <DashboardQuickActionsPanel>
-        <Stack direction="row" flexWrap="wrap" gap={1}>
-          {actions
-            .filter((action) => !action.hidden)
-            .map((action) => (
-              <Tooltip
-                key={action.label}
-                title={action.disabled ? (action.helperText ?? '') : ''}
-              >
-                <span>
-                  <Button
-                    disabled={action.disabled}
-                    onClick={action.onClick}
-                    size="small"
-                    variant="outlined"
-                  >
-                    {action.label}
-                  </Button>
-                </span>
-              </Tooltip>
-            ))}
-        </Stack>
+      <DashboardQuickActionsPanel description="Set up parking inventory and team access for this property.">
+        <DashboardQuickActionGrid actions={actions} />
       </DashboardQuickActionsPanel>
 
       <CreateUserDialog
