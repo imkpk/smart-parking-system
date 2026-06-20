@@ -1,12 +1,7 @@
-import {
-  Alert,
-  Button,
-  Link,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Alert, Button, Link, Stack, TextField } from '@mui/material';
 import { FormEvent, useState } from 'react';
 import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
+import { PasswordField } from '../../components/auth/PasswordField';
 import { useTenantSlugFromRoute } from '../../hooks/useTenantSlugFromRoute';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
@@ -17,7 +12,7 @@ export function LoginPage() {
   useTenantSlugFromRoute();
   const { isAuthenticated, login, user } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,10 +27,10 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await login({ email, password });
+      const response = await login({ email: identifier.trim(), password });
       navigate(getRoleHomePath(response.user.role), { replace: true });
     } catch {
-      setError('Invalid email or password.');
+      setError('Invalid email, mobile number, or password.');
     } finally {
       setIsSubmitting(false);
     }
@@ -47,27 +42,26 @@ export function LoginPage() {
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField
           {...authTextFieldProps}
-          autoComplete="email"
-          label="Email"
-          onChange={(event) => setEmail(event.target.value)}
+          autoComplete="username"
+          label="Email or mobile number"
+          onChange={(event) => setIdentifier(event.target.value)}
           required
-          type="email"
-          value={email}
+          type="text"
+          value={identifier}
         />
-        <TextField
-          {...authTextFieldProps}
+        <PasswordField
           autoComplete="current-password"
+          id="login-password"
           label="Password"
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={setPassword}
           required
-          type="password"
           value={password}
         />
         <Button disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
           Sign in
         </Button>
         <Link component={RouterLink} to="/register" underline="hover">
-          Create an account
+          Create an organization account
         </Link>
       </Stack>
     </AuthPageShell>

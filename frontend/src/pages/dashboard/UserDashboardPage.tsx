@@ -3,6 +3,7 @@ import { Fragment } from 'react';
 import { DashboardHeroKpiRow } from '../../components/dashboard/DashboardHeroKpiRow';
 import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashboardShell';
 import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
+import { UserQuickActions } from '../../components/dashboard/UserQuickActions';
 import { buildUserHeroKpis } from '../../lib/operatorDashboardMetrics';
 
 export function UserDashboardPage() {
@@ -14,6 +15,7 @@ export function UserDashboardPage() {
       {(metrics) => (
         <Fragment>
           <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />
+          <UserQuickActions />
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <RecentActivityTimeline />

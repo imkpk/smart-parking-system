@@ -19,7 +19,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "prisma:demo-seed": "ts-node --project tsconfig.json prisma/demo-seed.ts"
+    "prisma:demo-seed": "ts-node --project tsconfig.json prisma/demo-seed.ts",
+    "seed:super-admin": "ts-node --project tsconfig.json prisma/seed-super-admin.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

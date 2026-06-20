@@ -83,6 +83,7 @@ model Organization {
   id                   Int                   @id @default(autoincrement())
   name                 String
   slug                 String                @unique
+  organizationType     ParkingLotType        @default(APARTMENT) @map("organization_type")
   logoUrl              String?
   primaryColor         String?
   secondaryColor       String?
@@ -111,7 +112,7 @@ model User {
   id                       Int                   @id @default(autoincrement())
   organizationId           Int?
   name                     String
-  email                    String
+  email                    String?
   phone                    String?
   passwordHash             String
   role                     Role                  @default(USER)

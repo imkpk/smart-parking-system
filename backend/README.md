@@ -110,6 +110,18 @@ CORS_ALLOWED_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 
 **Render + Neon deploy:** see [docs/DEPLOY.md](./docs/DEPLOY.md).
 
+**Platform SUPER_ADMIN bootstrap (local or Render shell):**
+
+```bash
+cd backend
+set SUPER_ADMIN_NAME=Platform Owner
+set SUPER_ADMIN_EMAIL=you@example.com
+set SUPER_ADMIN_PASSWORD=your-32-char-minimum-password
+npm run seed:super-admin
+```
+
+Uses env vars only — credentials are never printed. Upserts by email with `organizationId = null`.
+
 ## Installation
 
 ```bash

@@ -332,6 +332,88 @@ describe('DashboardService', () => {
     expect(result.organizationName).toBeNull();
   });
 
+  it('counts active sessions and today check-ins from parking events for tenant admin', async () => {
+    prisma.organization.findUnique.mockResolvedValue({ name: 'Default Organization' });
+    prisma.booking.count.mockResolvedValue(0);
+    prisma.booking.groupBy.mockResolvedValue([]);
+    prisma.parkingEvent.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    prisma.parkingEvent.aggregate.mockResolvedValue({ _sum: { feeAmount: null } });
+    prisma.parkingEvent.findMany.mockResolvedValue([]);
+    prisma.parkingLot.findMany.mockResolvedValue([]);
+    prisma.slot.groupBy.mockResolvedValue([]);
+
+    const result = await service.getOperatorMetrics(tenantAdminUser);
+
+    expect(result.parkingEvents).toEqual({
+      active: 1,
+      completed: 0,
+      checkInsToday: 1,
+      checkOutsToday: 0,
+    });
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
+      where: {
+        organizationId: DEFAULT_ORGANIZATION_ID,
+        status: ParkingEventStatus.ACTIVE,
+      },
+    });
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
+      where: {
+        organizationId: DEFAULT_ORGANIZATION_ID,
+        checkInTime: {
+          gte: expect.any(Date),
+          lt: expect.any(Date),
+        },
+      },
+    });
+  });
+
+  it('counts organization-scoped active sessions for security dashboard', async () => {
+    prisma.organization.findUnique.mockResolvedValue({ name: 'Default Organization' });
+    prisma.booking.count.mockResolvedValue(2);
+    prisma.parkingEvent.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    prisma.slot.groupBy.mockResolvedValue([]);
+
+    const result = await service.getOperatorMetrics(securityUser);
+
+    expect(result.parkingEvents).toEqual({
+      active: 1,
+      completed: 0,
+      checkInsToday: 1,
+      checkOutsToday: 0,
+    });
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
+      where: {
+        organizationId: DEFAULT_ORGANIZATION_ID,
+        status: ParkingEventStatus.ACTIVE,
+      },
+    });
+  });
+
+  it('counts user-scoped active parking sessions for user dashboard', async () => {
+    prisma.organization.findUnique.mockResolvedValue({ name: 'Default Organization' });
+    prisma.vehicle.count.mockResolvedValue(1);
+    prisma.booking.count.mockResolvedValue(0);
+    prisma.parkingEvent.count.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+
+    const result = await service.getOperatorMetrics(normalUser);
+
+    expect(result.userOverview?.activeParkingEvents).toBe(1);
+    expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
+      where: {
+        userId: normalUser.id,
+        organizationId: DEFAULT_ORGANIZATION_ID,
+        status: ParkingEventStatus.ACTIVE,
+      },
+    });
+  });
+
   it('returns tenant operator metrics for tenant admin', async () => {
     prisma.organization.findUnique.mockResolvedValue({ name: 'Default Organization' });
     prisma.booking.count.mockResolvedValue(0);

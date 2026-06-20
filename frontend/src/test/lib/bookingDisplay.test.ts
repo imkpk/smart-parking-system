@@ -49,6 +49,9 @@ describe('bookingDisplay', () => {
   it('reads customer, vehicle, lot, floor, and slot labels from enriched booking fields', () => {
     expect(getBookingCustomerLabel(enrichedBooking)).toBe('Test User · user@example.com');
     expect(getBookingVehicleLabel(enrichedBooking)).toBe('KA01AB1234');
+    expect(getBookingVehicleLabel({ ...enrichedBooking, vehicleNumber: 'ka01ab1234' })).toBe(
+      'KA01AB1234',
+    );
     expect(getBookingParkingLotLabel(enrichedBooking)).toBe('Main Lot');
     expect(getBookingFloorLabel(enrichedBooking)).toBe('Level 1');
     expect(getBookingSlotLabel(enrichedBooking)).toBe('A-01');

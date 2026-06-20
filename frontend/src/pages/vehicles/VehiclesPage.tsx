@@ -18,7 +18,8 @@ import {
 import { Add, Delete, Edit } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   createVehicle,
   deleteVehicle,
@@ -39,6 +40,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
 import { filterVehicles } from '../../lib/searchFilters';
+import { formatVehicleNumber, normalizeVehicleNumber } from '../../lib/vehicleNumber';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
 function buildVehicleSummaryRows(
@@ -47,7 +49,7 @@ function buildVehicleSummaryRows(
   showOwner: boolean,
 ): DetailsRow[] {
   const rows: DetailsRow[] = [
-    { label: 'Vehicle Number', value: vehicle.vehicleNumber },
+    { label: 'Vehicle Number', value: formatVehicleNumber(vehicle.vehicleNumber) },
     { label: 'Vehicle Type', value: formatStatusLabel(vehicle.vehicleType) },
     { label: 'Brand', value: vehicle.brand ?? '-' },
     { label: 'Model', value: vehicle.model ?? '-' },
@@ -79,6 +81,7 @@ const emptyVehicleForm: VehiclePayload = {
 
 export function VehiclesPage() {
   const { user, isAdmin, isUser } = useUserRole();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const labels = useReferenceLabels({
@@ -139,7 +142,13 @@ export function VehiclesPage() {
 
   const columns = useMemo<GridColDef<Vehicle>[]>(
     () => [
-      { field: 'vehicleNumber', flex: 1, headerName: 'Vehicle Number', minWidth: 170 },
+      {
+        field: 'vehicleNumber',
+        flex: 1,
+        headerName: 'Vehicle Number',
+        minWidth: 170,
+        valueGetter: (_value, row) => formatVehicleNumber(row.vehicleNumber),
+      },
       { field: 'vehicleType', headerName: 'Vehicle Type', minWidth: 120 },
       { field: 'brand', headerName: 'Brand', minWidth: 140 },
       { field: 'model', headerName: 'Model', minWidth: 140 },
@@ -195,10 +204,19 @@ export function VehiclesPage() {
     setFormOpen(true);
   };
 
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !canManageVehicles) {
+      return;
+    }
+
+    openCreateForm();
+    setSearchParams({}, { replace: true });
+  }, [canManageVehicles, searchParams, setSearchParams]);
+
   const openEditForm = (vehicle: Vehicle) => {
     setEditingVehicle(vehicle);
     setVehicleForm({
-      vehicleNumber: vehicle.vehicleNumber,
+      vehicleNumber: formatVehicleNumber(vehicle.vehicleNumber),
       vehicleType: vehicle.vehicleType,
       brand: vehicle.brand ?? '',
       model: vehicle.model ?? '',
@@ -208,7 +226,7 @@ export function VehiclesPage() {
   };
 
   const toPayload = () => ({
-    vehicleNumber: vehicleForm.vehicleNumber.trim(),
+    vehicleNumber: normalizeVehicleNumber(vehicleForm.vehicleNumber),
     vehicleType: vehicleForm.vehicleType,
     brand: vehicleForm.brand?.trim() || undefined,
     model: vehicleForm.model?.trim() || undefined,
@@ -275,9 +293,17 @@ export function VehiclesPage() {
               <TextField
                 label="Vehicle Number"
                 onChange={(event) =>
-                  setVehicleForm((current) => ({ ...current, vehicleNumber: event.target.value }))
+                  setVehicleForm((current) => ({
+                    ...current,
+                    vehicleNumber: normalizeVehicleNumber(event.target.value),
+                  }))
                 }
                 required
+                slotProps={{
+                  input: {
+                    sx: { textTransform: 'uppercase' },
+                  },
+                }}
                 value={vehicleForm.vehicleNumber}
               />
               <FormControl required>
@@ -343,7 +369,9 @@ export function VehiclesPage() {
 
       <ConfirmDialog
         confirmLabel="Delete"
-        description={deleteTarget ? `Delete vehicle ${deleteTarget.vehicleNumber}?` : ''}
+        description={
+          deleteTarget ? `Delete vehicle ${formatVehicleNumber(deleteTarget.vehicleNumber)}?` : ''
+        }
         isLoading={deleteMutation.isPending}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {

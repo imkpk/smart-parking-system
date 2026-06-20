@@ -26,7 +26,7 @@ describe('Phase 1 frontend tenant context acceptance', () => {
       organization: null,
     });
 
-    expect(getRoleHomePath(user.role)).toBe('/admin/dashboard');
+    expect(getRoleHomePath(user.role)).toBe('/platform/admin');
     expect(user.organizationId).toBeNull();
     expect(user.organization).toBeNull();
   });

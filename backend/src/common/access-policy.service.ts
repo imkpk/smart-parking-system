@@ -4,8 +4,20 @@ import { SafeUser } from '../users/types/safe-user.type';
 
 @Injectable()
 export class AccessPolicyService {
+  isSuperAdmin(user: SafeUser) {
+    return user.role === Role.SUPER_ADMIN;
+  }
+
+  isTenantAdmin(user: SafeUser) {
+    return user.role === Role.TENANT_ADMIN;
+  }
+
   isAdmin(user: SafeUser) {
     return user.role === Role.ADMIN;
+  }
+
+  isTenantManager(user: SafeUser) {
+    return this.isTenantAdmin(user) || this.isAdmin(user);
   }
 
   isSecurity(user: SafeUser) {
@@ -17,7 +29,7 @@ export class AccessPolicyService {
   }
 
   isOperationalRole(user: SafeUser) {
-    return this.isAdmin(user) || this.isSecurity(user);
+    return this.isTenantManager(user) || this.isSecurity(user);
   }
 
   getRequiredOrganizationId(currentUser: SafeUser): number {
@@ -98,7 +110,10 @@ export class AccessPolicyService {
     ownerUserId: number,
     message: string,
   ) {
-    if (!this.isAdmin(currentUser) && !this.canAccessUserResource(currentUser, ownerUserId)) {
+    if (
+      !this.isTenantManager(currentUser) &&
+      !this.canAccessUserResource(currentUser, ownerUserId)
+    ) {
       throw new ForbiddenException(message);
     }
   }

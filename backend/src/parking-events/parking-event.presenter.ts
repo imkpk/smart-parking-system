@@ -67,7 +67,7 @@ export function presentParkingEvent(event: ParkingEventWithRelations): ParkingEv
     floorName: slot.floor.name,
     parkingLotName: parkingLot.name,
     customerName: user.name,
-    customerEmail: user.email,
+    customerEmail: user.email ?? '',
     customerPhone: user.phone,
   };
 }

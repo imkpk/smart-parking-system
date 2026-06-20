@@ -5,6 +5,8 @@ import { OperatorDashboardShell } from '../../components/dashboard/OperatorDashb
 import { RecentActivityTimeline } from '../../components/dashboard/RecentActivityTimeline';
 import { SlotStatusDonutChart } from '../../components/dashboard/SlotStatusDonutChart';
 import { TenantOperatorDashboardLayout } from '../../components/dashboard/TenantOperatorDashboardLayout';
+import { TenantAdminQuickActions } from '../../components/dashboard/TenantAdminQuickActions';
+import { UserSummaryCard } from '../../components/dashboard/UserSummaryCard';
 import {
   buildPlatformHeroKpis,
   buildTenantHeroKpis,
@@ -17,6 +19,7 @@ export function AdminDashboardPage() {
         metrics.scope === 'PLATFORM' ? (
           <Fragment>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
+            <TenantAdminQuickActions />
             {metrics.occupancy ? (
               <DashboardSummaryColumns
                 left={
@@ -35,11 +38,15 @@ export function AdminDashboardPage() {
             )}
           </Fragment>
         ) : (
-          <TenantOperatorDashboardLayout
-            heroMetrics={buildTenantHeroKpis(metrics)}
-            lotUtilization={metrics.lotUtilization}
-            occupancy={metrics.occupancy}
-          />
+          <Fragment>
+            <TenantOperatorDashboardLayout
+              belowHeroContent={<TenantAdminQuickActions />}
+              extraContent={<UserSummaryCard />}
+              heroMetrics={buildTenantHeroKpis(metrics)}
+              lotUtilization={metrics.lotUtilization}
+              occupancy={metrics.occupancy}
+            />
+          </Fragment>
         )
       }
     </OperatorDashboardShell>

@@ -19,7 +19,8 @@ import {
 import { Add, Cancel } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   cancelBooking,
   createBooking,
@@ -47,6 +48,7 @@ import {
   getBookingSlotLabel,
   getBookingVehicleLabel,
 } from '../../lib/bookingDisplay';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { formatBookingNo, formatDateTime } from '../../lib/formatters';
 import { filterBookings } from '../../lib/searchFilters';
 import { userFacingLabels } from '../../lib/userFacingLabels';
@@ -118,6 +120,7 @@ function toLocalDateTimeValue(date = new Date()) {
 
 export function BookingsPage() {
   const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [formOpen, setFormOpen] = useState(false);
@@ -286,6 +289,15 @@ export function BookingsPage() {
     setFormOpen(true);
   };
 
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !isUser) {
+      return;
+    }
+
+    openCreateForm();
+    setSearchParams({}, { replace: true });
+  }, [isUser, searchParams, setSearchParams]);
+
   const handleVehicleChange = (vehicleId: number) => {
     const selectedVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);
     setBookingForm((current) => ({
@@ -376,7 +388,7 @@ export function BookingsPage() {
                 >
                   {vehicles.map((vehicle) => (
                     <MenuItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.vehicleNumber} · {vehicle.vehicleType}
+                      {formatVehicleNumber(vehicle.vehicleNumber)} · {vehicle.vehicleType}
                     </MenuItem>
                   ))}
                 </Select>

@@ -45,6 +45,7 @@ import {
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { invalidateOperationalQueries } from '../../lib/invalidateOperationalQueries';
 import {
   getParkingEventBookingLabel,
   getParkingEventCustomerLabel,
@@ -277,18 +278,12 @@ export function ParkingEventsPage() {
     enabled: isUser || isAdmin
   });
 
-  const invalidateParkingEvents = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
-      queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-    ]);
-  };
-
   const checkInMutation = useMutation({
     mutationFn: checkInParkingEvent,
     onSuccess: async (parkingEvent) => {
-      await invalidateParkingEvents();
+      await invalidateOperationalQueries(queryClient, {
+        parkingLotId: parkingEvent.parkingLotId,
+      });
       setBookingCode('');
       setBookingId('');
       showSuccess(`Checked in booking ${getParkingEventBookingLabel(parkingEvent)}.`);
@@ -298,7 +293,9 @@ export function ParkingEventsPage() {
   const checkOutMutation = useMutation({
     mutationFn: checkOutParkingEvent,
     onSuccess: async (result) => {
-      await invalidateParkingEvents();
+      await invalidateOperationalQueries(queryClient, {
+        parkingLotId: result.parkingEvent.parkingLotId,
+      });
       setCheckoutTarget(null);
       setCheckoutResult(result);
       showSuccess('Parking event checked out.');

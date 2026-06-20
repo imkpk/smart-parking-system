@@ -264,6 +264,60 @@ describe('ParkingEventsService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('reactivates a return visit when the slot is still reserved and marks it occupied', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-14T12:30:00.000Z'));
+    const completedEvent = buildEnrichedParkingEvent({
+      id: 100,
+      status: ParkingEventStatus.COMPLETED,
+      checkOutTime: new Date('2026-06-14T12:00:00.000Z'),
+      durationMinutes: 120,
+      feeAmount: 100,
+    });
+    const reactivatedEvent = buildEnrichedParkingEvent({
+      id: 100,
+      checkInTime: new Date('2026-06-14T12:30:00.000Z'),
+      checkOutTime: null,
+      status: ParkingEventStatus.ACTIVE,
+      durationMinutes: null,
+      feeAmount: null,
+    });
+
+    prisma.booking.findFirst.mockResolvedValue({
+      ...booking,
+      status: BookingStatus.CONFIRMED,
+      slot: { id: booking.slotId, status: SlotStatus.RESERVED },
+    });
+    prisma.parkingEvent.findFirst.mockResolvedValue(null);
+    prisma.parkingEvent.findUnique.mockResolvedValue({
+      id: 100,
+      status: ParkingEventStatus.COMPLETED,
+    });
+    prisma.slot.findUnique.mockResolvedValue({
+      id: booking.slotId,
+      status: SlotStatus.RESERVED,
+    });
+    prisma.parkingEvent.update.mockResolvedValue(reactivatedEvent);
+
+    const result = await service.checkIn({ bookingId: booking.id }, securityUser);
+
+    expect(prisma.slot.updateMany).toHaveBeenCalledWith({
+      where: { id: booking.slotId, status: SlotStatus.RESERVED },
+      data: { status: SlotStatus.OCCUPIED },
+    });
+    expect(prisma.parkingEvent.update).toHaveBeenCalledWith({
+      where: { id: 100 },
+      data: {
+        status: ParkingEventStatus.ACTIVE,
+        checkInTime: new Date('2026-06-14T12:30:00.000Z'),
+        checkOutTime: null,
+        durationMinutes: null,
+        feeAmount: null,
+      },
+      include: parkingEventListInclude,
+    });
+    expect(result).toEqual(presentParkingEvent(reactivatedEvent));
+  });
+
   it('reactivates a completed parking event when the customer returns', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-14T12:30:00.000Z'));
     const completedEvent = buildEnrichedParkingEvent({

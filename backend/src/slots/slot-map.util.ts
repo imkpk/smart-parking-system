@@ -88,12 +88,24 @@ export function buildSlotMapOccupancy(
   return undefined;
 }
 
+export function resolveSlotMapDisplayStatus(
+  slotStatus: SlotStatus,
+  hasActiveEvent: boolean,
+): SlotStatus | 'UNKNOWN' {
+  if (hasActiveEvent) {
+    return SlotStatus.OCCUPIED;
+  }
+
+  return normalizeSlotStatus(slotStatus);
+}
+
 export function mapSlotToMapItem(
   slot: SlotWithRelations,
   currentUser: SafeUser,
   isUserRole: boolean,
 ): SlotMapSlotItem {
-  const normalizedStatus = normalizeSlotStatus(slot.status);
+  const hasActiveEvent = slot.events.length > 0;
+  const normalizedStatus = resolveSlotMapDisplayStatus(slot.status, hasActiveEvent);
 
   return {
     id: slot.id,

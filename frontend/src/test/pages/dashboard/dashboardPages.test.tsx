@@ -19,6 +19,41 @@ vi.mock('@/api/dashboardApi', () => ({
   getRecentActivity: vi.fn(),
 }));
 
+vi.mock('@/api/parkingLotsApi', () => ({
+  getParkingLots: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/api/floorsApi', () => ({
+  getFloors: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/api/usersApi', () => ({
+  getUserSummary: vi.fn().mockResolvedValue({
+    totalUsers: 1,
+    activeUsers: 1,
+    inactiveUsers: 0,
+    tenantAdmins: 1,
+    admins: 0,
+    security: 0,
+    users: 0,
+  }),
+  createUser: vi.fn(),
+}));
+
+vi.mock('@/hooks/useUserRole', () => ({
+  useUserRole: vi.fn(() => ({
+    user: { role: 'TENANT_ADMIN' },
+    isTenantAdmin: true,
+    isOperationalAdmin: true,
+    isAdmin: false,
+    isSecurity: false,
+    isUser: false,
+    isSuperAdmin: false,
+    canOperateParkingEvents: true,
+    canViewOperationalPayments: true,
+  })),
+}));
+
 vi.mock('@/providers/TenantBrandingProvider', () => ({
   useTenantBranding: () => ({
     branding: { name: 'Smart Parking' },
@@ -32,9 +67,21 @@ vi.mock('@/providers/TenantBrandingProvider', () => ({
 
 const recentActivityPage = {
   items: tenantOperatorMetrics.recentActivity,
-  nextCursor: 'cursor-page-2',
-  hasMore: true,
+  nextCursor: null,
+  hasMore: false,
 };
+
+async function expandQuickActions(user: ReturnType<typeof userEvent.setup>) {
+  const quickActionsHeader = screen.getByRole('button', { name: /^quick actions$/i });
+
+  if (quickActionsHeader.getAttribute('aria-expanded') === 'false') {
+    await user.click(quickActionsHeader);
+
+    await waitFor(() => {
+      expect(quickActionsHeader).toHaveAttribute('aria-expanded', 'true');
+    });
+  }
+}
 
 describe('AdminDashboardPage', () => {
   beforeEach(() => {
@@ -55,7 +102,8 @@ describe('AdminDashboardPage', () => {
     expect(screen.queryByText('Utilization')).not.toBeInTheDocument();
   });
 
-  it('renders four hero KPIs, slot status chart, compact lot list, and activity timeline', async () => {
+  it('renders aligned quick actions, four hero KPIs, slot status chart, compact lot list, and activity timeline', async () => {
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<AdminDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
@@ -64,6 +112,14 @@ describe('AdminDashboardPage', () => {
       expect(screen.getByText(/overview for acme parking/i)).toBeInTheDocument();
       expect(screen.getByText('Utilization')).toBeInTheDocument();
     });
+
+    await expandQuickActions(user);
+
+    expect(screen.getByText('Add a new parking area for this property.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create parking lot/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create admin/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create security/i })).toBeInTheDocument();
 
     expect(screen.getAllByText('29%').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByLabelText('29% utilized')).toBeInTheDocument();
@@ -85,11 +141,9 @@ describe('AdminDashboardPage', () => {
     expect(viewAllActivity).toHaveAttribute('href', '/parking-events');
     expect(viewAllActivity).toHaveClass('MuiButton-outlined');
 
-    await waitFor(() => {
-      expect(screen.getByText('TS09EA1234')).toBeInTheDocument();
-      expect(screen.getByText('Check-in')).toBeInTheDocument();
-      expect(screen.getByText(/Lot A · Ground · A-01/)).toBeInTheDocument();
-    });
+    expect(await screen.findByText('TS09EA1234')).toBeInTheDocument();
+    expect(screen.getByText('Check-in')).toBeInTheDocument();
+    expect(screen.getByText(/Lot A · Ground · A-01/)).toBeInTheDocument();
   });
 
   it('searches recent activity by vehicle, lot, floor, or slot', async () => {
@@ -155,22 +209,73 @@ describe('AdminDashboardPage', () => {
   });
 });
 
+describe('AdminDashboardPage role-specific quick actions', () => {
+  beforeEach(() => {
+    vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
+    vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+  });
+
+  it('hides Create Admin for ADMIN role', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { useUserRole } = await import('@/hooks/useUserRole');
+    vi.mocked(useUserRole).mockReturnValue({
+      user: { role: 'ADMIN' },
+      isTenantAdmin: false,
+      isOperationalAdmin: true,
+      isAdmin: true,
+      isSecurity: false,
+      isUser: false,
+      isSuperAdmin: false,
+      canOperateParkingEvents: true,
+      canViewOperationalPayments: true,
+    });
+
+    renderWithProviders(<AdminDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Utilization')).toBeInTheDocument();
+    });
+
+    await expandQuickActions(user);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /create admin/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create security/i })).toBeInTheDocument();
+  });
+});
+
 describe('SecurityDashboardPage', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(securityOperatorMetrics);
     vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
   });
 
-  it('renders security dashboard without revenue or lot utilization', async () => {
+  it('renders security quick actions and gate-focused KPIs without revenue or lot utilization', async () => {
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SecurityDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Utilization')).toBeInTheDocument();
+      expect(screen.getByText('Active Sessions')).toBeInTheDocument();
     });
 
+    await expandQuickActions(user);
+
+    await waitFor(() => {
+      expect(screen.getByText('Search booking or vehicle and start parking session.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
+
+    expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
     expect(screen.getByText("Today's Check-outs")).toBeInTheDocument();
+    expect(screen.getByText('Reserved Slots')).toBeInTheDocument();
     expect(screen.getByText('Slot Status')).toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.queryByText('Revenue Today')).not.toBeInTheDocument();
@@ -188,7 +293,8 @@ describe('UserDashboardPage', () => {
     });
   });
 
-  it('renders user hero KPIs and recent activity timeline', async () => {
+  it('renders user quick actions, hero KPIs, and recent activity timeline', async () => {
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<UserDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
@@ -196,6 +302,16 @@ describe('UserDashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText('My Vehicles')).toBeInTheDocument();
     });
+
+    await expandQuickActions(user);
+
+    await waitFor(() => {
+      expect(screen.getByText('Register your vehicle to book parking.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     expect(screen.getByText('Upcoming Bookings')).toBeInTheDocument();
     expect(screen.getByText('Active Parking Sessions')).toBeInTheDocument();

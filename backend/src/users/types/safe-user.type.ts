@@ -6,7 +6,7 @@ export type SafeUser = {
   organizationId: number | null;
   organization?: OrganizationSummary | null;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   role: Role;
   isActive: boolean;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPlatformHeroKpis,
+  buildSecurityHeroKpis,
   buildTenantAdminMetrics,
   buildTenantHeroKpis,
   buildUserHeroKpis,
@@ -25,12 +26,17 @@ describe('Phase 3D dashboard polish acceptance', () => {
     expect(buildTenantAdminMetrics(metrics).map((item) => item.label)).toContain('Total Bookings');
   });
 
-  it('keeps security hero KPIs revenue-free while preserving operational signals', () => {
-    const heroLabels = buildTenantHeroKpis(securityOperatorMetrics).map((item) => item.label);
+  it('builds security hero KPIs focused on gate operations and reserved slots', () => {
+    const heroLabels = buildSecurityHeroKpis(securityOperatorMetrics).map((item) => item.label);
 
+    expect(heroLabels).toEqual([
+      'Active Sessions',
+      "Today's Check-ins",
+      "Today's Check-outs",
+      'Reserved Slots',
+    ]);
     expect(heroLabels).not.toContain('Revenue Today');
-    expect(heroLabels).toContain("Today's Check-outs");
-    expect(heroLabels).toHaveLength(4);
+    expect(heroLabels).not.toContain('Utilization');
   });
 
   it('builds four user hero KPIs without occupancy or revenue sections', () => {

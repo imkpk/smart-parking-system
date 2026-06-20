@@ -5,7 +5,7 @@ export class UserResponseDto {
 
   name: string;
 
-  email: string;
+  email: string | null;
 
   phone: string | null;
 

@@ -62,6 +62,46 @@ describe('slot-map.util', () => {
     expect(occupancy?.bookingCode).toBeUndefined();
   });
 
+  it('reports occupied status when an active session exists even if slot row is reserved', () => {
+    const item = mapSlotToMapItem(
+      {
+        id: 1,
+        slotNumber: 'A-01',
+        slotType: SlotType.CAR,
+        status: SlotStatus.RESERVED,
+        floor: { id: 10, name: 'Ground', level: 0 },
+        bookings: [
+          {
+            id: 12,
+            bookingCode: 'BK-12345',
+            vehicle: { vehicleNumber: 'TS09EA1234' },
+          },
+        ],
+        events: [
+          {
+            id: 55,
+            checkInTime: new Date('2026-06-19T08:00:00.000Z'),
+            bookingId: 12,
+            booking: { id: 12, bookingCode: 'BK-12345' },
+            vehicle: { vehicleNumber: 'TS09EA1234' },
+          },
+        ],
+      },
+      adminUser,
+      false,
+    );
+
+    expect(item.status).toBe(SlotStatus.OCCUPIED);
+    expect(item.occupancy).toEqual({
+      state: 'OCCUPIED',
+      bookingId: 12,
+      eventId: 55,
+      checkedInAt: '2026-06-19T08:00:00.000Z',
+      vehicleNumber: 'TS09EA1234',
+      bookingCode: 'BK-12345',
+    });
+  });
+
   it('includes operational occupancy details for admin role', () => {
     const item = mapSlotToMapItem(
       {

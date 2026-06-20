@@ -45,19 +45,23 @@ async function expectInvalid<T extends object>(Dto: new () => T, payload: Partia
 describe('DTO validation', () => {
   it('validates auth DTOs', async () => {
     await expectValid(LoginDto, { email: 'user@example.com', password: 'password123' });
-    await expectInvalid(LoginDto, { email: 'bad-email', password: '123' });
+    await expectValid(LoginDto, { email: '9876543210', password: 'password123' });
+    await expectValid(LoginDto, { email: '+919876543210', password: 'password123' });
+    await expectInvalid(LoginDto, { email: 'ab', password: '123' });
     await expectValid(RegisterDto, {
+      organizationName: 'Sunrise Apartments',
+      organizationType: ParkingLotType.APARTMENT,
       name: 'User',
       email: 'user@example.com',
-      phone: '+919999999999',
+      phone: '+919876543210',
       password: 'password123',
-      role: Role.USER,
     });
     await expectInvalid(RegisterDto, {
+      organizationName: 'Sunrise Apartments',
+      organizationType: ParkingLotType.APARTMENT,
       name: 'User',
       email: 'bad-email',
       password: '123',
-      role: 'OWNER' as Role,
     });
   });
 

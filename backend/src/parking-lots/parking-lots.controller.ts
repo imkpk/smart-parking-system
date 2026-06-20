@@ -25,13 +25,13 @@ export class ParkingLotsController {
   constructor(private readonly parkingLotsService: ParkingLotsService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.SECURITY, Role.USER)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY, Role.USER)
   findAll(@CurrentUser() currentUser: SafeUser) {
     return this.parkingLotsService.findAll(currentUser);
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   create(
     @CurrentUser() currentUser: SafeUser,
     @Body() createParkingLotDto: CreateParkingLotDto,
@@ -40,7 +40,7 @@ export class ParkingLotsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SECURITY, Role.USER)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY, Role.USER)
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -49,7 +49,7 @@ export class ParkingLotsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -59,7 +59,7 @@ export class ParkingLotsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,

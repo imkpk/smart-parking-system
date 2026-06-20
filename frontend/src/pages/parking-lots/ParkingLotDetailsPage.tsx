@@ -73,8 +73,9 @@ const emptyFloorForm: FloorPayload = {
   level: 0,
 };
 
-const emptySlotForm: SlotPayload & { floorId: number | '' } = {
+const emptySlotForm: SlotPayload & { floorId: number | ''; prefix: string } = {
   floorId: '',
+  prefix: 'A',
   slotNumber: '',
   slotType: 'CAR',
   status: 'AVAILABLE',
@@ -141,7 +142,7 @@ export function ParkingLotDetailsPage() {
   const { id } = useParams();
   const parkingLotId = Number(id);
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const { isOperationalAdmin, isTenantAdmin } = useUserRole();
@@ -420,6 +421,31 @@ export function ParkingLotDetailsPage() {
     setBulkFormOpen(true);
   };
 
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !canManageLot) {
+      return;
+    }
+
+    if (activeTab === 'floors') {
+      openCreateFloorForm();
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+      return;
+    }
+
+    if (activeTab === 'slots' && floors.length > 0) {
+      openCreateSlotForm();
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+    }
+  }, [activeTab, canManageLot, floors.length, searchParams, setSearchParams]);
+
   const handleCreateSlotSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -428,10 +454,18 @@ export function ParkingLotDetailsPage() {
       return;
     }
 
+    const prefix = slotForm.prefix.trim();
+    const slotNumber = slotForm.slotNumber.trim();
+
+    if (!prefix || !slotNumber) {
+      showError('Please enter a prefix and slot number.');
+      return;
+    }
+
     createSlotMutation.mutate({
       floorId: Number(slotForm.floorId),
       payload: {
-        slotNumber: slotForm.slotNumber.trim(),
+        slotNumber: `${prefix}${slotNumber}`,
         slotType: slotForm.slotType,
         status: slotForm.status,
       },
@@ -748,7 +782,13 @@ export function ParkingLotDetailsPage() {
                 value={slotForm.floorId}
               />
               <TextField
-                label="Slot Number"
+                label="Prefix"
+                onChange={(event) => setSlotForm((current) => ({ ...current, prefix: event.target.value }))}
+                required
+                value={slotForm.prefix}
+              />
+              <TextField
+                label="Number"
                 onChange={(event) => setSlotForm((current) => ({ ...current, slotNumber: event.target.value }))}
                 required
                 value={slotForm.slotNumber}
@@ -1219,21 +1259,29 @@ function SlotsSection({
             >
               Delete Selected
             </ToolbarButton>
-            <ToolbarButton
-              disabled={floors.length === 0}
-              onClick={onCreate}
-              startIcon={<Add />}
-              variant="contained"
-            >
-              Create Slot
-            </ToolbarButton>
-            <ToolbarButton
-              disabled={floors.length === 0}
-              onClick={onBulkCreate}
-              variant="outlined"
-            >
-              Bulk Create
-            </ToolbarButton>
+            <Tooltip title={floors.length === 0 ? 'Create floor first' : ''}>
+              <span>
+                <ToolbarButton
+                  disabled={floors.length === 0}
+                  onClick={onCreate}
+                  startIcon={<Add />}
+                  variant="contained"
+                >
+                  Create Slot
+                </ToolbarButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={floors.length === 0 ? 'Create floor first' : ''}>
+              <span>
+                <ToolbarButton
+                  disabled={floors.length === 0}
+                  onClick={onBulkCreate}
+                  variant="outlined"
+                >
+                  Bulk Create
+                </ToolbarButton>
+              </span>
+            </Tooltip>
           </Stack>
         ) : null}
       </Stack>

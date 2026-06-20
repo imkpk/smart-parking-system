@@ -12,7 +12,7 @@ import {
 
 describe('Phase 3 operator dashboard acceptance', () => {
   it('routes each role to the correct dashboard home', () => {
-    expect(getRoleHomePath('SUPER_ADMIN')).toBe('/admin/dashboard');
+    expect(getRoleHomePath('SUPER_ADMIN')).toBe('/platform/admin');
     expect(getRoleHomePath('TENANT_ADMIN')).toBe('/admin/dashboard');
     expect(getRoleHomePath('ADMIN')).toBe('/admin/dashboard');
     expect(getRoleHomePath('SECURITY')).toBe('/security/dashboard');

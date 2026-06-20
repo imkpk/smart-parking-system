@@ -25,7 +25,7 @@ export class FloorsController {
   constructor(private readonly floorsService: FloorsService) {}
 
   @Get('parking-lots/:parkingLotId/floors')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY)
   findByParkingLot(
     @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
     @CurrentUser() currentUser: SafeUser,
@@ -34,7 +34,7 @@ export class FloorsController {
   }
 
   @Post('parking-lots/:parkingLotId/floors')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   create(
     @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
     @CurrentUser() currentUser: SafeUser,
@@ -44,7 +44,7 @@ export class FloorsController {
   }
 
   @Patch('floors/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -54,7 +54,7 @@ export class FloorsController {
   }
 
   @Delete('floors/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,

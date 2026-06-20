@@ -173,7 +173,7 @@ describe('Infrastructure', () => {
     await expect(
       strategy.validate({
         sub: normalUser.id,
-        email: normalUser.email,
+        email: normalUser.email!,
         role: normalUser.role,
         organizationId: normalUser.organizationId,
       }),
