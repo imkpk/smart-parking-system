@@ -16,7 +16,7 @@ import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPag
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
 import { PaymentsPage } from './pages/payments/PaymentsPage';
-import { BrandingSettingsPage } from './pages/settings/BrandingSettingsPage';
+// import { BrandingSettingsPage } from './pages/settings/BrandingSettingsPage';
 import { SecurityGatePage } from './pages/security/SecurityGatePage';
 import {
   AdminSupportInboxPage,
@@ -106,15 +106,16 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          {
-            element: <RoleRoute allowedRoles={['SUPER_ADMIN', 'TENANT_ADMIN']} />,
-            children: [
-              {
-                path: 'admin/branding',
-                element: <BrandingSettingsPage />,
-              },
-            ],
-          },
+          // Branding settings — disabled for now
+          // {
+          //   element: <RoleRoute allowedRoles={['SUPER_ADMIN', 'TENANT_ADMIN']} />,
+          //   children: [
+          //     {
+          //       path: 'admin/branding',
+          //       element: <BrandingSettingsPage />,
+          //     },
+          //   ],
+          // },
           {
             element: <RoleRoute allowedRoles={['TENANT_ADMIN', 'ADMIN', 'SECURITY']} />,
             children: [

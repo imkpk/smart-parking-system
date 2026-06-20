@@ -27,7 +27,6 @@ import {
   Logout,
   Menu,
   MenuOpen,
-  Palette,
   Security,
   SensorOccupied,
   SvgIconComponent,
@@ -108,13 +107,14 @@ const navItems: NavItem[] = [
     icon: ContactSupportIcon,
     roles: ['USER'],
   },
-  {
-    label: 'Branding',
-    to: '/admin/branding',
-    icon: Palette,
-    roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
-    requiresOrganization: true,
-  },
+  // Branding settings — disabled for now
+  // {
+  //   label: 'Branding',
+  //   to: '/admin/branding',
+  //   icon: Palette,
+  //   roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
+  //   requiresOrganization: true,
+  // },
   {
     label: 'Parking Lots',
     to: '/parking-lots',

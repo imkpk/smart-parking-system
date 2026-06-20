@@ -73,8 +73,9 @@ const emptyFloorForm: FloorPayload = {
   level: 0,
 };
 
-const emptySlotForm: SlotPayload & { floorId: number | '' } = {
+const emptySlotForm: SlotPayload & { floorId: number | ''; prefix: string } = {
   floorId: '',
+  prefix: 'A',
   slotNumber: '',
   slotType: 'CAR',
   status: 'AVAILABLE',
@@ -428,10 +429,18 @@ export function ParkingLotDetailsPage() {
       return;
     }
 
+    const prefix = slotForm.prefix.trim();
+    const slotNumber = slotForm.slotNumber.trim();
+
+    if (!prefix || !slotNumber) {
+      showError('Please enter a prefix and slot number.');
+      return;
+    }
+
     createSlotMutation.mutate({
       floorId: Number(slotForm.floorId),
       payload: {
-        slotNumber: slotForm.slotNumber.trim(),
+        slotNumber: `${prefix}${slotNumber}`,
         slotType: slotForm.slotType,
         status: slotForm.status,
       },
@@ -748,7 +757,13 @@ export function ParkingLotDetailsPage() {
                 value={slotForm.floorId}
               />
               <TextField
-                label="Slot Number"
+                label="Prefix"
+                onChange={(event) => setSlotForm((current) => ({ ...current, prefix: event.target.value }))}
+                required
+                value={slotForm.prefix}
+              />
+              <TextField
+                label="Number"
                 onChange={(event) => setSlotForm((current) => ({ ...current, slotNumber: event.target.value }))}
                 required
                 value={slotForm.slotNumber}
@@ -1227,11 +1242,7 @@ function SlotsSection({
             >
               Create Slot
             </ToolbarButton>
-            <ToolbarButton
-              disabled={floors.length === 0}
-              onClick={onBulkCreate}
-              variant="outlined"
-            >
+            <ToolbarButton disabled={floors.length === 0} onClick={onBulkCreate} variant="outlined">
               Bulk Create
             </ToolbarButton>
           </Stack>
