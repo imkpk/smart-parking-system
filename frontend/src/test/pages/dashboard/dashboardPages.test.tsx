@@ -237,14 +237,15 @@ describe('SecurityDashboardPage', () => {
     renderWithProviders(<SecurityDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByText('Search booking or vehicle and start parking session.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Active Sessions')).toBeInTheDocument();
+      expect(screen.getByText('Search booking or vehicle and start parking session.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
     });
+
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
     expect(screen.getByText("Today's Check-outs")).toBeInTheDocument();
@@ -270,14 +271,15 @@ describe('UserDashboardPage', () => {
     renderWithProviders(<UserDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByText('Register your vehicle to book parking.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('My Vehicles')).toBeInTheDocument();
+      expect(screen.getByText('Register your vehicle to book parking.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
     });
+
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     expect(screen.getByText('Upcoming Bookings')).toBeInTheDocument();
     expect(screen.getByText('Active Parking Sessions')).toBeInTheDocument();

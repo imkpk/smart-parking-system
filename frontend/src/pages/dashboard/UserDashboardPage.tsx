@@ -11,11 +11,11 @@ export function UserDashboardPage() {
     <OperatorDashboardShell
       accessDeniedMessage="Access denied. Sign in to view your dashboard."
       title="My Dashboard"
-      topContent={<UserQuickActions />}
     >
       {(metrics) => (
         <Fragment>
           <DashboardHeroKpiRow metrics={buildUserHeroKpis(metrics)} />
+          <UserQuickActions />
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <RecentActivityTimeline />

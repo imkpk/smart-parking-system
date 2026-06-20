@@ -14,14 +14,12 @@ import {
 
 export function AdminDashboardPage() {
   return (
-    <OperatorDashboardShell
-      accessDeniedMessage="Access denied. Admin role is required for this dashboard."
-      topContent={<TenantAdminQuickActions />}
-    >
+    <OperatorDashboardShell accessDeniedMessage="Access denied. Admin role is required for this dashboard.">
       {(metrics) =>
         metrics.scope === 'PLATFORM' ? (
           <Fragment>
             <DashboardHeroKpiRow metrics={buildPlatformHeroKpis(metrics)} />
+            <TenantAdminQuickActions />
             {metrics.occupancy ? (
               <DashboardSummaryColumns
                 left={
@@ -42,6 +40,7 @@ export function AdminDashboardPage() {
         ) : (
           <Fragment>
             <TenantOperatorDashboardLayout
+              belowHeroContent={<TenantAdminQuickActions />}
               extraContent={<UserSummaryCard />}
               heroMetrics={buildTenantHeroKpis(metrics)}
               lotUtilization={metrics.lotUtilization}

@@ -12,17 +12,20 @@ export function TenantOperatorDashboardLayout({
   occupancy,
   lotUtilization,
   showLotUtilization = true,
+  belowHeroContent,
   extraContent,
 }: {
   heroMetrics: DashboardMetricItem[];
   occupancy: OccupancySummary | null;
   lotUtilization: LotUtilizationItem[];
   showLotUtilization?: boolean;
+  belowHeroContent?: ReactNode;
   extraContent?: ReactNode;
 }) {
   return (
     <Fragment>
       <DashboardHeroKpiRow metrics={heroMetrics} />
+      {belowHeroContent}
 
       {occupancy ? (
         <DashboardSummaryColumns

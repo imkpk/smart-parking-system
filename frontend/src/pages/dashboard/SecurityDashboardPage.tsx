@@ -6,19 +6,15 @@ import { buildSecurityHeroKpis } from '../../lib/operatorDashboardMetrics';
 
 export function SecurityDashboardPage() {
   return (
-    <OperatorDashboardShell
-      accessDeniedMessage="Access denied. Security role is required for this dashboard."
-      topContent={<SecurityQuickActions />}
-    >
+    <OperatorDashboardShell accessDeniedMessage="Access denied. Security role is required for this dashboard.">
       {(metrics) => (
-        <Fragment>
-          <TenantOperatorDashboardLayout
-            heroMetrics={buildSecurityHeroKpis(metrics)}
+        <TenantOperatorDashboardLayout
+          belowHeroContent={<SecurityQuickActions />}
+          heroMetrics={buildSecurityHeroKpis(metrics)}
           lotUtilization={metrics.lotUtilization}
           occupancy={metrics.occupancy}
-            showLotUtilization={false}
-          />
-        </Fragment>
+          showLotUtilization={false}
+        />
       )}
     </OperatorDashboardShell>
   );
