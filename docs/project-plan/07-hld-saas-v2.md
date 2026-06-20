@@ -16,7 +16,6 @@ React Frontend + NestJS Main API + Spring Boot Payment Service + Razorpay
 ```mermaid
 flowchart TB
     subgraph actors [Actors]
-        SA[SUPER_ADMIN<br/>Platform owner]
         TA[TENANT_ADMIN<br/>Customer org admin]
         AD[ADMIN<br/>Lot manager]
         SEC[SECURITY<br/>Gate operator]
@@ -53,7 +52,6 @@ flowchart TB
 
 | Layer | Who | Responsibility |
 |-------|-----|----------------|
-| **Platform** | SUPER_ADMIN | Onboard tenants, plans, platform analytics, billing |
 | **Tenant** | TENANT_ADMIN | Org settings, branding, all lots under org |
 | **Operations** | ADMIN, SECURITY | Day-to-day lot management and gate ops |
 | **End user** | USER | Vehicles, bookings, own payments |
@@ -66,7 +64,6 @@ Every tenant-scoped record carries `organizationId`. JWT includes `organizationI
 
 | Surface | Audience | Features |
 |---------|----------|----------|
-| Platform console | SUPER_ADMIN | Tenant list, plans, platform metrics |
 | Tenant admin | TENANT_ADMIN | Branding, users, subscription, all lots |
 | Operator dashboard | ADMIN | Occupancy, revenue, heatmap, reports |
 | **Visual slot map** | ADMIN, SECURITY | Floor grid, live slot colors |
@@ -107,7 +104,6 @@ Vehicle, Booking, ParkingEvent, SlotAssignment
 
 - NestJS `TenantGuard` reads `organizationId` from JWT
 - Prisma middleware or service-layer filter on every query
-- SUPER_ADMIN may pass `X-Tenant-Id` to impersonate / support
 
 ---
 
@@ -190,7 +186,7 @@ sequenceDiagram
 
 ### Steps (numbered)
 
-1. Tenant onboarded by SUPER_ADMIN (org + TENANT_ADMIN created)
+1. Tenant onboarded via public signup (org + TENANT_ADMIN created)
 2. User logs in under tenant context (branded login page)
 3. User registers vehicle
 4. User books available slot → slot **RESERVED**
@@ -207,7 +203,6 @@ sequenceDiagram
 
 | Role | Can | Cannot |
 |------|-----|--------|
-| SUPER_ADMIN | Manage all tenants, plans, platform billing | — |
 | TENANT_ADMIN | All lots in org, branding, tenant users | Other tenants' data |
 | ADMIN | Lot config, reports, check-in/out | Other orgs |
 | SECURITY | Check-in/out, active events, gate UI | Admin settings, mock payments |

@@ -94,7 +94,7 @@ This document captures the existing High Level System Design and how it maps to 
 The diagram describes a **single-deployment parking system**. For the sellable multi-tenant SaaS vision, these layers are **not in the HLD** and need to be added:
 
 ```text
-Platform layer     → SUPER_ADMIN, tenant onboarding, subscription billing
+Platform layer     → Tenant lifecycle, subscription billing
 Tenant layer       → Organization, organizationId scoping, white-label branding
 Visual slot map    → Floor-plan occupancy grid (sales differentiator)
 Mobile gate UI     → Dedicated security check-in/out on small screens

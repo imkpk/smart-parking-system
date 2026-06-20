@@ -32,7 +32,7 @@ Snapshot as of 2026-06-17.
 |-----|--------|---------------|
 | No `Organization` / tenant model | Cannot sell to multiple customers on one deployment | Phase 1 |
 | No `organizationId` on data | No data isolation | Phase 1 |
-| No SUPER_ADMIN / TENANT_ADMIN | No platform or tenant management | Phase 1 |
+| No TENANT_ADMIN | No tenant self-service or org management | Phase 1 |
 | Single global branding | Product looks like one app, not white-label | Phase 2 |
 | Basic dashboards only | Weak sales demo for operators | Phase 3 |
 | Table-only slot view | Missing visual occupancy (competitor disadvantage) | Phase 4 |

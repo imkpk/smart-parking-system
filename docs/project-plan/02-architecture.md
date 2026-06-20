@@ -5,8 +5,8 @@
 ```mermaid
 flowchart TB
     subgraph platform [Platform Layer]
-        SA[SUPER_ADMIN]
         Billing[Subscription and Billing]
+        Analytics[Platform Analytics]
     end
 
     subgraph tenant [Tenant Layer]
@@ -21,7 +21,7 @@ flowchart TB
         USER[USER - bookings and payments]
     end
 
-    SA --> tenant
+    Billing --> tenant
     TA --> Lots
     TA --> Users
     SEC --> Lots
@@ -32,7 +32,6 @@ flowchart TB
 
 | Role | Scope | Capabilities |
 |------|-------|--------------|
-| SUPER_ADMIN | Platform | Create tenants, manage subscriptions, platform analytics |
 | TENANT_ADMIN | One tenant | All lots under tenant, billing, tenant settings, branding |
 | ADMIN | One or more lots | Lot config, users, reports, payments |
 | SECURITY | Assigned lots | Check-in, check-out, view active sessions |
@@ -59,8 +58,6 @@ Every tenant-owned record gets `organizationId`:
 ParkingLot, Floor, Slot, User (tenant-scoped), Booking,
 ParkingEvent, Payment (via event), SlotAssignment
 ```
-
-Platform-level users (SUPER_ADMIN) bypass tenant scope via explicit policy.
 
 ### Isolation strategy
 
