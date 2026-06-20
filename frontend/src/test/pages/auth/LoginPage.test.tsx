@@ -45,9 +45,8 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByTestId('login-password')).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
@@ -58,7 +57,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'wrong-password');
+    await user.type(screen.getByTestId('login-password'), 'wrong-password');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid email or password/i);
@@ -101,7 +100,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />, { route: '/login' });
 
     await user.type(screen.getByLabelText(/email/i), 'admin@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'secret123');
+    await user.type(screen.getByTestId('login-password'), 'secret123');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {

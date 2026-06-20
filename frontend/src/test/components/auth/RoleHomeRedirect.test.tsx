@@ -42,7 +42,7 @@ describe('RoleHomeRedirect', () => {
     expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
   });
 
-  it('redirects super admin users to the admin dashboard', () => {
+  it('redirects super admin users to the platform admin page', () => {
     vi.mocked(useAuth).mockReturnValue(
       createMockAuthValue({
         user: createMockUser({ role: 'SUPER_ADMIN', organizationId: null, organization: null }),
@@ -52,12 +52,12 @@ describe('RoleHomeRedirect', () => {
     renderWithProviders(
       <Routes>
         <Route path="/" element={<RoleHomeRedirect />} />
-        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+        <Route path="/platform/admin" element={<div>Platform Admin</div>} />
       </Routes>,
       { route: '/' },
     );
 
-    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Platform Admin')).toBeInTheDocument();
   });
 
   it('redirects admin users to the admin dashboard', () => {
