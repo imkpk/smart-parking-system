@@ -330,6 +330,11 @@ export class ParkingEventsService {
       return;
     }
 
+    if (slot.status === SlotStatus.RESERVED) {
+      await this.slotLifecycleService.occupySlot(slotId, tx);
+      return;
+    }
+
     if (slot.status === SlotStatus.OCCUPIED) {
       const activeEventOnSlot = await tx.parkingEvent.findFirst({
         where: {

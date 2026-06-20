@@ -24,6 +24,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { invalidateOperationalQueries } from '../../lib/invalidateOperationalQueries';
 import { buildGateConfirmDescription } from '../../lib/gateConfirmText';
 import { formatBookingNo, formatDateTime, formatSessionNo } from '../../lib/formatters';
 import { matchItemToSingleResult } from '../../lib/securityGateMatch';
@@ -598,14 +599,6 @@ export function SecurityGatePage() {
   const [notFoundMessage, setNotFoundMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const invalidateOperationalQueries = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['parking-events'] }),
-      queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-    ]);
-  };
-
   const searchMutation = useMutation({
     mutationFn: searchSecurityGate,
     onSuccess: (data) => {
@@ -635,8 +628,10 @@ export function SecurityGatePage() {
 
   const checkInMutation = useMutation({
     mutationFn: checkInParkingEvent,
-    onSuccess: async () => {
-      await invalidateOperationalQueries();
+    onSuccess: async (parkingEvent) => {
+      await invalidateOperationalQueries(queryClient, {
+        parkingLotId: parkingEvent.parkingLotId,
+      });
       setConfirmOpen(false);
       setSuccessMessage('Vehicle checked in successfully.');
       setStep('success');
@@ -650,8 +645,10 @@ export function SecurityGatePage() {
 
   const checkOutMutation = useMutation({
     mutationFn: checkOutParkingEvent,
-    onSuccess: async () => {
-      await invalidateOperationalQueries();
+    onSuccess: async (result) => {
+      await invalidateOperationalQueries(queryClient, {
+        parkingLotId: result.parkingEvent.parkingLotId,
+      });
       setConfirmOpen(false);
       setResult(null);
       setSuccessMessage('Vehicle checked out successfully.');

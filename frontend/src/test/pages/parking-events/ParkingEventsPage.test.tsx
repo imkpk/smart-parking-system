@@ -122,6 +122,23 @@ describe('ParkingEventsPage', () => {
     expect(await screen.findByText(/checked in booking/i)).toBeInTheDocument();
   });
 
+  it('invalidates operational queries after successful check-in', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { queryClient } = renderWithProviders(<ParkingEventsPage />);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await screen.findByText('BK-001');
+    await user.type(screen.getByLabelText(/booking code/i), 'BK-001');
+    await user.click(screen.getByRole('button', { name: /check in/i }));
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5] });
+    });
+  });
+
   it('checks out an active parking event', async () => {
     const user = userEvent.setup({ delay: null });
     renderWithProviders(<ParkingEventsPage />);
