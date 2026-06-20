@@ -1,12 +1,7 @@
-import {
-  Alert,
-  Button,
-  Link,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Alert, Button, Link, Stack, TextField } from '@mui/material';
 import { FormEvent, useState } from 'react';
 import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
+import { PasswordField } from '../../components/auth/PasswordField';
 import { useTenantSlugFromRoute } from '../../hooks/useTenantSlugFromRoute';
 import { getRoleHomePath } from '../../lib/routes';
 import { useAuth } from '../../providers/AuthProvider';
@@ -54,20 +49,19 @@ export function LoginPage() {
           type="email"
           value={email}
         />
-        <TextField
-          {...authTextFieldProps}
+        <PasswordField
           autoComplete="current-password"
+          id="login-password"
           label="Password"
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={setPassword}
           required
-          type="password"
           value={password}
         />
         <Button disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
           Sign in
         </Button>
         <Link component={RouterLink} to="/register" underline="hover">
-          Create an account
+          Create an organization account
         </Link>
       </Stack>
     </AuthPageShell>

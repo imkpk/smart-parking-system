@@ -61,10 +61,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    label: 'Platform Admin',
+    to: '/platform/admin',
+    icon: Analytics,
+    roles: ['SUPER_ADMIN'],
+  },
+  {
     label: 'Admin Dashboard',
     to: '/admin/dashboard',
     icon: Analytics,
-    roles: ['SUPER_ADMIN', 'TENANT_ADMIN', 'ADMIN'],
+    roles: ['TENANT_ADMIN', 'ADMIN'],
   },
   {
     label: 'Support Inbox',

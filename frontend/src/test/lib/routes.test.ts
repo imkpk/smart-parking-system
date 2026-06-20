@@ -3,7 +3,7 @@ import { getRoleHomePath } from '@/lib/routes';
 
 describe('getRoleHomePath', () => {
   it('routes super admin users to the admin dashboard', () => {
-    expect(getRoleHomePath('SUPER_ADMIN')).toBe('/admin/dashboard');
+    expect(getRoleHomePath('SUPER_ADMIN')).toBe('/platform/admin');
   });
 
   it('routes tenant admin users to the admin dashboard', () => {

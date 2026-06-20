@@ -30,7 +30,7 @@ export class SlotsController {
   constructor(private readonly slotsService: SlotsService) {}
 
   @Get('parking-lots/:parkingLotId/slots')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY)
   findByParkingLot(
     @Param('parkingLotId', ParseIntPipe) parkingLotId: number,
     @CurrentUser() currentUser: SafeUser,
@@ -63,7 +63,7 @@ export class SlotsController {
   }
 
   @Post('floors/:floorId/slots')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   create(
     @Param('floorId', ParseIntPipe) floorId: number,
     @CurrentUser() currentUser: SafeUser,
@@ -73,7 +73,7 @@ export class SlotsController {
   }
 
   @Post('floors/:floorId/slots/bulk')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   createBulk(
     @Param('floorId', ParseIntPipe) floorId: number,
     @CurrentUser() currentUser: SafeUser,
@@ -83,7 +83,7 @@ export class SlotsController {
   }
 
   @Patch('slots/:id/status')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -93,7 +93,7 @@ export class SlotsController {
   }
 
   @Delete('slots/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -102,7 +102,7 @@ export class SlotsController {
   }
 
   @Delete('slots')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   removeBulk(
     @CurrentUser() currentUser: SafeUser,
     @Body() deleteSlotsDto: DeleteSlotsDto,

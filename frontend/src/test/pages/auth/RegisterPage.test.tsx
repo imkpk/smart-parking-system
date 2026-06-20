@@ -36,18 +36,19 @@ describe('RegisterPage', () => {
     });
   });
 
-  it('renders registration form fields', () => {
+  it('renders tenant registration form fields', () => {
     renderWithProviders(<RegisterPage />);
 
-    expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /create your organization/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/organization name/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /organization type/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/i).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /role/i }).closest('.MuiFormControl-fullWidth')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /role/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
+    expect(screen.getByTestId('register-password')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /create organization account/i }),
+    ).toBeInTheDocument();
   });
 
   it('redirects to role home when already authenticated', () => {
@@ -70,7 +71,9 @@ describe('RegisterPage', () => {
     );
 
     expect(screen.getByText('User Home')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /create account/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /create your organization/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows validation error when registration fails', async () => {
@@ -79,10 +82,11 @@ describe('RegisterPage', () => {
 
     renderWithProviders(<RegisterPage />);
 
-    await user.type(screen.getByLabelText(/name/i), 'New User');
+    await user.type(screen.getByLabelText(/organization name/i), 'Sunrise Apartments');
+    await user.type(screen.getByLabelText(/full name/i), 'New User');
     await user.type(screen.getByLabelText(/email/i), 'new@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'secret123');
-    await user.click(screen.getByRole('button', { name: /create account/i }));
+    await user.type(screen.getByTestId('register-password'), 'secret123');
+    await user.click(screen.getByRole('button', { name: /create organization account/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /could not register this account/i,
@@ -93,7 +97,7 @@ describe('RegisterPage', () => {
     const user = userEvent.setup();
     registerMock.mockResolvedValueOnce({
       accessToken: 'register-token',
-      user: createMockUser({ role: 'ADMIN', email: 'admin@example.com' }),
+      user: createMockUser({ role: 'TENANT_ADMIN', email: 'owner@example.com' }),
     });
 
     renderWithProviders(
@@ -104,18 +108,21 @@ describe('RegisterPage', () => {
       { route: '/register' },
     );
 
-    await user.type(screen.getByLabelText(/name/i), 'Admin User');
-    await user.type(screen.getByLabelText(/email/i), 'admin@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'secret123');
-    await user.click(screen.getByRole('button', { name: /create account/i }));
+    await user.type(screen.getByLabelText(/organization name/i), 'Sunrise Apartments');
+    await user.type(screen.getByLabelText(/full name/i), 'Owner User');
+    await user.type(screen.getByLabelText(/email/i), 'owner@example.com');
+    await user.type(screen.getByLabelText(/phone/i), '9876543210');
+    await user.type(screen.getByTestId('register-password'), 'secret123');
+    await user.click(screen.getByRole('button', { name: /create organization account/i }));
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith({
-        name: 'Admin User',
-        email: 'admin@example.com',
-        phone: undefined,
+        organizationName: 'Sunrise Apartments',
+        organizationType: 'APARTMENT',
+        name: 'Owner User',
+        email: 'owner@example.com',
+        phone: '+919876543210',
         password: 'secret123',
-        role: 'USER',
       });
     });
 

@@ -1,5 +1,6 @@
-import { ParkingLotType } from '@prisma/client';
+import { Role } from '@prisma/client';
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -8,14 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class RegisterDto {
-  @IsString()
-  @MinLength(2)
-  organizationName: string;
-
-  @IsEnum(ParkingLotType)
-  organizationType: ParkingLotType;
-
+export class CreateUserDto {
   @IsString()
   @MinLength(2)
   name: string;
@@ -32,4 +26,11 @@ export class RegisterDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @IsEnum(Role)
+  role: Role;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

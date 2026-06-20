@@ -58,7 +58,7 @@ describe('UsersService', () => {
     await expect(service.findOne(999, adminUser)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('finds a user by email', async () => {
+  it('finds a user by email across organizations', async () => {
     prisma.user.findFirst.mockResolvedValue(userRecord);
 
     const result = await service.findByEmail(userRecord.email);
@@ -66,13 +66,13 @@ describe('UsersService', () => {
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: {
         email: userRecord.email,
-        organizationId: DEFAULT_ORGANIZATION_ID,
+        isActive: true,
       },
     });
     expect(result).toBe(userRecord);
   });
 
-  it('finds a user by phone in the default organization', async () => {
+  it('finds a user by phone across organizations', async () => {
     prisma.user.findFirst.mockResolvedValue(userRecord);
 
     const result = await service.findByPhone(userRecord.phone!);
@@ -80,13 +80,13 @@ describe('UsersService', () => {
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: {
         phone: userRecord.phone,
-        organizationId: DEFAULT_ORGANIZATION_ID,
+        isActive: true,
       },
     });
     expect(result).toBe(userRecord);
   });
 
-  it('does not return a user from another organization by email', async () => {
+  it('returns null when no active user matches email', async () => {
     prisma.user.findFirst.mockResolvedValue(null);
 
     const result = await service.findByEmail(userRecord.email);
@@ -94,7 +94,7 @@ describe('UsersService', () => {
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: {
         email: userRecord.email,
-        organizationId: DEFAULT_ORGANIZATION_ID,
+        isActive: true,
       },
     });
     expect(result).toBeNull();

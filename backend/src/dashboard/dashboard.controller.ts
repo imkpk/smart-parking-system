@@ -14,13 +14,13 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('admin-summary')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   getAdminSummary(@CurrentUser() currentUser: SafeUser) {
     return this.dashboardService.getAdminSummary(currentUser);
   }
 
   @Get('parking-lot/:id/summary')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   getParkingLotSummary(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: SafeUser,
@@ -29,19 +29,19 @@ export class DashboardController {
   }
 
   @Get('recent-events')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY)
   getRecentEvents(@CurrentUser() currentUser: SafeUser) {
     return this.dashboardService.getRecentEvents(currentUser);
   }
 
   @Get('today-bookings')
-  @Roles(Role.ADMIN)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
   getTodayBookings(@CurrentUser() currentUser: SafeUser) {
     return this.dashboardService.getTodayBookings(currentUser);
   }
 
   @Get('slot-status-summary')
-  @Roles(Role.ADMIN, Role.SECURITY)
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY)
   getSlotStatusSummary(@CurrentUser() currentUser: SafeUser) {
     return this.dashboardService.getSlotStatusSummary(currentUser);
   }

@@ -83,6 +83,7 @@ model Organization {
   id                   Int                   @id @default(autoincrement())
   name                 String
   slug                 String                @unique
+  organizationType     ParkingLotType        @default(APARTMENT) @map("organization_type")
   logoUrl              String?
   primaryColor         String?
   secondaryColor       String?

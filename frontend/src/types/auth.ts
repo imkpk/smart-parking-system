@@ -34,10 +34,13 @@ export interface LoginPayload {
   password: string;
 }
 
+export type OrganizationType = 'APARTMENT' | 'MALL' | 'HOSPITAL' | 'OFFICE' | 'PUBLIC';
+
 export interface RegisterPayload {
+  organizationName: string;
+  organizationType: OrganizationType;
   name: string;
   email: string;
   phone?: string;
   password: string;
-  role?: Role;
 }

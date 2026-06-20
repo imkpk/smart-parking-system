@@ -32,10 +32,11 @@ describe('Controllers', () => {
     };
     const controller = new AuthController(authService as never);
     const registerDto = {
+      organizationName: 'Test Apartments',
+      organizationType: 'APARTMENT' as const,
       name: 'Test User',
       email: 'user@example.com',
       password: 'password123',
-      role: Role.USER,
     };
     const loginDto = { email: 'user@example.com', password: 'password123' };
 
