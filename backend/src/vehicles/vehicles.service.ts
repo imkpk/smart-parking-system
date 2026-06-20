@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AccessPolicyService } from '../common/access-policy.service';
+import { normalizeVehicleNumber } from '../common/vehicle-number.util';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
@@ -31,6 +32,7 @@ export class VehiclesService {
       return await this.prisma.vehicle.create({
         data: {
           ...createVehicleDto,
+          vehicleNumber: normalizeVehicleNumber(createVehicleDto.vehicleNumber),
           userId: currentUser.id,
           organizationId,
         },
@@ -78,7 +80,12 @@ export class VehiclesService {
     try {
       return await this.prisma.vehicle.update({
         where: { id },
-        data: updateVehicleDto,
+        data: {
+          ...updateVehicleDto,
+          ...(updateVehicleDto.vehicleNumber
+            ? { vehicleNumber: normalizeVehicleNumber(updateVehicleDto.vehicleNumber) }
+            : {}),
+        },
       });
     } catch (error) {
       handlePrismaUniqueConstraint(

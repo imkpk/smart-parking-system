@@ -190,6 +190,25 @@ describe('VehiclesPage', () => {
     expect(within(dialog).getByText('Owner')).toBeInTheDocument();
   });
 
+  it('uppercases mixed-case vehicle numbers before saving', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderWithProviders(<VehiclesPage />);
+    await screen.findByText('KA01AB1234');
+
+    await user.click(screen.getByRole('button', { name: /add vehicle/i }));
+    const dialog = screen.getByRole('dialog');
+
+    await user.type(within(dialog).getByLabelText(/vehicle number/i), 'ka05gh1212');
+    await user.click(within(dialog).getByRole('button', { name: /^create$/i }));
+
+    await waitFor(() => {
+      expect(createVehicle).toHaveBeenCalled();
+      expect(vi.mocked(createVehicle).mock.calls[0]?.[0]).toEqual(
+        expect.objectContaining({ vehicleNumber: 'KA05GH1212' }),
+      );
+    });
+  });
+
   it('creates vehicle with optional brand, model, and color fields', async () => {
     const user = userEvent.setup({ delay: null });
     renderWithProviders(<VehiclesPage />);

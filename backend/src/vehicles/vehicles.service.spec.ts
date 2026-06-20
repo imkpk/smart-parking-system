@@ -108,6 +108,21 @@ describe('VehiclesService', () => {
     expect(result).toBe(vehicle);
   });
 
+  it('stores vehicle numbers in uppercase', async () => {
+    prisma.vehicle.create.mockResolvedValue({ ...vehicle, vehicleNumber: 'KA05GH1212' });
+
+    await service.create(normalUser, {
+      vehicleNumber: 'ka05gh1212',
+      vehicleType: vehicle.vehicleType,
+    });
+
+    expect(prisma.vehicle.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        vehicleNumber: 'KA05GH1212',
+      }),
+    });
+  });
+
   it('cannot access a vehicle from another organization', async () => {
     prisma.vehicle.findFirst.mockResolvedValue(null);
 

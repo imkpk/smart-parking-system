@@ -40,6 +40,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
 import { filterVehicles } from '../../lib/searchFilters';
+import { normalizeVehicleNumber } from '../../lib/vehicleNumber';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
 function buildVehicleSummaryRows(
@@ -219,7 +220,7 @@ export function VehiclesPage() {
   };
 
   const toPayload = () => ({
-    vehicleNumber: vehicleForm.vehicleNumber.trim(),
+    vehicleNumber: normalizeVehicleNumber(vehicleForm.vehicleNumber),
     vehicleType: vehicleForm.vehicleType,
     brand: vehicleForm.brand?.trim() || undefined,
     model: vehicleForm.model?.trim() || undefined,
@@ -286,7 +287,10 @@ export function VehiclesPage() {
               <TextField
                 label="Vehicle Number"
                 onChange={(event) =>
-                  setVehicleForm((current) => ({ ...current, vehicleNumber: event.target.value }))
+                  setVehicleForm((current) => ({
+                    ...current,
+                    vehicleNumber: normalizeVehicleNumber(event.target.value),
+                  }))
                 }
                 required
                 value={vehicleForm.vehicleNumber}
