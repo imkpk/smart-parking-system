@@ -342,3 +342,83 @@ describe('UserDashboardPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not load recent activity/i);
   });
 });
+
+describe('Dashboard mobile layout', () => {
+  beforeEach(() => {
+    vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
+    vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+      writable: true,
+    });
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  it('keeps tenant admin KPIs and collapsible quick actions usable on a narrow viewport', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderWithProviders(<AdminDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Utilization')).toBeInTheDocument();
+      expect(screen.getByText('Active Sessions')).toBeInTheDocument();
+      expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
+      expect(screen.getByText('Revenue Today')).toBeInTheDocument();
+    });
+
+    const quickActionsHeader = screen.getByRole('button', { name: /^quick actions$/i });
+    expect(quickActionsHeader).toHaveAttribute('aria-expanded', 'false');
+
+    await expandQuickActions(user);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create parking lot/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+    });
+  });
+
+  it('keeps user dashboard quick actions collapsed then expandable on a narrow viewport', async () => {
+    vi.mocked(getOperatorMetrics).mockResolvedValue(userOperatorMetrics);
+    vi.mocked(getRecentActivity).mockResolvedValue({
+      items: userOperatorMetrics.recentActivity,
+      nextCursor: null,
+      hasMore: false,
+    });
+
+    const user = userEvent.setup({ delay: null });
+    renderWithProviders(<UserDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('My Vehicles')).toBeInTheDocument();
+      expect(screen.getByText('Upcoming Bookings')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /^quick actions$/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+
+    await expandQuickActions(user);
+
+    expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
+  });
+
+  it('keeps security gate quick actions accessible on a narrow viewport', async () => {
+    vi.mocked(getOperatorMetrics).mockResolvedValue(securityOperatorMetrics);
+
+    const user = userEvent.setup({ delay: null });
+    renderWithProviders(<SecurityDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Active Sessions')).toBeInTheDocument();
+      expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
+    });
+
+    await expandQuickActions(user);
+
+    expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
+    expect(screen.queryByText('Lot Utilization')).not.toBeInTheDocument();
+  });
+});
