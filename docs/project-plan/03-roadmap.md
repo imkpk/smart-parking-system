@@ -27,7 +27,7 @@ Phased plan from current single-tenant app to sellable multi-tenant SaaS.
 - [ ] Migration strategy for existing seed data (default org)
 - [ ] JWT claims: `organizationId`, expanded `Role` enum
 - [ ] NestJS tenant guard / Prisma middleware for automatic scoping
-- [ ] SUPER_ADMIN and TENANT_ADMIN roles
+- [x] TENANT_ADMIN role (public signup)
 - [ ] Tenant onboarding API (create org + first admin user)
 - [ ] Frontend: tenant context in auth provider
 
@@ -97,7 +97,7 @@ Phased plan from current single-tenant app to sellable multi-tenant SaaS.
 - [ ] Enforce lot and user limits per plan
 - [ ] Feature flags per plan (heatmap, slot map, exports)
 - [ ] Platform billing integration (Razorpay Subscriptions or Stripe)
-- [ ] SUPER_ADMIN tenant management UI
+
 
 **Exit criteria:** New tenant signup respects plan limits without manual intervention.
 

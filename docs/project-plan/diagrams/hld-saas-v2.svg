@@ -28,7 +28,7 @@
     <rect x="60" y="145" width="130" height="52" rx="8" fill="#7c3aed" opacity="0.12" stroke="#7c3aed" stroke-width="1.5"/>
     <circle cx="88" cy="171" r="14" fill="#7c3aed"/>
     <text x="88" y="176" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">SA</text>
-    <text x="110" y="168" fill="#5b21b6" font-size="11" font-weight="700">SUPER_ADMIN</text>
+    <text x="110" y="168" fill="#5b21b6" font-size="11" font-weight="700">Platform</text>
     <text x="110" y="183" fill="#64748b" font-size="9">Platform owner</text>
   </g>
 
@@ -85,7 +85,7 @@
   <text x="528" y="286" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">FRONTEND — React + TypeScript + Vite + MUI</text>
 
   <text x="268" y="320" fill="#1e40af" font-size="11" font-weight="600">Surfaces</text>
-  <text x="268" y="340" fill="#334155" font-size="10">• Platform Console (SUPER_ADMIN)</text>
+  <text x="268" y="340" fill="#334155" font-size="10">• Tenant Admin Console</text>
   <text x="268" y="356" fill="#334155" font-size="10">• Tenant Admin + White-label Theme (logo, colors)</text>
   <text x="268" y="372" fill="#334155" font-size="10">• Operator Dashboard — occupancy, revenue, heatmap</text>
   <text x="268" y="388" fill="#334155" font-size="10">• Visual Slot Map — floor grid, live status colors</text>
@@ -174,7 +174,7 @@
 
   <g font-size="10" fill="#334155">
     <circle cx="80" cy="812" r="12" fill="#1f6feb"/><text x="80" y="816" text-anchor="middle" fill="#fff" font-weight="700">1</text>
-    <text x="100" y="816">Tenant onboarded (SUPER_ADMIN)</text>
+    <text x="100" y="816">Tenant onboarded (public signup)</text>
 
     <circle cx="310" cy="812" r="12" fill="#1f6feb"/><text x="310" y="816" text-anchor="middle" fill="#fff" font-weight="700">2</text>
     <text x="330" y="816">User login (branded)</text>
@@ -212,7 +212,7 @@
   <text x="60" y="1006" fill="#0f172a" font-size="14" font-weight="700">KEY RULES BY ROLE</text>
 
   <rect x="60" y="1020" width="250" height="112" rx="8" fill="#f5f3ff" stroke="#c4b5fd"/>
-  <text x="72" y="1040" fill="#5b21b6" font-size="10" font-weight="700">SUPER_ADMIN / TENANT_ADMIN</text>
+  <text x="72" y="1040" fill="#5b21b6" font-size="10" font-weight="700">TENANT_ADMIN</text>
   <text x="72" y="1058" fill="#334155" font-size="9">Manage tenants, plans, branding</text>
   <text x="72" y="1074" fill="#334155" font-size="9">All lots &amp; users within org</text>
   <text x="72" y="1090" fill="#334155" font-size="9">Revenue &amp; occupancy reports</text>

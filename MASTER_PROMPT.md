@@ -133,7 +133,7 @@ Report:        .grok/reports/ci-fast-pr-gates-and-agent-flow.md
 **Diagram:** `docs/project-plan/diagrams/hld-saas-v2.svg`
 
 ```text
-Actors: SUPER_ADMIN | TENANT_ADMIN | ADMIN | SECURITY | USER
+Actors: TENANT_ADMIN | ADMIN | SECURITY | USER
          ↓
 Platform Layer → Tenant Layer (organizationId on all data)
          ↓
@@ -187,7 +187,6 @@ React Frontend ──REST/JWT──► NestJS API ──HTTP──► Payment Se
 
 | Role | Access |
 |------|--------|
-| SUPER_ADMIN | Platform: tenants, plans, billing, cross-tenant analytics |
 | TENANT_ADMIN | One org: branding, all lots, users, subscription |
 
 ---
@@ -321,7 +320,7 @@ Execute in this order unless the human redirects:
 ```text
 [x] Add Organization model to Prisma
 [x] Add organizationId to direct tenant-scoped tables (User, ParkingLot, Vehicle, Booking, ParkingEvent, SlotAssignment)
-[x] Expand Role enum: SUPER_ADMIN, TENANT_ADMIN
+[x] Expand Role enum: TENANT_ADMIN
 [x] JWT claims: organizationId
 [x] Service-level query scoping + cross-tenant write protection (Phase 1b)
 [x] Tenant onboarding API (Phase 1c)
@@ -355,7 +354,7 @@ Execute in this order unless the human redirects:
 [x] 3E: demo polish — KPI icons/helper text, donut center label, activity spacing, demo seed E2E cleanup — PR pending
 [x] Occupancy %, booking volume, active sessions, revenue (parking fees)
 [x] Recent activity cursor API + timeline feed (separate from operator-metrics)
-[x] Role-specific dashboards (SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER)
+[x] Role-specific dashboards (TENANT_ADMIN, ADMIN, SECURITY, USER)
 [x] Slot heatmap by floor — delivered in Phase 4 visual slot map
 ```
 
@@ -410,7 +409,7 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 [ ] Push notifications and unread badges (unreadCount stubbed at 0)
 [ ] File/image attachments
 [ ] Cypress smoke journey for chat (J16+)
-[ ] SUPER_ADMIN cross-tenant support inbox
+[ ] Platform cross-tenant support inbox
 [ ] Conversation assignment / routing rules
 ```
 
@@ -420,7 +419,7 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 [ ] Plans: STARTER | PRO | ENTERPRISE
 [ ] Enforce lot/user limits
 [ ] Feature flags per plan
-[ ] SUPER_ADMIN tenant management UI
+[ ] Platform tenant management UI
 ```
 
 ### Phase 7 — Enterprise
@@ -678,8 +677,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-18 | 1.4.7 | Grok | Local E2E runner script (`scripts/run-e2e-local.ps1`), Cypress smoke stability fixes (login token seeding, DataGrid/dialog selectors), npm `e2e:local*` scripts. |
 | 2026-06-18 | 1.4.8 | Codex | LOOP 1A Phase 1a verification: audited Organization schema, tenant columns, default-org seed, migration backfill, and tenant-aware unique constraints. Report added at `.grok/reports/phase-1a-verification.md`. |
 | 2026-06-18 | 1.4.9 | Codex | LOOP 1B Phase 1b verification: audited JWT organization claims, access policy helpers, service-level tenant scoping, cross-tenant tests, dashboard filters, and booking/event display enrichment. Report added at `.grok/reports/phase-1b-verification.md`. |
-| 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added SUPER_ADMIN-only `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
-| 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support SUPER_ADMIN/TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
+| 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
+| 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
 | 2026-06-18 | 1.6.0 | Grok | Phase 1 tenant isolation acceptance: added acceptance tests/report; Phase 1a–1d marked complete. |
 | 2026-06-18 | 1.7.0 | Grok | Phase 2 LOOP 2A: white-label branding contract — API plan, data model, frontend provider contract, acceptance criteria. PR #72. |
 | 2026-06-18 | 1.7.1 | Grok | Phase 2 LOOP 2B: backend tenant branding API — schema fields, public/current/PATCH endpoints, validation, tests. PR #73. |

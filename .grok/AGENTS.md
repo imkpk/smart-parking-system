@@ -22,7 +22,7 @@ End users          → Residents, staff, visitors, security guards
 ```text
 1. Multi-tenancy — every record scoped to a tenant/organization
 2. White-label UI — per-tenant logo, name, and theme colors
-3. Role hierarchy — SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER
+3. Role hierarchy — TENANT_ADMIN, ADMIN, SECURITY, USER
 4. Operator dashboards — occupancy, revenue, active sessions, heatmaps
 5. Visual slot maps — floor-plan grid view (key differentiator for sales)
 6. Mobile-first security gate — fast check-in / check-out for guards

@@ -16,7 +16,7 @@ This is a **sellable SaaS product**, not a portfolio demo or single-deployment a
 ## Layer model
 
 ```text
-Platform (us)      → Super-admin: onboard tenants, billing, platform analytics
+Platform (us)      → Billing, platform analytics, tenant lifecycle
 Tenant (customer)  → Apartment / hospital / mall / office / public lot operator
 End users          → Residents, staff, visitors, security guards
 ```
@@ -25,7 +25,7 @@ End users          → Residents, staff, visitors, security guards
 
 1. **Multi-tenancy** — every record scoped to a tenant/organization
 2. **White-label UI** — per-tenant logo, name, and theme colors
-3. **Role hierarchy** — SUPER_ADMIN, TENANT_ADMIN, ADMIN, SECURITY, USER
+3. **Role hierarchy** — TENANT_ADMIN, ADMIN, SECURITY, USER
 4. **Operator dashboards** — occupancy, revenue, active sessions, heatmaps
 5. **Visual slot maps** — floor-plan grid view (key sales differentiator)
 6. **Mobile-first security gate** — fast check-in / check-out for guards
