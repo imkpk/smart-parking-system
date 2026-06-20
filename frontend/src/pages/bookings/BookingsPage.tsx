@@ -19,7 +19,8 @@ import {
 import { Add, Cancel } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   cancelBooking,
   createBooking,
@@ -118,6 +119,7 @@ function toLocalDateTimeValue(date = new Date()) {
 
 export function BookingsPage() {
   const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const [formOpen, setFormOpen] = useState(false);
@@ -285,6 +287,15 @@ export function BookingsPage() {
     setBookingForm({ ...emptyBookingForm, startTime: toLocalDateTimeValue() });
     setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !isUser) {
+      return;
+    }
+
+    openCreateForm();
+    setSearchParams({}, { replace: true });
+  }, [isUser, searchParams, setSearchParams]);
 
   const handleVehicleChange = (vehicleId: number) => {
     const selectedVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);

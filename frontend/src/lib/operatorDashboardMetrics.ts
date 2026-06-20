@@ -148,6 +148,61 @@ export function buildUserOverviewMetrics(metrics: OperatorDashboardMetrics): Das
   ];
 }
 
+export function buildSecurityHeroKpis(metrics: OperatorDashboardMetrics): DashboardMetricItem[] {
+  const { parkingEvents, occupancy, bookings } = metrics;
+
+  if (!parkingEvents) {
+    return [];
+  }
+
+  const items: DashboardMetricItem[] = [
+    {
+      key: 'hero-active-sessions',
+      label: 'Active Sessions',
+      value: parkingEvents.active,
+      helperText: 'Vehicles currently parked',
+      accentColor: statusStyles.ACTIVE.borderColor,
+      iconBgcolor: statusStyles.ACTIVE.bgcolor,
+    },
+    {
+      key: 'hero-check-ins-today',
+      label: "Today's Check-ins",
+      value: parkingEvents.checkInsToday,
+      helperText: 'Since midnight',
+    },
+    {
+      key: 'hero-check-outs-today',
+      label: "Today's Check-outs",
+      value: parkingEvents.checkOutsToday,
+      helperText: 'Completed sessions today',
+      accentColor: statusStyles.COMPLETED.borderColor,
+      iconBgcolor: statusStyles.COMPLETED.bgcolor,
+    },
+  ];
+
+  if (occupancy) {
+    items.push({
+      key: 'hero-reserved-slots',
+      label: 'Reserved Slots',
+      value: occupancy.reservedSlots,
+      helperText: 'Booked, not checked in',
+      accentColor: statusStyles.RESERVED.borderColor,
+      iconBgcolor: statusStyles.RESERVED.bgcolor,
+    });
+  } else if (bookings) {
+    items.push({
+      key: 'bookings-pending',
+      label: 'Pending Bookings',
+      value: bookings.pending,
+      helperText: 'Awaiting confirmation',
+      accentColor: statusStyles.PENDING.borderColor,
+      iconBgcolor: statusStyles.PENDING.bgcolor,
+    });
+  }
+
+  return items.slice(0, 4);
+}
+
 export function buildTenantHeroKpis(metrics: OperatorDashboardMetrics): DashboardMetricItem[] {
   const { occupancy, parkingEvents, revenue } = metrics;
 

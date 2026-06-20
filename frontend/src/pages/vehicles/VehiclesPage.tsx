@@ -18,7 +18,8 @@ import {
 import { Add, Delete, Edit } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   createVehicle,
   deleteVehicle,
@@ -79,6 +80,7 @@ const emptyVehicleForm: VehiclePayload = {
 
 export function VehiclesPage() {
   const { user, isAdmin, isUser } = useUserRole();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const labels = useReferenceLabels({
@@ -194,6 +196,15 @@ export function VehiclesPage() {
     setVehicleForm(emptyVehicleForm);
     setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || !canManageVehicles) {
+      return;
+    }
+
+    openCreateForm();
+    setSearchParams({}, { replace: true });
+  }, [canManageVehicles, searchParams, setSearchParams]);
 
   const openEditForm = (vehicle: Vehicle) => {
     setEditingVehicle(vehicle);

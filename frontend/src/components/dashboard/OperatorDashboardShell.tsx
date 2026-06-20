@@ -15,10 +15,12 @@ const DASHBOARD_SECTION_GAP = 2.5;
 export function OperatorDashboardShell({
   title = 'Dashboard',
   accessDeniedMessage = 'Access denied. You do not have permission to view this dashboard.',
+  topContent,
   children,
 }: {
   title?: string;
   accessDeniedMessage?: string;
+  topContent?: ReactNode;
   children: (metrics: OperatorDashboardMetrics) => ReactNode;
 }) {
   const { branding } = useTenantBranding();
@@ -53,6 +55,12 @@ export function OperatorDashboardShell({
           ) : null
         }
       />
+
+      {topContent ? (
+        <Stack spacing={DASHBOARD_SECTION_GAP} sx={{ mb: DASHBOARD_SECTION_GAP, maxWidth: '100%', minWidth: 0, width: '100%' }}>
+          {topContent}
+        </Stack>
+      ) : null}
 
       {metricsQuery.isLoading ? (
         <Stack alignItems="center" py={8}>

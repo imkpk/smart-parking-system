@@ -90,7 +90,7 @@ describe('AdminDashboardPage', () => {
     expect(screen.queryByText('Utilization')).not.toBeInTheDocument();
   });
 
-  it('renders four hero KPIs, slot status chart, compact lot list, and activity timeline', async () => {
+  it('renders aligned quick actions, four hero KPIs, slot status chart, compact lot list, and activity timeline', async () => {
     renderWithProviders(<AdminDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
@@ -99,6 +99,11 @@ describe('AdminDashboardPage', () => {
       expect(screen.getByText(/overview for acme parking/i)).toBeInTheDocument();
       expect(screen.getByText('Utilization')).toBeInTheDocument();
     });
+
+    expect(screen.getByRole('button', { name: /create parking lot/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create admin/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create security/i })).toBeInTheDocument();
 
     expect(screen.getAllByText('29%').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByLabelText('29% utilized')).toBeInTheDocument();
@@ -190,22 +195,58 @@ describe('AdminDashboardPage', () => {
   });
 });
 
+describe('AdminDashboardPage role-specific quick actions', () => {
+  beforeEach(() => {
+    vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
+    vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+  });
+
+  it('hides Create Admin for ADMIN role', async () => {
+    const { useUserRole } = await import('@/hooks/useUserRole');
+    vi.mocked(useUserRole).mockReturnValue({
+      user: { role: 'ADMIN' },
+      isTenantAdmin: false,
+      isOperationalAdmin: true,
+      isAdmin: true,
+      isSecurity: false,
+      isUser: false,
+      isSuperAdmin: false,
+      canOperateParkingEvents: true,
+      canViewOperationalPayments: true,
+    });
+
+    renderWithProviders(<AdminDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /create admin/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create security/i })).toBeInTheDocument();
+  });
+});
+
 describe('SecurityDashboardPage', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(securityOperatorMetrics);
     vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
   });
 
-  it('renders security dashboard without revenue or lot utilization', async () => {
+  it('renders security quick actions and gate-focused KPIs without revenue or lot utilization', async () => {
     renderWithProviders(<SecurityDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check in vehicle/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check out vehicle/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Utilization')).toBeInTheDocument();
+      expect(screen.getByText('Active Sessions')).toBeInTheDocument();
     });
 
+    expect(screen.getByText("Today's Check-ins")).toBeInTheDocument();
     expect(screen.getByText("Today's Check-outs")).toBeInTheDocument();
+    expect(screen.getByText('Reserved Slots')).toBeInTheDocument();
     expect(screen.getByText('Slot Status')).toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.queryByText('Revenue Today')).not.toBeInTheDocument();
@@ -223,10 +264,13 @@ describe('UserDashboardPage', () => {
     });
   });
 
-  it('renders user hero KPIs and recent activity timeline', async () => {
+  it('renders user quick actions, hero KPIs, and recent activity timeline', async () => {
     renderWithProviders(<UserDashboardPage />);
 
     expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add vehicle/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /book slot/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('My Vehicles')).toBeInTheDocument();

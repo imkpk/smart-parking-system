@@ -1,4 +1,4 @@
-import { Button, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Button, Stack, Tooltip } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
 import { Role } from '../../types/auth';
 import { CreateUserDialog } from '../users/CreateUserDialog';
+import { DashboardQuickActionsPanel } from './DashboardQuickActionsPanel';
 
 type QuickAction = {
   label: string;
@@ -65,6 +66,7 @@ export function TenantAdminQuickActions() {
     },
     {
       label: 'Create User',
+      hidden: !isOperationalAdmin,
       onClick: () => openCreateUser('USER'),
     },
     {
@@ -74,38 +76,36 @@ export function TenantAdminQuickActions() {
     },
     {
       label: 'Create Security',
+      hidden: !isOperationalAdmin,
       onClick: () => openCreateUser('SECURITY'),
     },
   ];
 
   return (
     <>
-      <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 2 }}>
-        <Stack spacing={1.5}>
-          <Typography variant="subtitle1">Quick actions</Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {actions
-              .filter((action) => !action.hidden)
-              .map((action) => (
-                <Tooltip
-                  key={action.label}
-                  title={action.disabled ? (action.helperText ?? '') : ''}
-                >
-                  <span>
-                    <Button
-                      disabled={action.disabled}
-                      onClick={action.onClick}
-                      size="small"
-                      variant="outlined"
-                    >
-                      {action.label}
-                    </Button>
-                  </span>
-                </Tooltip>
-              ))}
-          </Stack>
+      <DashboardQuickActionsPanel>
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          {actions
+            .filter((action) => !action.hidden)
+            .map((action) => (
+              <Tooltip
+                key={action.label}
+                title={action.disabled ? (action.helperText ?? '') : ''}
+              >
+                <span>
+                  <Button
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                    size="small"
+                    variant="outlined"
+                  >
+                    {action.label}
+                  </Button>
+                </span>
+              </Tooltip>
+            ))}
         </Stack>
-      </Paper>
+      </DashboardQuickActionsPanel>
 
       <CreateUserDialog
         onClose={() => setCreateUserOpen(false)}
