@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { formatActivityTypeLabel } from '../../lib/operatorDashboardLabels';
 import { formatDateTime } from '../../lib/formatters';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { RecentActivityItem } from '../../types/operatorDashboard';
 import { ParkingEventStatusChip } from '../common/ParkingEventStatusChip';
 
@@ -47,7 +48,7 @@ export function RecentActivityTable({ items }: { items: RecentActivityItem[] }) 
                 items.map((item) => (
                   <TableRow hover key={item.parkingEventId}>
                     <TableCell>{formatActivityTypeLabel(item.activityType)}</TableCell>
-                    <TableCell>{item.vehicleNumber}</TableCell>
+                    <TableCell>{formatVehicleNumber(item.vehicleNumber)}</TableCell>
                     <TableCell>{item.slotNumber}</TableCell>
                     <TableCell>{item.parkingLotName}</TableCell>
                     <TableCell>

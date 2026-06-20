@@ -17,6 +17,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { formatActivityTypeLabel } from '../../lib/operatorDashboardLabels';
 import { formatDateTime, formatRelativeTime } from '../../lib/formatters';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { getStatusStyle } from '../../lib/statusStyles';
 import { RecentActivityItem } from '../../types/operatorDashboard';
 import { EmptyState } from '../common/EmptyState';
@@ -82,7 +83,7 @@ function ActivityTimelineItem({ item }: { item: RecentActivityItem }) {
           sx={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em', wordBreak: 'break-word' }}
           variant="subtitle1"
         >
-          {item.vehicleNumber}
+          {formatVehicleNumber(item.vehicleNumber)}
         </Typography>
 
         <Typography color="text.secondary" sx={{ lineHeight: 1.45, wordBreak: 'break-word' }} variant="body2">

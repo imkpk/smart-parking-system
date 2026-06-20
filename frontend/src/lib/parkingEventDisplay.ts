@@ -1,4 +1,5 @@
 import { formatBookingNo } from './formatters';
+import { formatVehicleNumber } from './vehicleNumber';
 import { ParkingEvent } from '../types/parkingEvent';
 
 export function getParkingEventBookingLabel(event: ParkingEvent): string {
@@ -18,7 +19,11 @@ export function getParkingEventCustomerLabel(event: ParkingEvent): string {
 }
 
 export function getParkingEventVehicleLabel(event: ParkingEvent): string {
-  return event.vehicleNumber ?? `Vehicle #${event.vehicleId}`;
+  if (!event.vehicleNumber) {
+    return `Vehicle #${event.vehicleId}`;
+  }
+
+  return formatVehicleNumber(event.vehicleNumber);
 }
 
 export function getParkingEventParkingLotLabel(event: ParkingEvent): string {

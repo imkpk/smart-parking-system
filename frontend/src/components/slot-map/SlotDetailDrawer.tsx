@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { formatDateTime, formatStatusLabel } from '../../lib/formatters';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { SlotMapSlotItem } from '../../types/slotMap';
 import { SlotStatusChip } from '../common/SlotStatusChip';
 import { StatusChip } from '../common/StatusChip';
@@ -56,7 +57,9 @@ export function SlotDetailDrawer({
                     State: {formatStatusLabel(slot.occupancy.state)}
                   </Typography>
                   {slot.occupancy.vehicleNumber ? (
-                    <Typography variant="body2">Vehicle: {slot.occupancy.vehicleNumber}</Typography>
+                    <Typography variant="body2">
+                      Vehicle: {formatVehicleNumber(slot.occupancy.vehicleNumber)}
+                    </Typography>
                   ) : null}
                   {slot.occupancy.bookingCode ? (
                     <Typography variant="body2">Booking: {slot.occupancy.bookingCode}</Typography>

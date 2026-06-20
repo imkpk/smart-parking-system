@@ -48,6 +48,7 @@ import {
   getBookingSlotLabel,
   getBookingVehicleLabel,
 } from '../../lib/bookingDisplay';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { formatBookingNo, formatDateTime } from '../../lib/formatters';
 import { filterBookings } from '../../lib/searchFilters';
 import { userFacingLabels } from '../../lib/userFacingLabels';
@@ -387,7 +388,7 @@ export function BookingsPage() {
                 >
                   {vehicles.map((vehicle) => (
                     <MenuItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.vehicleNumber} · {vehicle.vehicleType}
+                      {formatVehicleNumber(vehicle.vehicleNumber)} · {vehicle.vehicleType}
                     </MenuItem>
                   ))}
                 </Select>

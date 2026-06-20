@@ -27,6 +27,7 @@ import { getApiErrorMessage } from '../../lib/apiError';
 import { invalidateOperationalQueries } from '../../lib/invalidateOperationalQueries';
 import { buildGateConfirmDescription } from '../../lib/gateConfirmText';
 import { formatBookingNo, formatDateTime, formatSessionNo } from '../../lib/formatters';
+import { formatVehicleNumber } from '../../lib/vehicleNumber';
 import { matchItemToSingleResult } from '../../lib/securityGateMatch';
 import {
   SecurityGateMatchItem,
@@ -279,7 +280,7 @@ function GateResultCard({
             { label: 'Booking Code', value: result.booking.bookingCode },
             { label: 'Customer', value: result.booking.customerName },
             { label: 'Phone', value: result.booking.customerPhone ?? '—' },
-            { label: 'Vehicle Number', value: result.booking.vehicleNumber },
+            { label: 'Vehicle Number', value: formatVehicleNumber(result.booking.vehicleNumber) },
             { label: 'Parking Lot', value: result.booking.parkingLotName },
             { label: 'Floor', value: result.booking.floorName },
             { label: 'Slot', value: result.booking.slotNumber },
@@ -382,7 +383,7 @@ function MatchCard({
               label: 'Customer',
               value: `${match.customerName}${match.customerPhone ? ` · ${match.customerPhone}` : ''}`,
             },
-            { label: 'Vehicle', value: match.vehicleNumber },
+            { label: 'Vehicle', value: formatVehicleNumber(match.vehicleNumber) },
             {
               label: 'Lot / Slot',
               value: `${match.parkingLotName} · ${match.slotNumber}`,
@@ -461,6 +462,7 @@ function MultipleMatchesPanel({
         headerName: 'Vehicle',
         minWidth: 120,
         sortable: false,
+        valueGetter: (_value, row) => formatVehicleNumber(row.vehicleNumber),
       },
       {
         field: 'lotSlot',

@@ -1,4 +1,5 @@
 import { Booking } from '../types/booking';
+import { formatVehicleNumber } from './vehicleNumber';
 
 export function getBookingCustomerLabel(booking: Booking): string {
   if (booking.customerName && booking.customerEmail) {
@@ -13,7 +14,11 @@ export function getBookingCustomerLabel(booking: Booking): string {
 }
 
 export function getBookingVehicleLabel(booking: Booking): string {
-  return booking.vehicleNumber ?? `Vehicle #${booking.vehicleId}`;
+  if (!booking.vehicleNumber) {
+    return `Vehicle #${booking.vehicleId}`;
+  }
+
+  return formatVehicleNumber(booking.vehicleNumber);
 }
 
 export function getBookingParkingLotLabel(booking: Booking): string {

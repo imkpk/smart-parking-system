@@ -7,6 +7,7 @@ import { getUsers } from '../api/usersApi';
 import { getMyVehicles, getVehicles } from '../api/vehiclesApi';
 import { asMap } from '../lib/collection';
 import { formatBookingNo, formatSessionNo } from '../lib/formatters';
+import { formatVehicleNumber } from '../lib/vehicleNumber';
 import { Role, User } from '../types/auth';
 import { Booking } from '../types/booking';
 import { ParkingLot } from '../types/parkingLot';
@@ -94,15 +95,20 @@ export function useReferenceLabels({
         parkingLotById.get(parkingLotId)?.name ?? `Lot #${parkingLotId}`,
       getSessionLabel: (sessionId: number) => formatSessionNo(sessionId),
       getSlotLabel: (slotId: number) => slotById.get(slotId)?.slotNumber ?? `Slot #${slotId}`,
-      getVehicleLabel: (vehicleId: number) =>
-        vehicleById.get(vehicleId)?.vehicleNumber ?? `Vehicle #${vehicleId}`,
+      getVehicleLabel: (vehicleId: number) => {
+        const vehicleNumber = vehicleById.get(vehicleId)?.vehicleNumber;
+        return vehicleNumber ? formatVehicleNumber(vehicleNumber) : `Vehicle #${vehicleId}`;
+      },
       getVehicleLabelForBooking: (bookingId: number) => {
         const booking = bookingById.get(bookingId);
         if (!booking) {
           return '-';
         }
 
-        return vehicleById.get(booking.vehicleId)?.vehicleNumber ?? `Vehicle #${booking.vehicleId}`;
+        const vehicleNumber = vehicleById.get(booking.vehicleId)?.vehicleNumber;
+        return vehicleNumber
+          ? formatVehicleNumber(vehicleNumber)
+          : `Vehicle #${booking.vehicleId}`;
       },
     }),
     [bookingById, parkingLotById, slotById, userById, vehicleById],
