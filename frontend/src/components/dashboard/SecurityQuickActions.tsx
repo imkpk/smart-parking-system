@@ -36,7 +36,10 @@ export function SecurityQuickActions() {
   );
 
   return (
-    <DashboardQuickActionsPanel description="Gate operations for arrivals and departures.">
+    <DashboardQuickActionsPanel
+      description="Gate operations for arrivals and departures."
+      previewActions={actions}
+    >
       <DashboardQuickActionGrid actions={actions} />
     </DashboardQuickActionsPanel>
   );

@@ -36,7 +36,10 @@ export function UserQuickActions() {
   );
 
   return (
-    <DashboardQuickActionsPanel description="Get started with your parking in two quick steps.">
+    <DashboardQuickActionsPanel
+      description="Get started with your parking in two quick steps."
+      previewActions={actions}
+    >
       <DashboardQuickActionGrid actions={actions} />
     </DashboardQuickActionsPanel>
   );

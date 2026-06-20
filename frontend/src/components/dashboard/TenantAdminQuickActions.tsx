@@ -121,7 +121,10 @@ export function TenantAdminQuickActions() {
 
   return (
     <>
-      <DashboardQuickActionsPanel description="Set up parking inventory and team access for this property.">
+      <DashboardQuickActionsPanel
+        description="Set up parking inventory and team access for this property."
+        previewActions={actions}
+      >
         <DashboardQuickActionGrid actions={actions} />
       </DashboardQuickActionsPanel>
 
