@@ -68,7 +68,7 @@ function DashboardQuickActionPreviewChips({
 export function DashboardQuickActionsPanel({
   title = 'Quick actions',
   description = 'Choose what you want to do next.',
-  defaultExpanded = true,
+  defaultExpanded = false,
   previewActions,
   children,
 }: {
