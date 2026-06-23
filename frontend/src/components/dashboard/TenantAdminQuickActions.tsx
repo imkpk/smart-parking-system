@@ -4,12 +4,14 @@ import LocalParking from '@mui/icons-material/LocalParking';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Security from '@mui/icons-material/Security';
 import ViewModule from '@mui/icons-material/ViewModule';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFloors } from '../../api/floorsApi';
 import { getParkingLots } from '../../api/parkingLotsApi';
+import { getSlots } from '../../api/slotsApi';
+import { getUserSummary } from '../../api/usersApi';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
 import { statusStyles } from '../../lib/statusStyles';
@@ -17,6 +19,21 @@ import { Role } from '../../types/auth';
 import { CreateUserDialog } from '../users/CreateUserDialog';
 import { DashboardQuickActionGrid, DashboardQuickActionGridItem } from './DashboardQuickActionGrid';
 import { DashboardQuickActionsPanel } from './DashboardQuickActionsPanel';
+
+type OnboardingStepStatus = 'loading' | 'complete' | 'incomplete';
+
+type OnboardingStep = {
+  label: string;
+  status: OnboardingStepStatus;
+};
+
+function getChipProps(status: OnboardingStepStatus) {
+  if (status === 'complete') {
+    return { color: 'primary' as const, variant: 'filled' as const };
+  }
+
+  return { color: 'default' as const, variant: 'outlined' as const };
+}
 
 export function TenantAdminQuickActions() {
   const navigate = useNavigate();
@@ -28,24 +45,56 @@ export function TenantAdminQuickActions() {
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
   });
-  const firstLot = lotsQuery.data?.[0];
-  const floorsQuery = useQuery({
-    queryKey: ['parking-lots', firstLot?.id, 'floors'],
-    queryFn: () => getFloors(firstLot!.id),
-    enabled: Boolean(firstLot?.id),
+  const lots = lotsQuery.data ?? [];
+
+  const floorsQueries = useQueries({
+    queries: lots.map((lot) => ({
+      queryKey: ['parking-lots', lot.id, 'floors'],
+      queryFn: () => getFloors(lot.id),
+      enabled: Boolean(lot.id),
+    })),
   });
 
-  const hasLot = (lotsQuery.data?.length ?? 0) > 0;
-  const hasFloor = (floorsQuery.data?.length ?? 0) > 0;
+  const slotsQueries = useQueries({
+    queries: lots.map((lot) => ({
+      queryKey: ['parking-lots', lot.id, 'slots'],
+      queryFn: () => getSlots(lot.id),
+      enabled: Boolean(lot.id),
+    })),
+  });
 
-  if (!isOperationalAdmin && !isTenantAdmin) {
-    return null;
-  }
+  const userSummaryQuery = useQuery({
+    queryKey: ['users', 'summary'],
+    queryFn: getUserSummary,
+  });
+
+  const firstLot = lots[0];
+  const firstLotWithFloors = lots.find(
+    (lot, index) => (floorsQueries[index]?.data?.length ?? 0) > 0,
+  );
+
+  const hasLot = lots.length > 0;
+  const hasFloor = floorsQueries.some((query) => (query.data?.length ?? 0) > 0);
+  const hasSlot = slotsQueries.some((query) => (query.data?.length ?? 0) > 0);
+  const hasTeamAccess =
+    (userSummaryQuery.data?.admins ?? 0) +
+      (userSummaryQuery.data?.security ?? 0) +
+      (userSummaryQuery.data?.users ?? 0) >
+    0;
+
+  const lotsLoading = lotsQuery.isLoading;
+  const floorsLoading =
+    lotsLoading || (lots.length > 0 && floorsQueries.some((query) => query.isLoading));
+  const slotsLoading =
+    lotsLoading || (lots.length > 0 && slotsQueries.some((query) => query.isLoading));
+  const teamLoading = userSummaryQuery.isLoading;
 
   const openCreateUser = (role: Role) => {
     setPresetRole(role);
     setCreateUserOpen(true);
   };
+
+  const slotNavigationLot = firstLotWithFloors ?? firstLot;
 
   const actions = useMemo<DashboardQuickActionGridItem[]>(
     () => [
@@ -81,7 +130,8 @@ export function TenantAdminQuickActions() {
         iconBgcolor: statusStyles.RESERVED.bgcolor,
         disabled: !hasFloor,
         disabledReason: 'Create a floor first.',
-        onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'slots')}?create=1`),
+        onClick: () =>
+          navigate(`${getParkingLotWorkspacePath(slotNavigationLot!.id, 'slots')}?create=1`),
       },
       {
         id: 'create-user',
@@ -117,15 +167,56 @@ export function TenantAdminQuickActions() {
         onClick: () => openCreateUser('SECURITY'),
       },
     ],
-    [firstLot, hasFloor, hasLot, isOperationalAdmin, isTenantAdmin, navigate],
+    [
+      firstLot,
+      hasFloor,
+      hasLot,
+      isOperationalAdmin,
+      isTenantAdmin,
+      navigate,
+      slotNavigationLot,
+    ],
   );
 
-  const onboardingSteps = [
-    { label: 'Create a parking lot', active: hasLot },
-    { label: 'Add a floor', active: hasFloor },
-    { label: 'Create a slot', active: hasFloor },
-    { label: 'Add team access', active: isOperationalAdmin || isTenantAdmin },
-  ];
+  const onboardingSteps = useMemo<OnboardingStep[]>(
+    () => [
+      {
+        label: 'Create a parking lot',
+        status: lotsLoading ? 'loading' : hasLot ? 'complete' : 'incomplete',
+      },
+      {
+        label: 'Add a floor',
+        status: floorsLoading ? 'loading' : hasFloor ? 'complete' : 'incomplete',
+      },
+      {
+        label: 'Create a slot',
+        status: slotsLoading ? 'loading' : hasSlot ? 'complete' : 'incomplete',
+      },
+      {
+        label: 'Add team access',
+        status: teamLoading ? 'loading' : hasTeamAccess ? 'complete' : 'incomplete',
+      },
+    ],
+    [floorsLoading, hasFloor, hasLot, hasSlot, hasTeamAccess, lotsLoading, slotsLoading, teamLoading],
+  );
+
+  const onboardingHint = useMemo(() => {
+    const isLoading = onboardingSteps.some((step) => step.status === 'loading');
+    if (isLoading) {
+      return null;
+    }
+
+    const allComplete = onboardingSteps.every((step) => step.status === 'complete');
+    if (allComplete) {
+      return 'Setup complete. You can now manage bookings and gate operations.';
+    }
+
+    return 'Complete these steps to start accepting bookings.';
+  }, [onboardingSteps]);
+
+  if (!isOperationalAdmin && !isTenantAdmin) {
+    return null;
+  }
 
   const helperContent = (
     <Stack spacing={1.25}>
@@ -136,13 +227,17 @@ export function TenantAdminQuickActions() {
         {onboardingSteps.map((step) => (
           <Chip
             key={step.label}
-            color={step.active ? 'primary' : 'default'}
             label={step.label}
             size="small"
-            variant={step.active ? 'filled' : 'outlined'}
+            {...getChipProps(step.status)}
           />
         ))}
       </Box>
+      {onboardingHint ? (
+        <Typography color="text.secondary" variant="caption">
+          {onboardingHint}
+        </Typography>
+      ) : null}
     </Stack>
   );
 

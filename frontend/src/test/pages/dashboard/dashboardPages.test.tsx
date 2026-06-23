@@ -27,6 +27,10 @@ vi.mock('@/api/floorsApi', () => ({
   getFloors: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('@/api/slotsApi', () => ({
+  getSlots: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('@/api/usersApi', () => ({
   getUserSummary: vi.fn().mockResolvedValue({
     totalUsers: 1,
@@ -203,7 +207,9 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText(/platform-wide parking operations overview/i)).toBeInTheDocument();
     expect(screen.getByText('Total Users')).toBeInTheDocument();
     expect(screen.getByText('Parking Lots')).toBeInTheDocument();
-    expect(screen.getByText('Slot Status')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Slot Status')).toBeInTheDocument();
+    });
     expect(screen.queryByText('Revenue Today')).not.toBeInTheDocument();
     expect(screen.queryByText('1. Lot B')).not.toBeInTheDocument();
   });
