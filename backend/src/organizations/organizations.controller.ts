@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -38,7 +39,8 @@ export class OrganizationsController {
   }
 
   @Post('onboard')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Roles(Role.SUPER_ADMIN)
   onboard(
     @CurrentUser() currentUser: SafeUser,

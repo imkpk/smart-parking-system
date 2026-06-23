@@ -3,8 +3,10 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleHomeRedirect } from './components/auth/RoleHomeRedirect';
 import { RoleRoute } from './components/auth/RoleRoute';
 import { AppLayout } from './components/layout/AppLayout';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { BookingsPage } from './pages/bookings/BookingsPage';
 import { AdminDashboardPage } from './pages/dashboard/AdminDashboardPage';
 import { PlatformAdminPage } from './pages/platform/PlatformAdminPage';
@@ -37,6 +39,14 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPage />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/',

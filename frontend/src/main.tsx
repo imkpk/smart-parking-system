@@ -7,6 +7,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './providers/AuthProvider';
+import { PlanLimitProvider } from './providers/PlanLimitProvider';
 import { TenantBrandingProvider } from './providers/TenantBrandingProvider';
 import { ThemeModeProvider } from './providers/ThemeModeProvider';
 import { router } from './router';
@@ -25,9 +26,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeModeProvider>
         <AuthProvider>
-          <TenantBrandingProvider>
-            <RouterProvider router={router} />
-          </TenantBrandingProvider>
+          <PlanLimitProvider>
+            <TenantBrandingProvider>
+              <RouterProvider router={router} />
+            </TenantBrandingProvider>
+          </PlanLimitProvider>
         </AuthProvider>
       </ThemeModeProvider>
     </QueryClientProvider>

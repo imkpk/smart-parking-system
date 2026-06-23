@@ -20,10 +20,11 @@ describe('AuthService', () => {
     findActiveById: jest.Mock;
   };
   let prisma: {
-    user: { findFirst: jest.Mock };
+    user: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
     organization: { findUnique: jest.Mock };
     $transaction: jest.Mock;
   };
+  let mailerService: { sendMail: jest.Mock };
 
   beforeEach(() => {
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
@@ -32,8 +33,9 @@ describe('AuthService', () => {
       findActiveLoginCandidatesByPhone: jest.fn(),
       findActiveById: jest.fn(),
     };
+    mailerService = { sendMail: jest.fn().mockResolvedValue(undefined) };
     prisma = {
-      user: { findFirst: jest.fn() },
+      user: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
       organization: { findUnique: jest.fn().mockResolvedValue(null) },
       $transaction: jest.fn(),
     };
@@ -41,6 +43,8 @@ describe('AuthService', () => {
       jwtService as never,
       usersService as never,
       prisma as never,
+      mailerService as never,
+      { get: jest.fn().mockReturnValue('http://localhost:5173') } as never,
     );
     jest.mocked(bcrypt.hash).mockReset();
     jest.mocked(bcrypt.compare).mockReset();
@@ -193,6 +197,39 @@ describe('AuthService', () => {
 
     expect(usersService.findActiveLoginCandidatesByPhone).toHaveBeenCalledWith('+919876543210');
     expect(result).toEqual({ user: normalUser, accessToken: 'signed-token' });
+  });
+
+  it('sends reset email for an existing account', async () => {
+    prisma.user.findFirst.mockResolvedValue({ id: 1, email: 'user@example.com' });
+    prisma.user.update.mockResolvedValue({ id: 1 });
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed-token' as never);
+
+    const response = await service.forgotPassword({ email: 'user@example.com' });
+
+    expect(response.message).toContain('reset link has been sent');
+    expect(mailerService.sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the same response when the email is not registered', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    const response = await service.forgotPassword({ email: 'missing@example.com' });
+
+    expect(response.message).toContain('reset link has been sent');
+    expect(mailerService.sendMail).not.toHaveBeenCalled();
+  });
+
+  it('resets password when token matches an unexpired hash', async () => {
+    prisma.user.findMany.mockResolvedValue([
+      { id: 1, passwordResetToken: 'hashed-token' },
+    ]);
+    jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+    jest.mocked(bcrypt.hash).mockResolvedValue('new-hash' as never);
+    prisma.user.update.mockResolvedValue({ id: 1 });
+
+    await expect(
+      service.resetPassword({ token: 'raw-token', newPassword: 'new-password' }),
+    ).resolves.toEqual({ message: 'Password reset successful. Please log in.' });
   });
 
   it('rejects login when multiple active accounts match the same phone', async () => {

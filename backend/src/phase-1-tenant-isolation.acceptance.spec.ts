@@ -41,7 +41,9 @@ describe('Phase 1 tenant isolation acceptance', () => {
         findMany: jest.fn().mockResolvedValue([org1.normalUser]),
       },
     };
-    const service = new UsersService(prisma as never, accessPolicy);
+    const service = new UsersService(prisma as never, accessPolicy, {
+      checkLimit: jest.fn().mockResolvedValue(undefined),
+    } as never);
 
     const users = await service.findAll(adminUser);
 

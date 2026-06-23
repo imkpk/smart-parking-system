@@ -60,6 +60,9 @@ export function LoginPage() {
         <Button disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
           Sign in
         </Button>
+        <Link component={RouterLink} to="/forgot-password" underline="hover">
+          Forgot password?
+        </Link>
         <Link component={RouterLink} to="/register" underline="hover">
           Create an organization account
         </Link>

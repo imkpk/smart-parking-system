@@ -25,7 +25,12 @@ describe('UsersService', () => {
         findFirst: jest.fn(),
       },
     };
-    service = new UsersService(prisma as never, new AccessPolicyService());
+    const usageLimitsService = { checkLimit: jest.fn().mockResolvedValue(undefined) };
+    service = new UsersService(
+      prisma as never,
+      new AccessPolicyService(),
+      usageLimitsService as never,
+    );
   });
 
   it('creates a user and removes passwordHash from the response', async () => {

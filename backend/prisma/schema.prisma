@@ -17,6 +17,7 @@ enum Role {
 }
 
 enum OrganizationPlan {
+  FREE
   STARTER
   PRO
   ENTERPRISE
@@ -90,7 +91,7 @@ model Organization {
   accentColor          String?
   loginTitle           String?
   supportEmail         String?
-  plan                 OrganizationPlan      @default(STARTER)
+  plan                 OrganizationPlan      @default(FREE)
   maxParkingLots       Int                   @default(5) @map("maxLots")
   maxUsers             Int                   @default(50)
   isActive             Boolean               @default(true)
@@ -115,6 +116,8 @@ model User {
   email                    String?
   phone                    String?
   passwordHash             String
+  passwordResetToken       String?               @unique
+  passwordResetExpiresAt   DateTime?
   role                     Role                  @default(USER)
   isActive                 Boolean               @default(true)
   organization             Organization?         @relation(fields: [organizationId], references: [id], onDelete: Restrict)

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsageLimitsService } from '../usage-limits/usage-limits.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateParkingLotDto } from './dto/create-parking-lot.dto';
 import { UpdateParkingLotDto } from './dto/update-parking-lot.dto';
@@ -12,10 +13,12 @@ export class ParkingLotsService {
     private readonly prisma: PrismaService,
     private readonly parkingLotValidationService: ParkingLotValidationService,
     private readonly accessPolicy: AccessPolicyService,
+    private readonly usageLimitsService: UsageLimitsService,
   ) {}
 
-  create(currentUser: SafeUser, createParkingLotDto: CreateParkingLotDto) {
+  async create(currentUser: SafeUser, createParkingLotDto: CreateParkingLotDto) {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+    await this.usageLimitsService.checkLimit(organizationId, 'parkingLots');
 
     return this.prisma.parkingLot.create({
       data: {

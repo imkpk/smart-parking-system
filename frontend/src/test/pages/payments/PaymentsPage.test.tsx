@@ -55,6 +55,10 @@ vi.mock('@/lib/razorpayCheckout', () => ({
   openRazorpayCheckout: vi.fn(),
 }));
 
+vi.mock('@/lib/paymentHealthCheck', () => ({
+  checkPaymentServiceHealth: vi.fn().mockResolvedValue(true),
+}));
+
 const mockPayment: Payment = {
   id: 1,
   parkingEventId: 10,

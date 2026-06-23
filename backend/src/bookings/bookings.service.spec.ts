@@ -106,10 +106,12 @@ describe('BookingsService', () => {
       prisma as never,
       parkingLotValidationService,
     );
+    const usageLimitsService = { checkLimit: jest.fn().mockResolvedValue(undefined) };
     service = new BookingsService(
       prisma as never,
       new AccessPolicyService(),
       slotLifecycleService,
+      usageLimitsService as never,
     );
   });
 
