@@ -32,8 +32,8 @@ function getChipProps(status: OnboardingStepStatus) {
     return {
       color: 'primary' as const,
       variant: 'filled' as const,
-      disabled: false,
       sx: undefined,
+      'aria-label': undefined,
     };
   }
 
@@ -41,16 +41,16 @@ function getChipProps(status: OnboardingStepStatus) {
     return {
       color: 'default' as const,
       variant: 'outlined' as const,
-      disabled: true,
-      sx: { opacity: 0.65 },
+      sx: { opacity: 0.5 },
+      'aria-label': 'Loading...',
     };
   }
 
   return {
     color: 'default' as const,
     variant: 'outlined' as const,
-    disabled: false,
     sx: undefined,
+    'aria-label': 'Incomplete',
   };
 }
 
@@ -73,11 +73,11 @@ function TenantAdminOnboardingChecklist({
           return (
             <Chip
               key={step.label}
+              aria-label={chipProps['aria-label'] ?? step.label}
               label={step.label}
               size="small"
               color={chipProps.color}
               variant={chipProps.variant}
-              disabled={chipProps.disabled}
               sx={chipProps.sx}
             />
           );
@@ -198,7 +198,7 @@ export function TenantAdminQuickActions() {
         disabled: !hasFloor,
         disabledReason: 'Create a floor first.',
         onClick: () => {
-          if (!slotNavigationLot) {
+          if (!slotNavigationLot?.id) {
             return;
           }
 

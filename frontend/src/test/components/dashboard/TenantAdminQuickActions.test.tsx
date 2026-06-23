@@ -79,7 +79,7 @@ describe('TenantAdminQuickActions onboarding checklist', () => {
 
     const parkingLotChip = getChipForLabel('Create a parking lot');
     expect(parkingLotChip).toHaveClass('MuiChip-outlined');
-    expect(parkingLotChip).toHaveClass('Mui-disabled');
+    expect(parkingLotChip).toHaveAttribute('aria-label', 'Loading...');
     expect(screen.queryByText('Complete these steps to start accepting bookings.')).not.toBeInTheDocument();
   });
 
