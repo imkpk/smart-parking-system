@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.13.5
-**Last updated:** 2026-06-19  
-**Current branch:** `fix/phase-5b-chat-smoke-cleanup`
+**Version:** 1.13.6
+**Last updated:** 2026-06-23  
+**Current branch:** `fix/system-hardening-and-freemium-limits`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -286,10 +286,10 @@ Future UI/user-flow PRs must update Cypress smoke or document why not (PR templa
 ## 8. In progress (current sprint)
 
 ```text
-Phase 5 — Mobile Security Gate + In-App Chat MVP (PR stack 5A–5D).
-5A complete: gate flow (PR #97), phone search + visit history + illustrations (PR #99, #100).
-5B complete: chat schema/API/client/UI + staff inbox + smoke polish (PR #101–#106).
-Next: Phase 5C/5D or human redirect — do not start Phase 6 without approval.
+System hardening + freemium limits — branch fix/system-hardening-and-freemium-limits.
+Phase 5 complete: gate flow (PR #97–#100), chat MVP (PR #101–#106).
+Dashboard onboarding polish merged (PR #123): data-driven checklist, lazy-loaded panels.
+Next: freemium limits + hardening per human redirect — do not start Phase 6 without approval.
 ```
 
 **Before starting new work:** read branch strategy §7 stacked PR plan for Phase 1.
@@ -352,6 +352,7 @@ Execute in this order unless the human redirects:
 [x] 3C: acceptance verification — PR #82 ✅
 [x] 3D: dashboard polish — hero KPIs, slot donut, compact lot bars, cursor activity feed — PR #83 ✅
 [x] 3E: demo polish — KPI icons/helper text, donut center label, activity spacing, demo seed E2E cleanup — PR pending
+[x] 3F: tenant admin onboarding checklist (data-driven lots/floors/slots/team state) + lazy-loaded RecentActivityTimeline/SlotStatusDonutChart — PR #123 ✅
 [x] Occupancy %, booking volume, active sessions, revenue (parking fees)
 [x] Recent activity cursor API + timeline feed (separate from operator-metrics)
 [x] Role-specific dashboards (TENANT_ADMIN, ADMIN, SECURITY, USER)
@@ -706,6 +707,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.13.3 | Grok | Phase 5B LOOP 5B-4: USER `/support` chat UI — conversation list, security/customer-care starters, thread with 5s polling. PR #104 ✅. |
 | 2026-06-19 | 1.13.4 | Grok | Phase 5B LOOP 5B-5: SECURITY `/security/messages` + ADMIN `/admin/support` staff inboxes with reply, resolve, 5s polling. PR #105 ✅. |
 | 2026-06-19 | 1.13.5 | Grok | Phase 5B LOOP 5B-6: smoke polish — message empty-state loading guard, shared `conversationDisplay` in user support page, tenant-admin Support Inbox nav test, direct MUI icon imports. Phase 5B Chat MVP complete. PR #106 pending. |
+| 2026-06-23 | 1.13.6 | Grok | PR #123 merged: tenant admin dashboard onboarding checklist driven by parking-lots/floors/slots APIs and `GET /users/summary` (not role permissions); loading-safe chips with a11y labels; role-gated queries; safe slot navigation guards; lazy-loaded RecentActivityTimeline and SlotStatusDonutChart on AdminDashboardPage; unit tests in `TenantAdminQuickActions.test.tsx`. |
 
 ---
 
@@ -718,7 +720,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: E2E rollout (E2E 01–05). Branch: docs/e2e-agent-playbook → feature/cypress-* from develop.
+Current focus: system hardening + freemium limits. Branch: fix/system-hardening-and-freemium-limits from develop.
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
