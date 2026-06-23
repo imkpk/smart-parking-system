@@ -70,12 +70,14 @@ export function DashboardQuickActionsPanel({
   description = 'Choose what you want to do next.',
   defaultExpanded = false,
   previewActions,
+  helperContent,
   children,
 }: {
   title?: string;
   description?: string;
   defaultExpanded?: boolean;
   previewActions?: DashboardQuickActionPreviewItem[];
+  helperContent?: ReactNode;
   children: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -162,6 +164,19 @@ export function DashboardQuickActionsPanel({
               <Typography color="text.secondary" variant="body2">
                 {description}
               </Typography>
+              {helperContent ? (
+                <Box
+                  sx={{
+                    bgcolor: 'action.hover',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.5,
+                    p: 1.5,
+                  }}
+                >
+                  {helperContent}
+                </Box>
+              ) : null}
               {children}
             </Stack>
           </Collapse>
