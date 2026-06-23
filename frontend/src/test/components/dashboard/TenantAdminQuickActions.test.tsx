@@ -5,6 +5,7 @@ import { getParkingLots } from '@/api/parkingLotsApi';
 import { getSlots } from '@/api/slotsApi';
 import { getUserSummary } from '@/api/usersApi';
 import { TenantAdminQuickActions } from '@/components/dashboard/TenantAdminQuickActions';
+import { useUserRole } from '@/hooks/useUserRole';
 import { renderWithProviders } from '@/test/test-utils';
 
 vi.mock('@/api/parkingLotsApi', () => ({
@@ -42,8 +43,21 @@ function getChipForLabel(label: string) {
   return screen.getByText(label).closest('.MuiChip-root');
 }
 
+const tenantAdminRole = {
+  user: { role: 'TENANT_ADMIN' as const },
+  isTenantAdmin: true,
+  isOperationalAdmin: true,
+  isAdmin: false,
+  isSecurity: false,
+  isUser: false,
+  isSuperAdmin: false,
+  canOperateParkingEvents: true,
+  canViewOperationalPayments: true,
+};
+
 describe('TenantAdminQuickActions onboarding checklist', () => {
   beforeEach(() => {
+    vi.mocked(useUserRole).mockReturnValue(tenantAdminRole);
     vi.mocked(getParkingLots).mockResolvedValue([]);
     vi.mocked(getFloors).mockResolvedValue([]);
     vi.mocked(getSlots).mockResolvedValue([]);
@@ -56,6 +70,37 @@ describe('TenantAdminQuickActions onboarding checklist', () => {
       security: 0,
       users: 0,
     });
+  });
+
+  it('shows disabled outlined chips while onboarding data is loading', () => {
+    vi.mocked(getParkingLots).mockReturnValue(new Promise(() => undefined));
+
+    renderWithProviders(<TenantAdminQuickActions />);
+
+    const parkingLotChip = getChipForLabel('Create a parking lot');
+    expect(parkingLotChip).toHaveClass('MuiChip-outlined');
+    expect(parkingLotChip).toHaveClass('Mui-disabled');
+    expect(screen.queryByText('Complete these steps to start accepting bookings.')).not.toBeInTheDocument();
+  });
+
+  it('does not fetch onboarding data for roles without tenant admin access', () => {
+    vi.mocked(useUserRole).mockReturnValue({
+      user: { role: 'USER' },
+      isTenantAdmin: false,
+      isOperationalAdmin: false,
+      isAdmin: false,
+      isSecurity: false,
+      isUser: true,
+      isSuperAdmin: false,
+      canOperateParkingEvents: false,
+      canViewOperationalPayments: false,
+    });
+
+    const { container } = renderWithProviders(<TenantAdminQuickActions />);
+
+    expect(container).toBeEmptyDOMElement();
+    expect(getParkingLots).not.toHaveBeenCalled();
+    expect(getUserSummary).not.toHaveBeenCalled();
   });
 
   it('marks all steps incomplete for a new tenant with no inventory or team members', async () => {

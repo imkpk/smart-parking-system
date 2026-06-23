@@ -29,21 +29,80 @@ type OnboardingStep = {
 
 function getChipProps(status: OnboardingStepStatus) {
   if (status === 'complete') {
-    return { color: 'primary' as const, variant: 'filled' as const };
+    return {
+      color: 'primary' as const,
+      variant: 'filled' as const,
+      disabled: false,
+      sx: undefined,
+    };
   }
 
-  return { color: 'default' as const, variant: 'outlined' as const };
+  if (status === 'loading') {
+    return {
+      color: 'default' as const,
+      variant: 'outlined' as const,
+      disabled: true,
+      sx: { opacity: 0.65 },
+    };
+  }
+
+  return {
+    color: 'default' as const,
+    variant: 'outlined' as const,
+    disabled: false,
+    sx: undefined,
+  };
+}
+
+function TenantAdminOnboardingChecklist({
+  steps,
+  hint,
+}: {
+  steps: OnboardingStep[];
+  hint: string | null;
+}) {
+  return (
+    <Stack spacing={1.25}>
+      <Typography color="text.primary" variant="body2" fontWeight={600}>
+        Getting started checklist
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {steps.map((step) => {
+          const chipProps = getChipProps(step.status);
+
+          return (
+            <Chip
+              key={step.label}
+              label={step.label}
+              size="small"
+              color={chipProps.color}
+              variant={chipProps.variant}
+              disabled={chipProps.disabled}
+              sx={chipProps.sx}
+            />
+          );
+        })}
+      </Box>
+      {hint ? (
+        <Typography color="text.secondary" variant="caption">
+          {hint}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
 }
 
 export function TenantAdminQuickActions() {
   const navigate = useNavigate();
   const { isTenantAdmin, isOperationalAdmin } = useUserRole();
+  const canManageTenant = isOperationalAdmin || isTenantAdmin;
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [presetRole, setPresetRole] = useState<Role>('USER');
 
   const lotsQuery = useQuery({
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
+    enabled: canManageTenant,
   });
   const lots = lotsQuery.data ?? [];
 
@@ -51,7 +110,7 @@ export function TenantAdminQuickActions() {
     queries: lots.map((lot) => ({
       queryKey: ['parking-lots', lot.id, 'floors'],
       queryFn: () => getFloors(lot.id),
-      enabled: Boolean(lot.id),
+      enabled: canManageTenant && Boolean(lot.id),
     })),
   });
 
@@ -59,13 +118,14 @@ export function TenantAdminQuickActions() {
     queries: lots.map((lot) => ({
       queryKey: ['parking-lots', lot.id, 'slots'],
       queryFn: () => getSlots(lot.id),
-      enabled: Boolean(lot.id),
+      enabled: canManageTenant && Boolean(lot.id),
     })),
   });
 
   const userSummaryQuery = useQuery({
     queryKey: ['users', 'summary'],
     queryFn: getUserSummary,
+    enabled: canManageTenant,
   });
 
   const firstLot = lots[0];
@@ -83,6 +143,7 @@ export function TenantAdminQuickActions() {
     0;
 
   const lotsLoading = lotsQuery.isLoading;
+  // When a tenant has zero lots, floor/slot queries are skipped — show incomplete, not loading.
   const floorsLoading =
     lotsLoading || (lots.length > 0 && floorsQueries.some((query) => query.isLoading));
   const slotsLoading =
@@ -118,7 +179,13 @@ export function TenantAdminQuickActions() {
         iconBgcolor: statusStyles.PENDING.bgcolor,
         disabled: !hasLot,
         disabledReason: 'Create a parking lot first.',
-        onClick: () => navigate(`${getParkingLotWorkspacePath(firstLot!.id, 'floors')}?create=1`),
+        onClick: () => {
+          if (!firstLot) {
+            return;
+          }
+
+          navigate(`${getParkingLotWorkspacePath(firstLot.id, 'floors')}?create=1`);
+        },
       },
       {
         id: 'create-slot',
@@ -130,8 +197,13 @@ export function TenantAdminQuickActions() {
         iconBgcolor: statusStyles.RESERVED.bgcolor,
         disabled: !hasFloor,
         disabledReason: 'Create a floor first.',
-        onClick: () =>
-          navigate(`${getParkingLotWorkspacePath(slotNavigationLot!.id, 'slots')}?create=1`),
+        onClick: () => {
+          if (!slotNavigationLot) {
+            return;
+          }
+
+          navigate(`${getParkingLotWorkspacePath(slotNavigationLot.id, 'slots')}?create=1`);
+        },
       },
       {
         id: 'create-user',
@@ -214,38 +286,17 @@ export function TenantAdminQuickActions() {
     return 'Complete these steps to start accepting bookings.';
   }, [onboardingSteps]);
 
-  if (!isOperationalAdmin && !isTenantAdmin) {
+  if (!canManageTenant) {
     return null;
   }
-
-  const helperContent = (
-    <Stack spacing={1.25}>
-      <Typography color="text.primary" variant="body2" fontWeight={600}>
-        Getting started checklist
-      </Typography>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {onboardingSteps.map((step) => (
-          <Chip
-            key={step.label}
-            label={step.label}
-            size="small"
-            {...getChipProps(step.status)}
-          />
-        ))}
-      </Box>
-      {onboardingHint ? (
-        <Typography color="text.secondary" variant="caption">
-          {onboardingHint}
-        </Typography>
-      ) : null}
-    </Stack>
-  );
 
   return (
     <>
       <DashboardQuickActionsPanel
         description="Set up parking inventory and team access for this property."
-        helperContent={helperContent}
+        helperContent={
+          <TenantAdminOnboardingChecklist hint={onboardingHint} steps={onboardingSteps} />
+        }
         previewActions={actions}
       >
         <DashboardQuickActionGrid actions={actions} />
