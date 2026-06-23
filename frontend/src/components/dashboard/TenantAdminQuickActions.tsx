@@ -5,6 +5,7 @@ import PersonAdd from '@mui/icons-material/PersonAdd';
 import Security from '@mui/icons-material/Security';
 import ViewModule from '@mui/icons-material/ViewModule';
 import { useQuery } from '@tanstack/react-query';
+import { Box, Chip, Stack, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFloors } from '../../api/floorsApi';
@@ -119,10 +120,37 @@ export function TenantAdminQuickActions() {
     [firstLot, hasFloor, hasLot, isOperationalAdmin, isTenantAdmin, navigate],
   );
 
+  const onboardingSteps = [
+    { label: 'Create a parking lot', active: hasLot },
+    { label: 'Add a floor', active: hasFloor },
+    { label: 'Create a slot', active: hasFloor },
+    { label: 'Add team access', active: isOperationalAdmin || isTenantAdmin },
+  ];
+
+  const helperContent = (
+    <Stack spacing={1.25}>
+      <Typography color="text.primary" variant="body2" fontWeight={600}>
+        Getting started checklist
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {onboardingSteps.map((step) => (
+          <Chip
+            key={step.label}
+            color={step.active ? 'primary' : 'default'}
+            label={step.label}
+            size="small"
+            variant={step.active ? 'filled' : 'outlined'}
+          />
+        ))}
+      </Box>
+    </Stack>
+  );
+
   return (
     <>
       <DashboardQuickActionsPanel
         description="Set up parking inventory and team access for this property."
+        helperContent={helperContent}
         previewActions={actions}
       >
         <DashboardQuickActionGrid actions={actions} />

@@ -77,4 +77,17 @@ describe('DashboardQuickActionsPanel mobile layout', () => {
     expect(header).toBeInTheDocument();
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('renders helper content when provided', () => {
+    render(
+      <DashboardQuickActionsPanel
+        helperContent={<div>Getting started checklist</div>}
+        previewActions={previewActions}
+      >
+        <button type="button">Add vehicle</button>
+      </DashboardQuickActionsPanel>,
+    );
+
+    expect(screen.getByText('Getting started checklist')).toBeInTheDocument();
+  });
 });
