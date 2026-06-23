@@ -1,18 +1,24 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { isEmailIdentifier, normalizeIndianPhone } from '../common/phone.util';
 import { resolveUniqueOrganizationSlug } from '../organizations/organization-slug.util';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { MailerService } from '../common/mailer.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './types/jwt-payload.type';
 
 const REGISTER_UNIQUE_MESSAGES = {
@@ -29,6 +35,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -92,8 +100,95 @@ export class AuthService {
     }
   }
 
-  // Future login options (not in MVP): mobile OTP, email OTP, password reset via OTP.
-  // Requires SMS/email provider, OTP expiry, resend limits, and rate limiting.
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const email = forgotPasswordDto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: { email, isActive: true },
+      select: { id: true, email: true },
+    });
+
+    if (!user?.email) {
+      return {
+        message: 'If this email exists, a reset link has been sent.',
+      };
+    }
+
+    const rawToken = randomBytes(32).toString('hex');
+    const hashedToken = await bcrypt.hash(rawToken, 10);
+    const passwordResetExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: hashedToken,
+        passwordResetExpiresAt,
+      },
+    });
+
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Reset your Smart Parking password',
+      text: `Click the link below to reset your password. This link expires in 1 hour.\n\n${frontendUrl}/reset-password?token=${rawToken}`,
+    });
+
+    return {
+      message: 'If this email exists, a reset link has been sent.',
+    };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        passwordResetExpiresAt: { gt: new Date() },
+        passwordResetToken: { not: null },
+      },
+      select: {
+        id: true,
+        passwordResetToken: true,
+      },
+    });
+
+    let matchedUserId: number | null = null;
+
+    for (const candidate of candidates) {
+      if (!candidate.passwordResetToken) {
+        continue;
+      }
+
+      const isMatch = await bcrypt.compare(
+        resetPasswordDto.token,
+        candidate.passwordResetToken,
+      );
+
+      if (isMatch) {
+        matchedUserId = candidate.id;
+        break;
+      }
+    }
+
+    if (!matchedUserId) {
+      throw new BadRequestException('Reset link is invalid or has expired');
+    }
+
+    const passwordHash = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: matchedUserId },
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    return {
+      message: 'Password reset successful. Please log in.',
+    };
+  }
+
   async login(loginDto: LoginDto) {
     const candidates = await this.resolveLoginCandidates(loginDto.email.trim());
 

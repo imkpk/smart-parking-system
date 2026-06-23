@@ -11,8 +11,10 @@ import {
 } from '@prisma/client';
 import { HealthResponseDto } from './app.dto';
 import { AuthResponseDto, UserResponseDto } from './auth/dto/auth-response.dto';
+import { ForgotPasswordDto } from './auth/dto/forgot-password.dto';
 import { LoginDto } from './auth/dto/login.dto';
 import { RegisterDto } from './auth/dto/register.dto';
+import { ResetPasswordDto } from './auth/dto/reset-password.dto';
 import { CreateBookingDto } from './bookings/dto/create-booking.dto';
 import { CreateFloorDto } from './floors/dto/create-floor.dto';
 import { UpdateFloorDto } from './floors/dto/update-floor.dto';
@@ -48,6 +50,10 @@ describe('DTO validation', () => {
     await expectValid(LoginDto, { email: '9876543210', password: 'password123' });
     await expectValid(LoginDto, { email: '+919876543210', password: 'password123' });
     await expectInvalid(LoginDto, { email: 'ab', password: '123' });
+    await expectValid(ForgotPasswordDto, { email: 'user@example.com' });
+    await expectInvalid(ForgotPasswordDto, { email: 'not-an-email' });
+    await expectValid(ResetPasswordDto, { token: 'abc', newPassword: 'password123' });
+    await expectInvalid(ResetPasswordDto, { token: '', newPassword: 'short' });
     await expectValid(RegisterDto, {
       organizationName: 'Sunrise Apartments',
       organizationType: ParkingLotType.APARTMENT,

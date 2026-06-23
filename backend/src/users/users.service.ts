@@ -10,6 +10,7 @@ import { AccessPolicyService } from '../common/access-policy.service';
 import { normalizeIndianPhone } from '../common/phone.util';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsageLimitsService } from '../usage-limits/usage-limits.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SafeUser } from './types/safe-user.type';
 import { UserSummary } from './types/user-summary.type';
@@ -34,6 +35,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessPolicy: AccessPolicyService,
+    private readonly usageLimitsService: UsageLimitsService,
   ) {}
 
   async create(data: Prisma.UserCreateInput): Promise<SafeUser> {
@@ -51,6 +53,7 @@ export class UsersService {
   ): Promise<SafeUser> {
     this.assertCanCreateRole(currentUser.role, dto.role);
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+    await this.usageLimitsService.checkLimit(organizationId, 'users');
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const normalizedPhone = normalizeIndianPhone(dto.phone);

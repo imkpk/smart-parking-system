@@ -9,6 +9,7 @@ import { BookingStatus } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsageLimitsService } from '../usage-limits/usage-limits.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { bookingListInclude, presentBooking, presentBookings } from './booking.presenter';
@@ -29,10 +30,12 @@ export class BookingsService {
     private readonly prisma: PrismaService,
     private readonly accessPolicy: AccessPolicyService,
     private readonly slotLifecycleService: SlotLifecycleService,
+    private readonly usageLimitsService: UsageLimitsService,
   ) {}
 
   async create(currentUser: SafeUser, createBookingDto: CreateBookingDto) {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+    await this.usageLimitsService.checkLimit(organizationId, 'bookingsThisMonth');
 
     try {
       return await this.prisma.$transaction(async (tx) => {

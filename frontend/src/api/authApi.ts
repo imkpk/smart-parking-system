@@ -20,3 +20,13 @@ export async function getCurrentUser() {
   const response = await apiClient.get<User>('/auth/me');
   return response.data;
 }
+
+export async function forgotPassword(email: string) {
+  const response = await apiClient.post<{ message: string }>('/auth/forgot-password', { email });
+  return response.data;
+}
+
+export async function resetPassword(payload: { token: string; newPassword: string }) {
+  const response = await apiClient.post<{ message: string }>('/auth/reset-password', payload);
+  return response.data;
+}

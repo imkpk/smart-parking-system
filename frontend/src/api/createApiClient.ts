@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { dispatchPlanLimitEvent, getPlanLimitDetail } from '../lib/planLimitError';
 import { tokenStorage } from '../lib/tokenStorage';
 
 const UNAUTHORIZED_EVENT = 'smart-parking:unauthorized';
@@ -26,6 +27,12 @@ export function createApiClient(baseURL: string) {
     (error) => {
       if (error.response?.status === 401) {
         window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+      }
+
+      const planLimitDetail = getPlanLimitDetail(error);
+
+      if (planLimitDetail) {
+        dispatchPlanLimitEvent(planLimitDetail);
       }
 
       return Promise.reject(error);

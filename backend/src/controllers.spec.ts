@@ -29,6 +29,8 @@ describe('Controllers', () => {
     const authService = {
       register: jest.fn().mockResolvedValue({ accessToken: 'token' }),
       login: jest.fn().mockResolvedValue({ accessToken: 'token' }),
+      forgotPassword: jest.fn().mockResolvedValue({ message: 'sent' }),
+      resetPassword: jest.fn().mockResolvedValue({ message: 'reset' }),
     };
     const controller = new AuthController(authService as never);
     const registerDto = {
@@ -42,6 +44,12 @@ describe('Controllers', () => {
 
     await expect(controller.register(registerDto)).resolves.toEqual({ accessToken: 'token' });
     await expect(controller.login(loginDto)).resolves.toEqual({ accessToken: 'token' });
+    await expect(controller.forgotPassword({ email: 'user@example.com' })).resolves.toEqual({
+      message: 'sent',
+    });
+    await expect(
+      controller.resetPassword({ token: 'token', newPassword: 'password123' }),
+    ).resolves.toEqual({ message: 'reset' });
     expect(controller.getCurrentUser(normalUser)).toBe(normalUser);
   });
 

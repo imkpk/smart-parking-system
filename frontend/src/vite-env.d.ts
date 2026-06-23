@@ -4,6 +4,7 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;
   readonly VITE_PAYMENT_API_BASE_URL: string;
+  readonly VITE_PAYMENT_SERVICE_URL?: string;
   readonly VITE_RAZORPAY_KEY_ID?: string;
 }
 

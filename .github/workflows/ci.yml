@@ -14,8 +14,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  secrets-scan:
+    name: secrets-scan
+    uses: ./.github/workflows/secrets-scan.yml
+    secrets: inherit
+
   changes:
     name: Detect changes
+    needs: secrets-scan
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}

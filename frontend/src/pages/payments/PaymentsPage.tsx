@@ -47,6 +47,7 @@ import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useReferenceLabels } from '../../hooks/useReferenceLabels';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage } from '../../lib/apiError';
+import { checkPaymentServiceHealth } from '../../lib/paymentHealthCheck';
 import { filterPayments } from '../../lib/searchFilters';
 import {
   buildVerifyRazorpayPaymentRequest,
@@ -134,6 +135,8 @@ export function PaymentsPage() {
   const [detailsPayment, setDetailsPayment] = useState<Payment | null>(null);
   const [failureReason, setFailureReason] = useState('Mock provider declined payment');
   const [payingPaymentId, setPayingPaymentId] = useState<number | null>(null);
+  const [isCheckingPaymentHealth, setIsCheckingPaymentHealth] = useState(false);
+  const isDevEnvironment = import.meta.env.DEV;
 
   const summaryQuery = useQuery({
     queryKey: ['payments', 'summary'],
@@ -222,6 +225,16 @@ export function PaymentsPage() {
   const handlePayNow = useCallback(
     async (payment: Payment) => {
       setPayingPaymentId(payment.id);
+      setIsCheckingPaymentHealth(true);
+
+      const isHealthy = await checkPaymentServiceHealth();
+      setIsCheckingPaymentHealth(false);
+
+      if (!isHealthy) {
+        showError('Payment service is warming up, please try again in a moment');
+        setPayingPaymentId(null);
+        return;
+      }
 
       await openRazorpayCheckout({
         payment,
@@ -313,7 +326,8 @@ export function PaymentsPage() {
                   <Button
                     disabled={
                       payingPaymentId === row.id ||
-                      verifyRazorpayMutation.isPending
+                      verifyRazorpayMutation.isPending ||
+                      isCheckingPaymentHealth
                     }
                     onClick={() => void handlePayNow(row)}
                     size="small"
@@ -325,7 +339,7 @@ export function PaymentsPage() {
             } satisfies GridColDef<Payment>,
           ]
         : []),
-      ...(isAdmin
+      ...(isAdmin && isDevEnvironment
         ? [
             {
               field: 'actions',
@@ -337,6 +351,7 @@ export function PaymentsPage() {
               sortable: false,
               renderCell: ({ row }) => (
                 <Stack direction="row" justifyContent="flex-end" width="100%">
+                  {/* DEV ONLY — never render in production */}
                   <Tooltip title="Mock Success">
                     <span>
                       <IconButton
@@ -348,6 +363,7 @@ export function PaymentsPage() {
                       </IconButton>
                     </span>
                   </Tooltip>
+                  {/* DEV ONLY — never render in production */}
                   <Tooltip title="Mock Failure">
                     <span>
                       <IconButton
@@ -373,6 +389,8 @@ export function PaymentsPage() {
       payNowAccess,
       payingPaymentId,
       verifyRazorpayMutation.isPending,
+      isCheckingPaymentHealth,
+      isDevEnvironment,
       handlePayNow,
     ],
   );
@@ -492,67 +510,73 @@ export function PaymentsPage() {
         technicalRows={detailsPayment ? buildPaymentTechnicalRows(detailsPayment) : []}
       />
 
-      <ConfirmDialog
-        confirmLabel="Mark Success"
-        description={
-          actionTarget
-            ? `Mark payment #${actionTarget.payment.id} as SUCCESS?`
-            : ''
-        }
-        isLoading={mockSuccessMutation.isPending}
-        onClose={() => setActionTarget(null)}
-        onConfirm={() => {
-          if (actionTarget?.type === 'success') {
-            mockSuccessMutation.mutate(actionTarget.payment.id);
-          }
-        }}
-        open={actionTarget?.type === 'success'}
-        title="Mock Payment Success"
-      />
-
-      <Dialog
-        fullWidth
-        maxWidth="xs"
-        onClose={() => setActionTarget(null)}
-        open={actionTarget?.type === 'failure'}
-      >
-        <DialogTitle>Mock Payment Failure</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <Alert severity="warning">
-              This will mark payment #{actionTarget?.payment.id} as FAILED.
-            </Alert>
-            <TextField
-              label="Failure Reason"
-              multiline
-              minRows={3}
-              onChange={(event) => setFailureReason(event.target.value)}
-              required
-              value={failureReason}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button disabled={mockFailureMutation.isPending} onClick={() => setActionTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            color="error"
-            disabled={mockFailureMutation.isPending}
-            onClick={() => {
-              if (actionTarget?.type === 'failure') {
-                mockFailureMutation.mutate({
-                  id: actionTarget.payment.id,
-                  failureReason: failureReason.trim(),
-                });
+      {isDevEnvironment ? (
+        <>
+          {/* DEV ONLY — never render in production */}
+          <ConfirmDialog
+            confirmLabel="Mark Success"
+            description={
+              actionTarget
+                ? `Mark payment #${actionTarget.payment.id} as SUCCESS?`
+                : ''
+            }
+            isLoading={mockSuccessMutation.isPending}
+            onClose={() => setActionTarget(null)}
+            onConfirm={() => {
+              if (actionTarget?.type === 'success') {
+                mockSuccessMutation.mutate(actionTarget.payment.id);
               }
             }}
-            variant="contained"
+            open={actionTarget?.type === 'success'}
+            title="Mock Payment Success"
+          />
+
+          {/* DEV ONLY — never render in production */}
+          <Dialog
+            fullWidth
+            maxWidth="xs"
+            onClose={() => setActionTarget(null)}
+            open={actionTarget?.type === 'failure'}
           >
-            Mark Failed
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle>Mock Payment Failure</DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                <Alert severity="warning">
+                  This will mark payment #{actionTarget?.payment.id} as FAILED.
+                </Alert>
+                <TextField
+                  label="Failure Reason"
+                  multiline
+                  minRows={3}
+                  onChange={(event) => setFailureReason(event.target.value)}
+                  required
+                  value={failureReason}
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button disabled={mockFailureMutation.isPending} onClick={() => setActionTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                color="error"
+                disabled={mockFailureMutation.isPending}
+                onClick={() => {
+                  if (actionTarget?.type === 'failure') {
+                    mockFailureMutation.mutate({
+                      id: actionTarget.payment.id,
+                      failureReason: failureReason.trim(),
+                    });
+                  }
+                }}
+                variant="contained"
+              >
+                Mark Failed
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      ) : null}
 
       <AppSnackbar onClose={closeSnackbar} snackbar={snackbar} />
     </Stack>
