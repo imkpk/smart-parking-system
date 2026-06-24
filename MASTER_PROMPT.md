@@ -4,8 +4,8 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.13.6
-**Last updated:** 2026-06-23  
+**Version:** 1.13.7
+**Last updated:** 2026-06-24  
 **Current branch:** `fix/system-hardening-and-freemium-limits`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
@@ -708,6 +708,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-19 | 1.13.4 | Grok | Phase 5B LOOP 5B-5: SECURITY `/security/messages` + ADMIN `/admin/support` staff inboxes with reply, resolve, 5s polling. PR #105 ✅. |
 | 2026-06-19 | 1.13.5 | Grok | Phase 5B LOOP 5B-6: smoke polish — message empty-state loading guard, shared `conversationDisplay` in user support page, tenant-admin Support Inbox nav test, direct MUI icon imports. Phase 5B Chat MVP complete. PR #106 pending. |
 | 2026-06-23 | 1.13.6 | Grok | PR #123 merged: tenant admin dashboard onboarding checklist driven by parking-lots/floors/slots APIs and `GET /users/summary` (not role permissions); loading-safe chips with a11y labels; role-gated queries; safe slot navigation guards; lazy-loaded RecentActivityTimeline and SlotStatusDonutChart on AdminDashboardPage; unit tests in `TenantAdminQuickActions.test.tsx`. |
+| 2026-06-24 | 1.13.7 | Grok | Production deploy fix: `VITE_API_URL` / `VITE_PAYMENT_SERVICE_URL` in `.env.production`, env-only API clients (no localhost fallback), NestJS CORS allows `https://parking.imkpk.in`, `vercel.json` SPA rewrites confirmed, 30s axios timeout + slow-request warning toast for Render cold starts. |
 
 ---
 
