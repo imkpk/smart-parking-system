@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.13.7
+**Version:** 1.13.8
 **Last updated:** 2026-06-24  
 **Current branch:** `fix/system-hardening-and-freemium-limits`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -656,59 +656,60 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
-| 2026-06-17 | 1.0.0 | Grok + human | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
-| 2026-06-17 | 1.1.0 | Grok + human | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
-| 2026-06-17 | 1.1.1 | Grok + human | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
-| 2026-06-17 | 1.2.0 | Grok + human | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
-| 2026-06-17 | 1.2.1 | Grok | Phase 1a implementation: Organization model, Role expansion, organizationId on tenant tables, migration backfill, prisma seed, service wiring. PR pending. |
-| 2026-06-17 | 1.2.2 | Grok | Added Phase 1a completion report (.grok/reports/phase-1a-organization-schema.md); updated reports README with payment phases 7a–8c and Phase 1a. |
-| 2026-06-17 | 1.2.3 | Grok | PR #41 merged: post-merge docs cleanup (current branch develop, Phase 1a report Floor/Slot note). |
-| 2026-06-18 | 1.3.0 | Grok | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
-| 2026-06-18 | 1.4.0 | Grok | Phase 1b merged (PR #42): tenant scoping, Users API leak fix, enriched parking-events/bookings API (no slots fan-out). Next: Phase 1c tenant onboarding API. |
-| 2026-06-18 | 1.4.2 | Grok | CI path-based jobs on `fix/ci-path-based-jobs`: `dorny/paths-filter` change detection, conditional backend/frontend/payment jobs on PRs, full CI on push, `ci-summary` gate. PR #52 merged. |
-| 2026-06-18 | 1.4.3 | Grok | Created `single-tenant` branch from `main`; added to CI triggers; documented preservation/hotfix policy and ruleset checklist. Never merge `develop` into `single-tenant`. PR #53 merged. |
-| 2026-06-18 | 1.4.4 | Grok | Added E2E/Cypress agent playbook and prompt pack. Future UI/user-flow PRs must update Cypress smoke or document why not. PR #55 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 01: journey registry J1–J14 and hybrid strategy report. PR #56 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. PR #57 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. PR #58 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). PR #59 merged. |
-| 2026-06-18 | 1.4.4 | Grok | E2E 05: release regression policy + PR template UI/E2E checklist. PR #60 merged. |
-| 2026-06-18 | 1.4.5 | Grok | E2E rollout complete — final summary, 8 smoke specs, advisory CI stage. |
-| 2026-06-18 | 1.4.6 | Grok | CI storage hygiene: removed E2E upload-artifact steps, disabled Cypress screenshots in CI, gitignored cypress screenshots/videos. Pruned stale remote/local branches. |
-| 2026-06-18 | 1.4.7 | Grok | Local E2E runner script (`scripts/run-e2e-local.ps1`), Cypress smoke stability fixes (login token seeding, DataGrid/dialog selectors), npm `e2e:local*` scripts. |
+| 2026-06-17 | 1.0.0 | Pratibha Kumar K | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
+| 2026-06-17 | 1.1.0 | Pratibha Kumar K | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
+| 2026-06-17 | 1.1.1 | Pratibha Kumar K | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
+| 2026-06-17 | 1.2.0 | Pratibha Kumar K | PR #36 merged. Phase 0 complete. Added state-of-the-art branch strategy (09-branch-strategy.md), GitHub PR template, SemVer release plan. Phase 1 stacked PR plan ready. |
+| 2026-06-17 | 1.2.1 | Pratibha Kumar K | Phase 1a implementation: Organization model, Role expansion, organizationId on tenant tables, migration backfill, prisma seed, service wiring. PR pending. |
+| 2026-06-17 | 1.2.2 | Pratibha Kumar K | Added Phase 1a completion report (.grok/reports/phase-1a-organization-schema.md); updated reports README with payment phases 7a–8c and Phase 1a. |
+| 2026-06-17 | 1.2.3 | Pratibha Kumar K | PR #41 merged: post-merge docs cleanup (current branch develop, Phase 1a report Floor/Slot note). |
+| 2026-06-18 | 1.3.0 | Pratibha Kumar K | Phase 1b: backend tenant scoping — JWT organizationId, AccessPolicy org helpers, scoped services, cross-tenant tests. PR open. |
+| 2026-06-18 | 1.4.0 | Pratibha Kumar K | Phase 1b merged (PR #42): tenant scoping, Users API leak fix, enriched parking-events/bookings API (no slots fan-out). Next: Phase 1c tenant onboarding API. |
+| 2026-06-18 | 1.4.2 | Pratibha Kumar K | CI path-based jobs on `fix/ci-path-based-jobs`: `dorny/paths-filter` change detection, conditional backend/frontend/payment jobs on PRs, full CI on push, `ci-summary` gate. PR #52 merged. |
+| 2026-06-18 | 1.4.3 | Pratibha Kumar K | Created `single-tenant` branch from `main`; added to CI triggers; documented preservation/hotfix policy and ruleset checklist. Never merge `develop` into `single-tenant`. PR #53 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | Added E2E/Cypress agent playbook and prompt pack. Future UI/user-flow PRs must update Cypress smoke or document why not. PR #55 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | E2E 01: journey registry J1–J14 and hybrid strategy report. PR #56 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | E2E 02: Cypress foundation — J1/J3/J14 smoke, e2e scripts. PR #57 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | E2E 03: Core parking smoke — J4/J5/J6/J8 + API fan-out regression. PR #58 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | E2E 04: Cypress CI smoke stage (advisory e2e-smoke job). PR #59 merged. |
+| 2026-06-18 | 1.4.4 | Pratibha Kumar K | E2E 05: release regression policy + PR template UI/E2E checklist. PR #60 merged. |
+| 2026-06-18 | 1.4.5 | Pratibha Kumar K | E2E rollout complete — final summary, 8 smoke specs, advisory CI stage. |
+| 2026-06-18 | 1.4.6 | Pratibha Kumar K | CI storage hygiene: removed E2E upload-artifact steps, disabled Cypress screenshots in CI, gitignored cypress screenshots/videos. Pruned stale remote/local branches. |
+| 2026-06-18 | 1.4.7 | Pratibha Kumar K | Local E2E runner script (`scripts/run-e2e-local.ps1`), Cypress smoke stability fixes (login token seeding, DataGrid/dialog selectors), npm `e2e:local*` scripts. |
 | 2026-06-18 | 1.4.8 | Codex | LOOP 1A Phase 1a verification: audited Organization schema, tenant columns, default-org seed, migration backfill, and tenant-aware unique constraints. Report added at `.grok/reports/phase-1a-verification.md`. |
 | 2026-06-18 | 1.4.9 | Codex | LOOP 1B Phase 1b verification: audited JWT organization claims, access policy helpers, service-level tenant scoping, cross-tenant tests, dashboard filters, and booking/event display enrichment. Report added at `.grok/reports/phase-1b-verification.md`. |
 | 2026-06-18 | 1.5.0 | Codex | Phase 1c tenant onboarding API: added `POST /organizations/onboard`, transactional org + first TENANT_ADMIN creation, DTO validation, role guards, password hashing, unique constraint handling, and backend tests. |
-| 2026-06-18 | 1.5.1 | Grok | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
-| 2026-06-18 | 1.6.0 | Grok | Phase 1 tenant isolation acceptance: added acceptance tests/report; Phase 1a–1d marked complete. |
-| 2026-06-18 | 1.7.0 | Grok | Phase 2 LOOP 2A: white-label branding contract — API plan, data model, frontend provider contract, acceptance criteria. PR #72. |
-| 2026-06-18 | 1.7.1 | Grok | Phase 2 LOOP 2B: backend tenant branding API — schema fields, public/current/PATCH endpoints, validation, tests. PR #73. |
-| 2026-06-18 | 1.7.2 | Grok | Phase 2 LOOP 2C: TenantBrandingProvider, organizations API client, default branding merge, theme accent overrides. PR #74. |
-| 2026-06-18 | 1.7.3 | Grok | Phase 2 LOOP 2D: branded login page and app shell with tenant slug routes and branded AppLogo. PR #75. |
-| 2026-06-18 | 1.7.4 | Grok | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. PR #76. |
-| 2026-06-18 | 1.8.0 | Grok | Phase 2 complete: white-label acceptance tests/report; branding API, provider, login/shell, settings UI merged. |
-| 2026-06-18 | 1.8.1 | Grok | CI fast PR gates (PR #79): PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. |
-| 2026-06-18 | 1.9.0 | Grok | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
-| 2026-06-18 | 1.9.1 | Grok | Phase 3D dashboard polish: cursor recent-activity API, hero KPI row, slot donut chart, compact lot utilization, activity timeline + Load more. |
-| 2026-06-19 | 1.9.2 | Grok | Phase 3D merged (PR #83). Phase 3E demo polish: KPI icons/helper text, donut center label, tighter chart, activity spacing, demo-seed Hyderabad lot names + E2E artifact cleanup. |
-| 2026-06-19 | 1.9.3 | Grok | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse, 220px expanded width, dashboard spacing polish, view-all outlined buttons, favicon. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
-| 2026-06-19 | 1.10.0 | Grok | Phase 4 LOOP 4A: visual slot map contract — API shape, role rules, logical grid layout, frontend route/component plan, acceptance criteria. Report: `.grok/reports/phase-4-visual-slot-map-contract.md`. |
-| 2026-06-19 | 1.10.1 | Grok | Phase 4 LOOP 4B: visual slot map API — `GET /parking-lots/:id/slot-map`, role-safe occupancy, filters, legend, tests. Report: `.grok/reports/phase-4b-slot-map-api.md`. |
-| 2026-06-19 | 1.10.2 | Grok | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. PR #88 ✅. |
-| 2026-06-19 | 1.11.0 | Grok | Phase 4 complete: visual slot map acceptance — backend/frontend acceptance tests, Cypress J15 smoke, tenant isolation and role-safe occupancy verified. Report: `.grok/reports/phase-4-visual-slot-map-acceptance.md`. PR #89 ✅. |
-| 2026-06-19 | 1.11.1 | Grok | Phase 4E: parking lot management workspace UX — Manage button, shared shell/tabs, visual map CTA, SECURITY read-only tables, compact grid columns. Report: `.grok/reports/phase-4e-parking-lot-management-ux.md`. |
-| 2026-06-19 | 1.11.2 | Grok | Phase 4E regression fix: workspace header horizontal layout, deduplicated visual map CTA (header + tab only), removed aggressive parking lots row click. Report: `.grok/reports/parking-lot-workspace-ux-regressions.md`. |
-| 2026-06-19 | 1.12.0 | Grok | Phase 5A started: mobile security gate — tenant-scoped gate search API, `/security/gate` UI, nav for SECURITY/ADMIN/TENANT_ADMIN. |
-| 2026-06-19 | 1.12.1 | Grok | Phase 5A extension: phone search, multiple-match selection, vehicle activity counts, recent visits UI on gate. PR #99 open. Report: `.grok/reports/phase-5a-gate-phone-search-history.md`. |
-| 2026-06-19 | 1.12.2 | Grok | Phase 5A illustrations + post-#99 gate UI fixes merged via PR #100. |
-| 2026-06-19 | 1.13.0 | Grok | Phase 5B LOOP 5B-1: Conversation + ConversationMessage Prisma schema, migration, REST contract types (`backend/src/conversations/conversation.types.ts`). PR #101 ✅. |
-| 2026-06-19 | 1.13.1 | Grok | Phase 5B LOOP 5B-2: tenant-scoped `/api/conversations` REST API, access rules, presenter, focused service tests. PR #102 ✅ manual smoke passed. |
-| 2026-06-19 | 1.13.2 | Grok | Phase 5B LOOP 5B-3: frontend `conversationsApi`, `conversation` types, React Query hooks with 5s message polling option. PR #103 ✅. |
-| 2026-06-19 | 1.13.3 | Grok | Phase 5B LOOP 5B-4: USER `/support` chat UI — conversation list, security/customer-care starters, thread with 5s polling. PR #104 ✅. |
-| 2026-06-19 | 1.13.4 | Grok | Phase 5B LOOP 5B-5: SECURITY `/security/messages` + ADMIN `/admin/support` staff inboxes with reply, resolve, 5s polling. PR #105 ✅. |
-| 2026-06-19 | 1.13.5 | Grok | Phase 5B LOOP 5B-6: smoke polish — message empty-state loading guard, shared `conversationDisplay` in user support page, tenant-admin Support Inbox nav test, direct MUI icon imports. Phase 5B Chat MVP complete. PR #106 pending. |
-| 2026-06-23 | 1.13.6 | Grok | PR #123 merged: tenant admin dashboard onboarding checklist driven by parking-lots/floors/slots APIs and `GET /users/summary` (not role permissions); loading-safe chips with a11y labels; role-gated queries; safe slot navigation guards; lazy-loaded RecentActivityTimeline and SlotStatusDonutChart on AdminDashboardPage; unit tests in `TenantAdminQuickActions.test.tsx`. |
-| 2026-06-24 | 1.13.7 | Grok | Production deploy fix: `VITE_API_URL` / `VITE_PAYMENT_SERVICE_URL` in `.env.production`, env-only API clients (no localhost fallback), NestJS CORS allows `https://parking.imkpk.in`, `vercel.json` SPA rewrites confirmed, 30s axios timeout + slow-request warning toast for Render cold starts. |
+| 2026-06-18 | 1.5.1 | Pratibha Kumar K | Phase 1d frontend tenant context: AuthProvider exposes organizationId/organization summary; frontend types and route guards support TENANT_ADMIN; backend auth responses enriched with optional organization summary. PR #68 merged. |
+| 2026-06-18 | 1.6.0 | Pratibha Kumar K | Phase 1 tenant isolation acceptance: added acceptance tests/report; Phase 1a–1d marked complete. |
+| 2026-06-18 | 1.7.0 | Pratibha Kumar K | Phase 2 LOOP 2A: white-label branding contract — API plan, data model, frontend provider contract, acceptance criteria. PR #72. |
+| 2026-06-18 | 1.7.1 | Pratibha Kumar K | Phase 2 LOOP 2B: backend tenant branding API — schema fields, public/current/PATCH endpoints, validation, tests. PR #73. |
+| 2026-06-18 | 1.7.2 | Pratibha Kumar K | Phase 2 LOOP 2C: TenantBrandingProvider, organizations API client, default branding merge, theme accent overrides. PR #74. |
+| 2026-06-18 | 1.7.3 | Pratibha Kumar K | Phase 2 LOOP 2D: branded login page and app shell with tenant slug routes and branded AppLogo. PR #75. |
+| 2026-06-18 | 1.7.4 | Pratibha Kumar K | Phase 2 LOOP 2E: tenant branding settings UI at /admin/branding with validation and context refresh. PR #76. |
+| 2026-06-18 | 1.8.0 | Pratibha Kumar K | Phase 2 complete: white-label acceptance tests/report; branding API, provider, login/shell, settings UI merged. |
+| 2026-06-18 | 1.8.1 | Pratibha Kumar K | CI fast PR gates (PR #79): PR runs build+test:run; develop push runs coverage+Cypress. Agent flow: auto-merge, no idle-wait. |
+| 2026-06-18 | 1.9.0 | Pratibha Kumar K | Phase 3 operator dashboard: metrics API (PR #80), dashboard UI (PR #81), acceptance tests/report. |
+| 2026-06-18 | 1.9.1 | Pratibha Kumar K | Phase 3D dashboard polish: cursor recent-activity API, hero KPI row, slot donut chart, compact lot utilization, activity timeline + Load more. |
+| 2026-06-19 | 1.9.2 | Pratibha Kumar K | Phase 3D merged (PR #83). Phase 3E demo polish: KPI icons/helper text, donut center label, tighter chart, activity spacing, demo-seed Hyderabad lot names + E2E artifact cleanup. |
+| 2026-06-19 | 1.9.3 | Pratibha Kumar K | App shell sidebar: collapsed by default on desktop, 2 min inactivity auto-collapse, 220px expanded width, dashboard spacing polish, view-all outlined buttons, favicon. Report: `.grok/reports/app-shell-sidebar-collapse-behavior.md`. |
+| 2026-06-19 | 1.10.0 | Pratibha Kumar K | Phase 4 LOOP 4A: visual slot map contract — API shape, role rules, logical grid layout, frontend route/component plan, acceptance criteria. Report: `.grok/reports/phase-4-visual-slot-map-contract.md`. |
+| 2026-06-19 | 1.10.1 | Pratibha Kumar K | Phase 4 LOOP 4B: visual slot map API — `GET /parking-lots/:id/slot-map`, role-safe occupancy, filters, legend, tests. Report: `.grok/reports/phase-4b-slot-map-api.md`. |
+| 2026-06-19 | 1.10.2 | Pratibha Kumar K | Phase 4 LOOP 4C: visual slot map UI — `/parking-lots/:id/slot-map`, slot grid/cards, legend, detail drawer, lot details entry point. Report: `.grok/reports/phase-4c-visual-slot-map-ui.md`. PR #88 ✅. |
+| 2026-06-19 | 1.11.0 | Pratibha Kumar K | Phase 4 complete: visual slot map acceptance — backend/frontend acceptance tests, Cypress J15 smoke, tenant isolation and role-safe occupancy verified. Report: `.grok/reports/phase-4-visual-slot-map-acceptance.md`. PR #89 ✅. |
+| 2026-06-19 | 1.11.1 | Pratibha Kumar K | Phase 4E: parking lot management workspace UX — Manage button, shared shell/tabs, visual map CTA, SECURITY read-only tables, compact grid columns. Report: `.grok/reports/phase-4e-parking-lot-management-ux.md`. |
+| 2026-06-19 | 1.11.2 | Pratibha Kumar K | Phase 4E regression fix: workspace header horizontal layout, deduplicated visual map CTA (header + tab only), removed aggressive parking lots row click. Report: `.grok/reports/parking-lot-workspace-ux-regressions.md`. |
+| 2026-06-19 | 1.12.0 | Pratibha Kumar K | Phase 5A started: mobile security gate — tenant-scoped gate search API, `/security/gate` UI, nav for SECURITY/ADMIN/TENANT_ADMIN. |
+| 2026-06-19 | 1.12.1 | Pratibha Kumar K | Phase 5A extension: phone search, multiple-match selection, vehicle activity counts, recent visits UI on gate. PR #99 open. Report: `.grok/reports/phase-5a-gate-phone-search-history.md`. |
+| 2026-06-19 | 1.12.2 | Pratibha Kumar K | Phase 5A illustrations + post-#99 gate UI fixes merged via PR #100. |
+| 2026-06-19 | 1.13.0 | Pratibha Kumar K | Phase 5B LOOP 5B-1: Conversation + ConversationMessage Prisma schema, migration, REST contract types (`backend/src/conversations/conversation.types.ts`). PR #101 ✅. |
+| 2026-06-19 | 1.13.1 | Pratibha Kumar K | Phase 5B LOOP 5B-2: tenant-scoped `/api/conversations` REST API, access rules, presenter, focused service tests. PR #102 ✅ manual smoke passed. |
+| 2026-06-19 | 1.13.2 | Pratibha Kumar K | Phase 5B LOOP 5B-3: frontend `conversationsApi`, `conversation` types, React Query hooks with 5s message polling option. PR #103 ✅. |
+| 2026-06-19 | 1.13.3 | Pratibha Kumar K | Phase 5B LOOP 5B-4: USER `/support` chat UI — conversation list, security/customer-care starters, thread with 5s polling. PR #104 ✅. |
+| 2026-06-19 | 1.13.4 | Pratibha Kumar K | Phase 5B LOOP 5B-5: SECURITY `/security/messages` + ADMIN `/admin/support` staff inboxes with reply, resolve, 5s polling. PR #105 ✅. |
+| 2026-06-19 | 1.13.5 | Pratibha Kumar K | Phase 5B LOOP 5B-6: smoke polish — message empty-state loading guard, shared `conversationDisplay` in user support page, tenant-admin Support Inbox nav test, direct MUI icon imports. Phase 5B Chat MVP complete. PR #106 pending. |
+| 2026-06-23 | 1.13.6 | Pratibha Kumar K | PR #123 merged: tenant admin dashboard onboarding checklist driven by parking-lots/floors/slots APIs and `GET /users/summary` (not role permissions); loading-safe chips with a11y labels; role-gated queries; safe slot navigation guards; lazy-loaded RecentActivityTimeline and SlotStatusDonutChart on AdminDashboardPage; unit tests in `TenantAdminQuickActions.test.tsx`. |
+| 2026-06-24 | 1.13.7 | Pratibha Kumar K | Production deploy fix: `VITE_API_URL` / `VITE_PAYMENT_SERVICE_URL` in `.env.production`, env-only API clients (no localhost fallback), NestJS CORS allows `https://parking.imkpk.in`, `vercel.json` SPA rewrites confirmed, 30s axios timeout + slow-request warning toast for Render cold starts. |
+| 2026-06-24 | 1.13.8 | Pratibha Kumar K | Neon P3009 fix: split `20260623183000_add_plan_free_and_password_reset` into two migrations (PostgreSQL enum `FREE` must commit before default use); `migrate resolve --rolled-back` + `migrate deploy` on production; added `20260623183100_add_password_reset_and_plan_default`. Changelog authors normalized to Pratibha Kumar K. |
 
 ---
 
