@@ -6,7 +6,7 @@ This service is intentionally separate from the existing NestJS backend. It owns
 
 ## Tech Stack
 
-- Java 21
+- Java 25
 - Spring Boot 3
 - Maven
 - PostgreSQL (Neon hosted / local Postgres)
