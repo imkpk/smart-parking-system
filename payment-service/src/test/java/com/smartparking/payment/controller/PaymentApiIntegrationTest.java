@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import com.smartparking.payment.PaymentServiceApplication;
 import com.smartparking.payment.dto.InitiatePaymentRequest;
 import com.smartparking.payment.dto.MockFailureRequest;
 import com.smartparking.payment.dto.VerifyPaymentRequest;
@@ -34,7 +35,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(classes = PaymentServiceApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class PaymentApiIntegrationTest {
