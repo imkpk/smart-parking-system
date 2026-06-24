@@ -1,4 +1,5 @@
 import { createApiClient } from './createApiClient';
+import { getPaymentApiBaseUrl } from '../lib/apiEnv';
 import {
   Payment,
   PaymentApiResponse,
@@ -8,9 +9,7 @@ import {
 
 export type { VerifyRazorpayPaymentRequest };
 
-export const paymentApiClient = createApiClient(
-  import.meta.env.VITE_PAYMENT_API_BASE_URL ?? 'http://localhost:8081/api',
-);
+export const paymentApiClient = createApiClient(getPaymentApiBaseUrl());
 
 function unwrap<T>(response: { data: PaymentApiResponse<T> }) {
   return response.data.data;

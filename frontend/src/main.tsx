@@ -8,6 +8,7 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './providers/AuthProvider';
 import { PlanLimitProvider } from './providers/PlanLimitProvider';
+import { SlowRequestProvider } from './providers/SlowRequestProvider';
 import { TenantBrandingProvider } from './providers/TenantBrandingProvider';
 import { ThemeModeProvider } from './providers/ThemeModeProvider';
 import { router } from './router';
@@ -27,9 +28,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ThemeModeProvider>
         <AuthProvider>
           <PlanLimitProvider>
-            <TenantBrandingProvider>
-              <RouterProvider router={router} />
-            </TenantBrandingProvider>
+            <SlowRequestProvider>
+              <TenantBrandingProvider>
+                <RouterProvider router={router} />
+              </TenantBrandingProvider>
+            </SlowRequestProvider>
           </PlanLimitProvider>
         </AuthProvider>
       </ThemeModeProvider>
