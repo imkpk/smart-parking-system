@@ -294,9 +294,9 @@ export function TenantAdminQuickActions() {
     <>
       <DashboardQuickActionsPanel
         description="Set up parking inventory and team access for this property."
-        helperContent={
-          <TenantAdminOnboardingChecklist hint={onboardingHint} steps={onboardingSteps} />
-        }
+        // helperContent={
+        //   <TenantAdminOnboardingChecklist hint={onboardingHint} steps={onboardingSteps} />
+        // }
         previewActions={actions}
       >
         <DashboardQuickActionGrid actions={actions} />
