@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getFloors } from '@/api/floorsApi';
 import { getParkingLots } from '@/api/parkingLotsApi';
 import { getSlots } from '@/api/slotsApi';
+import { getUserSummary } from '@/api/usersApi';
 import { TenantAdminQuickActions } from '@/components/dashboard/TenantAdminQuickActions';
 import { useUserRole } from '@/hooks/useUserRole';
 import { renderWithProviders } from '@/test/test-utils';
@@ -67,6 +68,15 @@ describe('TenantAdminQuickActions', () => {
     vi.mocked(getParkingLots).mockResolvedValue([]);
     vi.mocked(getFloors).mockResolvedValue([]);
     vi.mocked(getSlots).mockResolvedValue([]);
+    vi.mocked(getUserSummary).mockResolvedValue({
+      totalUsers: 1,
+      activeUsers: 1,
+      inactiveUsers: 0,
+      tenantAdmins: 1,
+      admins: 0,
+      security: 0,
+      users: 0,
+    });
   });
 
   it('does not render for roles without tenant admin access', () => {
