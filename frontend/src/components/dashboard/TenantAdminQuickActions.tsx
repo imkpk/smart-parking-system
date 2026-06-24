@@ -92,9 +92,6 @@ function TenantAdminOnboardingChecklist({
   );
 }
 
-// Hidden for now — checklist chips were taking too much panel space. Re-enable via helperContent when needed.
-const SHOW_ONBOARDING_CHECKLIST = false;
-
 export function TenantAdminQuickActions() {
   const navigate = useNavigate();
   const { isTenantAdmin, isOperationalAdmin } = useUserRole();
@@ -297,11 +294,9 @@ export function TenantAdminQuickActions() {
     <>
       <DashboardQuickActionsPanel
         description="Set up parking inventory and team access for this property."
-        helperContent={
-          SHOW_ONBOARDING_CHECKLIST ? (
-            <TenantAdminOnboardingChecklist hint={onboardingHint} steps={onboardingSteps} />
-          ) : undefined
-        }
+        // helperContent={
+        //   <TenantAdminOnboardingChecklist hint={onboardingHint} steps={onboardingSteps} />
+        // }
         previewActions={actions}
       >
         <DashboardQuickActionGrid actions={actions} />
