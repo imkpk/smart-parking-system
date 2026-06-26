@@ -45,6 +45,11 @@ import { ParkingLotWorkspaceShell } from '../../components/parking-lots/ParkingL
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { useUserRole } from '../../hooks/useUserRole';
+import {
+  PARKING_LOT_QUERY_STALE_MS,
+  parkingLotWorkspaceNeedsFloors,
+  parkingLotWorkspaceNeedsSlots,
+} from '../../lib/parkingLotQueryOptions';
 import { resolveParkingLotWorkspaceTab } from '../../lib/parkingLotWorkspace';
 import {
   ParkingLotPayload,
@@ -149,6 +154,8 @@ export function ParkingLotDetailsPage() {
   const { isOperationalAdmin, isTenantAdmin } = useUserRole();
   const canManageLot = isOperationalAdmin || isTenantAdmin;
   const activeTab = resolveParkingLotWorkspaceTab(location.pathname, searchParams.get('tab'));
+  const fetchFloors = parkingLotWorkspaceNeedsFloors(activeTab);
+  const fetchSlots = parkingLotWorkspaceNeedsSlots(activeTab);
   const [settingsForm, setSettingsForm] = useState<ParkingLotPayload | null>(null);
 
   const [floorFormOpen, setFloorFormOpen] = useState(false);
@@ -182,6 +189,7 @@ export function ParkingLotDetailsPage() {
     queryKey: ['parking-lots', parkingLotId],
     queryFn: () => getParkingLot(parkingLotId),
     enabled: Number.isFinite(parkingLotId),
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
 
   useEffect(() => {
@@ -225,12 +233,14 @@ export function ParkingLotDetailsPage() {
   const floorsQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId, 'floors'],
     queryFn: () => getFloors(parkingLotId),
-    enabled: Number.isFinite(parkingLotId),
+    enabled: Number.isFinite(parkingLotId) && fetchFloors,
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
   const slotsQuery = useQuery({
     queryKey: ['parking-lots', parkingLotId, 'slots'],
     queryFn: () => getSlots(parkingLotId),
-    enabled: Number.isFinite(parkingLotId),
+    enabled: Number.isFinite(parkingLotId) && fetchSlots,
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
 
   const floors = floorsQuery.data ?? [];
@@ -544,8 +554,14 @@ export function ParkingLotDetailsPage() {
     setSelectedSlotIds((current) => Array.from(new Set([...current, ...filteredSlotIds])));
   };
 
-  const firstError = parkingLotQuery.error ?? floorsQuery.error ?? slotsQuery.error;
-  const isLoading = parkingLotQuery.isLoading || floorsQuery.isLoading || slotsQuery.isLoading;
+  const firstError =
+    parkingLotQuery.error ??
+    (fetchFloors ? floorsQuery.error : null) ??
+    (fetchSlots ? slotsQuery.error : null);
+  const isLoading =
+    (parkingLotQuery.isPending && !parkingLotQuery.data) ||
+    (fetchFloors && floorsQuery.isPending && !floorsQuery.data) ||
+    (fetchSlots && slotsQuery.isPending && !slotsQuery.data);
 
   return (
     <Stack spacing={3}>
