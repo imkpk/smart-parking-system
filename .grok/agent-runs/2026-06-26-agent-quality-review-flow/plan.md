@@ -14,6 +14,7 @@
 | 1 | Orchestration summary | ① |
 | 2 | Create `docs-agent-quality-review-flow.md` prompt | ① |
 | 3 | Create agent-run folder | ① |
+| 4 | Create agent-run task files | ① |
 | 5 | Branch `docs/agent-quality-review-flow` from develop | ① |
 | 6 | Cherry-pick ROLES + QUALITY_REVIEW commits; add prompt/run/report/MASTER_PROMPT | ① |
 | 13 | Role ⑤ review (QUALITY_REVIEW.md self-check) | ⑤ |
