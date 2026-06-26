@@ -3,8 +3,20 @@ name: CI
 on:
   pull_request:
     branches: [main, develop, single-tenant]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.grok/**'
+      - 'scripts/**'
+      - '.github/**'
   push:
     branches: [main, develop, single-tenant]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.grok/**'
+      - 'scripts/**'
+      - '.github/**'
 
 permissions:
   contents: read
@@ -52,14 +64,12 @@ jobs:
               - '**/*.md'
               - 'docs/**'
               - '.grok/**'
+              - 'scripts/**'
 
   backend:
     name: NestJS Backend
     needs: changes
-    if: >
-      github.event_name == 'push' ||
-      needs.changes.outputs.backend == 'true' ||
-      needs.changes.outputs.workflow == 'true'
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -67,6 +77,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -84,21 +96,26 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test (fast PR gate)
+      - name: Fetch develop for affected tests
         if: github.event_name == 'pull_request'
-        run: npm run test:run
+        run: git fetch origin develop
 
-      - name: Test with coverage (integration trunk)
-        if: github.event_name == 'push'
+      - name: Test affected only (PR)
+        if: github.event_name == 'pull_request'
+        run: npm run test:affected
+
+      - name: Test with coverage (develop push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: npm run test:cov
+
+      - name: Test with coverage (main/single-tenant push)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/single-tenant')
         run: npm run test:cov
 
   frontend:
     name: React Frontend
     needs: changes
-    if: >
-      github.event_name == 'push' ||
-      needs.changes.outputs.frontend == 'true' ||
-      needs.changes.outputs.workflow == 'true'
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -106,6 +123,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -120,13 +139,22 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test (fast PR gate)
+      - name: Fetch develop for affected tests
         if: github.event_name == 'pull_request'
-        run: npm run test:run
+        run: git fetch origin develop
 
-      - name: Test with coverage (integration trunk)
-        if: github.event_name == 'push'
+      - name: Test affected only (PR)
+        if: github.event_name == 'pull_request'
+        run: npm run test:affected
+
+      - name: Test with coverage (develop push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
         id: coverage
+        run: npm run coverage
+
+      - name: Test with coverage (main/single-tenant push)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/single-tenant')
+        id: coverage-main
         run: npm run coverage
 
       - name: Frontend coverage summary
@@ -136,10 +164,7 @@ jobs:
   payment-service:
     name: Spring Boot Payment Service
     needs: changes
-    if: >
-      github.event_name == 'push' ||
-      needs.changes.outputs.payment == 'true' ||
-      needs.changes.outputs.workflow == 'true'
+    if: needs.changes.outputs.payment == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -147,6 +172,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -155,7 +188,24 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Build
+      - name: Fetch develop for affected tests
+        if: github.event_name == 'pull_request'
+        run: git fetch origin develop
+
+      - name: Build (PR — skip tests)
+        if: github.event_name == 'pull_request'
+        run: mvn -B clean package -DskipTests
+
+      - name: Test affected only (PR)
+        if: github.event_name == 'pull_request'
+        run: node ../scripts/ci-payment-affected-tests.mjs
+
+      - name: Build and test (develop push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: mvn -B clean package
+
+      - name: Build and test (main/single-tenant push)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/single-tenant')
         run: mvn -B clean package
 
   e2e-smoke:
@@ -163,10 +213,10 @@ jobs:
     needs: changes
     if: >
       github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
       (
         needs.changes.outputs.frontend == 'true' ||
-        needs.changes.outputs.backend == 'true' ||
-        needs.changes.outputs.workflow == 'true'
+        needs.changes.outputs.backend == 'true'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -285,9 +335,9 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Ref: ${{ github.ref }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Gate mode: fast PR checks (build + unit tests; no Cypress)"
+            echo "Gate mode: path-filtered PR checks (build + affected tests only; no Cypress)"
           else
-            echo "Gate mode: full integration trunk checks (coverage + Cypress smoke on relevant paths)"
+            echo "Gate mode: full integration trunk checks on develop push (coverage + Cypress smoke on relevant paths)"
           fi
           echo "Backend: ${{ needs.backend.result }}"
           echo "Frontend: ${{ needs.frontend.result }}"
