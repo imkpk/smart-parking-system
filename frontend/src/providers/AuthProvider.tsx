@@ -9,6 +9,9 @@ import {
   useState,
 } from 'react';
 import { getCurrentUser, login, register } from '../api/authApi';
+import { usePathname } from '../hooks/usePathname';
+import { QUERY_META_SUPPRESS_CONSOLE_ERROR } from '../lib/createAppQueryClient';
+import { isPublicAppPath } from '../lib/publicRoutes';
 import { tokenStorage } from '../lib/tokenStorage';
 import {
   AuthResponse,
@@ -34,12 +37,18 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const [token, setToken] = useState(() => tokenStorage.get());
+  const shouldValidateSession = Boolean(token) && !isPublicAppPath(pathname);
 
   const currentUserQuery = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: getCurrentUser,
-    enabled: Boolean(token),
+    enabled: shouldValidateSession,
+    retry: false,
+    meta: {
+      [QUERY_META_SUPPRESS_CONSOLE_ERROR]: true,
+    },
   });
 
   const persistAuth = useCallback(

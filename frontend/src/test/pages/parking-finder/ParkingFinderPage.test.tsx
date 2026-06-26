@@ -1,7 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPublicParkingFinderResults } from '@/api/publicParkingFinderApi';
 import { ParkingFinderPage } from '@/pages/parking-finder/ParkingFinderPage';
+import { spyConsoleErrors } from '@/test/consoleAssertions';
 import { renderWithProviders } from '@/test/test-utils';
 
 vi.mock('@/api/publicParkingFinderApi', () => ({
@@ -9,8 +10,16 @@ vi.mock('@/api/publicParkingFinderApi', () => ({
 }));
 
 describe('ParkingFinderPage', () => {
+  let consoleErrors = spyConsoleErrors();
+
   beforeEach(() => {
+    consoleErrors.restore();
+    consoleErrors = spyConsoleErrors();
     vi.mocked(getPublicParkingFinderResults).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    consoleErrors.restore();
   });
 
   it('renders public finder without auth', async () => {
@@ -23,6 +32,8 @@ describe('ParkingFinderPage', () => {
     await waitFor(() => {
       expect(getPublicParkingFinderResults).toHaveBeenCalledTimes(1);
     });
+
+    consoleErrors.expectNone();
   });
 
   it('renders loading state', () => {
@@ -80,5 +91,7 @@ describe('ParkingFinderPage', () => {
     expect(
       await screen.findByText(/could not load parking lots/i),
     ).toBeInTheDocument();
+
+    consoleErrors.expectNone();
   });
 });
