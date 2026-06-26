@@ -1,5 +1,7 @@
 # Agent Instructions
 
+**Any AI tool (Codex, Claude, Cursor, Grok, Copilot, …):** paste [`.grok/prompts/ai-tool-bootstrap.md`](./.grok/prompts/ai-tool-bootstrap.md) at session start — see [`docs/agents/AI-TOOL-BOOTSTRAP.md`](./docs/agents/AI-TOOL-BOOTSTRAP.md).
+
 **Read [`MASTER_PROMPT.md`](./MASTER_PROMPT.md) first — it is the centralized prompt for this project.**
 
 That file overrides generic tool suggestions and contains:
