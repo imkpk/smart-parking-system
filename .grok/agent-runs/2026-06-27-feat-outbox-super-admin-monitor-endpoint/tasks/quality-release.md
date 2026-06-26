@@ -1,6 +1,6 @@
 # Role ⑤ — Quality, Architecture & Release
 
-**PR:** TBD (`feat/outbox-super-admin-monitor-endpoint` → `develop`)  
+**PR:** [#151](https://github.com/imkpk/smart-parking-system/pull/151) (`feat/outbox-super-admin-monitor-endpoint` → `develop`)  
 **Prompt:** Inline overnight loop prompt
 
 ## Verdict

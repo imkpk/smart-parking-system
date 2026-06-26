@@ -36,7 +36,7 @@ Inline overnight loop prompt from user.
 
 | PR | Title | Status |
 |----|-------|--------|
-| TBD | feat(outbox): add super-admin event monitor endpoint | ⏳ In Progress |
+| [#151](https://github.com/imkpk/smart-parking-system/pull/151) | feat(outbox): add super-admin event monitor endpoint | ⏳ In Progress |
 
 ## Current status
 

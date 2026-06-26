@@ -1,7 +1,8 @@
 # Outbox Super Admin Monitor Endpoint
 
-Status: PR pending
+Status: PR #151
 Branch: `feat/outbox-super-admin-monitor-endpoint`
+PR: https://github.com/imkpk/smart-parking-system/pull/151
 Date: 2026-06-27
 
 ## Summary
