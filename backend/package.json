@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Smart Parking backend API",
-  "author": "Pratibha Kumar K",
+  "author": "Pratibha Kumar K <imkpk@live.in> (+91 9492925536)",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "start": "nest start",
