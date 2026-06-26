@@ -40,6 +40,7 @@ describe('Check-in dashboard flow acceptance', () => {
       accessPolicy,
       { initiatePayment: jest.fn() } as never,
       slotLifecycleService,
+      { publishEventInTransaction: jest.fn() } as never,
     );
   };
 

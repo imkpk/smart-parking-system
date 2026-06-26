@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import {
   BookingStatus,
+  OutboxEventType,
   ParkingEventStatus,
   Prisma,
   SlotStatus,
 } from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
+import { EventPublisherService } from '../events/event-publisher.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -35,6 +37,7 @@ export class ParkingEventsService {
     private readonly accessPolicy: AccessPolicyService,
     private readonly paymentClientService: PaymentClientService,
     private readonly slotLifecycleService: SlotLifecycleService,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
   async checkIn(checkInDto: CheckInDto, currentUser: SafeUser) {
@@ -119,6 +122,8 @@ export class ParkingEventsService {
             include: parkingEventListInclude,
           });
 
+          await this.publishCheckedInEvent(tx, reactivatedEvent);
+
           return presentParkingEvent(reactivatedEvent);
         }
 
@@ -142,6 +147,8 @@ export class ParkingEventsService {
           },
           include: parkingEventListInclude,
         });
+
+        await this.publishCheckedInEvent(tx, createdEvent);
 
         return presentParkingEvent(createdEvent);
       });
@@ -226,6 +233,8 @@ export class ParkingEventsService {
       });
 
       await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
+
+      await this.publishCheckedOutEvent(tx, completedEvent, checkOutTime);
 
       return completedEvent;
     });
@@ -360,5 +369,63 @@ export class ParkingEventsService {
 
     const additionalHours = Math.ceil((durationMinutes - 60) / 60);
     return 50 + additionalHours * 30;
+  }
+
+  private async publishCheckedInEvent(
+    tx: Prisma.TransactionClient,
+    parkingEvent: {
+      id: number;
+      organizationId: number;
+      bookingId: number;
+      parkingLotId: number;
+      slotId: number;
+      vehicleId: number;
+      checkInTime: Date;
+    },
+  ) {
+    await this.eventPublisher.publishEventInTransaction(tx, {
+      eventType: OutboxEventType.PARKING_CHECKED_IN,
+      organizationId: parkingEvent.organizationId,
+      aggregateType: 'ParkingEvent',
+      aggregateId: String(parkingEvent.id),
+      payload: {
+        organizationId: parkingEvent.organizationId,
+        parkingEventId: parkingEvent.id,
+        bookingId: parkingEvent.bookingId,
+        parkingLotId: parkingEvent.parkingLotId,
+        slotId: parkingEvent.slotId,
+        vehicleId: parkingEvent.vehicleId,
+        checkedInAt: parkingEvent.checkInTime.toISOString(),
+      },
+    });
+  }
+
+  private async publishCheckedOutEvent(
+    tx: Prisma.TransactionClient,
+    parkingEvent: {
+      id: number;
+      organizationId: number;
+      bookingId: number;
+      parkingLotId: number;
+      slotId: number;
+      vehicleId: number;
+    },
+    checkedOutAt: Date,
+  ) {
+    await this.eventPublisher.publishEventInTransaction(tx, {
+      eventType: OutboxEventType.PARKING_CHECKED_OUT,
+      organizationId: parkingEvent.organizationId,
+      aggregateType: 'ParkingEvent',
+      aggregateId: String(parkingEvent.id),
+      payload: {
+        organizationId: parkingEvent.organizationId,
+        parkingEventId: parkingEvent.id,
+        bookingId: parkingEvent.bookingId,
+        parkingLotId: parkingEvent.parkingLotId,
+        slotId: parkingEvent.slotId,
+        vehicleId: parkingEvent.vehicleId,
+        checkedOutAt: checkedOutAt.toISOString(),
+      },
+    });
   }
 }
