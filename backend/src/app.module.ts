@@ -14,6 +14,7 @@ import { FloorsModule } from './floors/floors.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
+import { PublicParkingFinderModule } from './public-parking-finder/public-parking-finder.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SecurityModule } from './security/security.module';
 import { SlotsModule } from './slots/slots.module';
@@ -34,6 +35,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     UsersModule,
     VehiclesModule,
     ParkingLotsModule,
+    PublicParkingFinderModule,
     FloorsModule,
     SlotsModule,
     AssignmentsModule,

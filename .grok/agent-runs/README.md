@@ -53,4 +53,5 @@ Example: `2026-06-26-docs-agent-run-infrastructure`
 |------|--------|-------|-------|-----|--------|
 | 2026-06-26 | [agent-quality-review-flow](./2026-06-26-agent-quality-review-flow/) | docs: QUALITY_REVIEW gate + Role ⑤ | ①⑤ | [#133](https://github.com/imkpk/smart-parking-system/pull/133) | ✅ Merged |
 | 2026-06-26 | [agent-run-infrastructure](./2026-06-26-agent-run-infrastructure/) | docs: reusable agent-run scaffolding | ①⑤ | [#134](https://github.com/imkpk/smart-parking-system/pull/134) | ✅ Merged |
-| 2026-06-26 | [dynamic-agent-scaling](./2026-06-26-dynamic-agent-scaling/) | docs: dynamic agent registry ①–⑫ + CI activation summary | ①⑦⑩⑤ | [#139](https://github.com/imkpk/smart-parking-system/pull/139) | ⏳ In Progress |
+| 2026-06-26 | [dynamic-agent-scaling](./2026-06-26-dynamic-agent-scaling/) | docs: dynamic agent registry ①–⑫ + CI activation summary | ①⑦⑩⑤ | [#139](https://github.com/imkpk/smart-parking-system/pull/139) | ✅ Merged |
+| 2026-06-26 | [parking-finder-foundation](./2026-06-26-parking-finder-foundation/) | feat: public parking finder foundation | ①⑥②③⑧⑨⑪⑤ | TBD | ⏳ In Progress |

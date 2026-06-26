@@ -38,6 +38,12 @@ const mockParkingLot: ParkingLot = {
   city: 'Bengaluru',
   state: 'Karnataka',
   pincode: '560001',
+  visibility: 'PRIVATE',
+  latitude: null,
+  longitude: null,
+  baseHourlyRate: null,
+  currency: 'INR',
+  openingHours: null,
   isActive: true,
   createdAt: '2026-06-18T00:00:00.000Z',
   updatedAt: '2026-06-18T00:00:00.000Z',
@@ -206,6 +212,18 @@ describe('ParkingLotsPage', () => {
     });
 
     expect(await screen.findByText('Parking lot updated.')).toBeInTheDocument();
+  });
+
+  it('shows parking finder fields in create form', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderWithProviders(<ParkingLotsPage />);
+    await screen.findByText('Main Lot');
+
+    await user.click(screen.getByRole('button', { name: /create parking lot/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /create parking lot/i });
+    expect(within(dialog).getByLabelText(/visibility/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/only public lots appear in parking finder/i)).toBeInTheDocument();
   });
 
   it('deletes a parking lot after confirmation', async () => {
