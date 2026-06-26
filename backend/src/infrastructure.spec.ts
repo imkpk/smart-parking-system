@@ -17,6 +17,7 @@ import { ROLES_KEY, Roles } from './common/decorators/roles.decorator';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EventsModule } from './events/events.module';
 import { DashboardService } from './dashboard/dashboard.service';
 import { FloorsModule } from './floors/floors.module';
 import { ParkingEventsModule } from './parking-events/parking-events.module';
@@ -50,6 +51,7 @@ describe('Infrastructure', () => {
     expect(AuthModule).toBeDefined();
     expect(BookingsModule).toBeDefined();
     expect(DashboardModule).toBeDefined();
+    expect(EventsModule).toBeDefined();
     expect(FloorsModule).toBeDefined();
     expect(OrganizationsModule).toBeDefined();
     expect(ParkingEventsModule).toBeDefined();
