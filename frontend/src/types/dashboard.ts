@@ -11,6 +11,15 @@ export interface AdminSummary {
   completedParkingEvents: number;
 }
 
+export interface DashboardOnboardingStatus {
+  hasLot: boolean;
+  hasFloor: boolean;
+  hasSlot: boolean;
+  hasTeamAccess: boolean;
+  firstLotId: number | null;
+  firstLotWithFloorsId: number | null;
+}
+
 export interface SlotStatusSummary {
   availableSlots: number;
   occupiedSlots: number;

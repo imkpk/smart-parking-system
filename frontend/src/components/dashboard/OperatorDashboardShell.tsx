@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { getOperatorMetrics } from '../../api/dashboardApi';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { DASHBOARD_QUERY_STALE_MS } from '../../lib/dashboardQueryOptions';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
 import { OperatorDashboardMetrics } from '../../types/operatorDashboard';
 import { PageHeader } from '../common/PageHeader';
@@ -27,6 +28,7 @@ export function OperatorDashboardShell({
   const metricsQuery = useQuery({
     queryKey: ['dashboard', 'operator-metrics'],
     queryFn: getOperatorMetrics,
+    staleTime: DASHBOARD_QUERY_STALE_MS,
   });
 
   const metrics = metricsQuery.data;

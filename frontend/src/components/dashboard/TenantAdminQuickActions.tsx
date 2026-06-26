@@ -4,15 +4,13 @@ import LocalParking from '@mui/icons-material/LocalParking';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Security from '@mui/icons-material/Security';
 import ViewModule from '@mui/icons-material/ViewModule';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFloors } from '../../api/floorsApi';
-import { getParkingLots } from '../../api/parkingLotsApi';
-import { getSlots } from '../../api/slotsApi';
-import { getUserSummary } from '../../api/usersApi';
+import { getOnboardingStatus } from '../../api/dashboardApi';
 import { useUserRole } from '../../hooks/useUserRole';
+import { DASHBOARD_QUERY_STALE_MS } from '../../lib/dashboardQueryOptions';
 import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
 import { statusStyles } from '../../lib/statusStyles';
 import { Role } from '../../types/auth';
@@ -99,63 +97,34 @@ export function TenantAdminQuickActions() {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [presetRole, setPresetRole] = useState<Role>('USER');
 
-  const lotsQuery = useQuery({
-    queryKey: ['parking-lots'],
-    queryFn: getParkingLots,
+  const onboardingQuery = useQuery({
+    queryKey: ['dashboard', 'onboarding-status'],
+    queryFn: getOnboardingStatus,
     enabled: canManageTenant,
-  });
-  const lots = lotsQuery.data ?? [];
-
-  const floorsQueries = useQueries({
-    queries: lots.map((lot) => ({
-      queryKey: ['parking-lots', lot.id, 'floors'],
-      queryFn: () => getFloors(lot.id),
-      enabled: canManageTenant && Boolean(lot.id),
-    })),
+    staleTime: DASHBOARD_QUERY_STALE_MS,
   });
 
-  const slotsQueries = useQueries({
-    queries: lots.map((lot) => ({
-      queryKey: ['parking-lots', lot.id, 'slots'],
-      queryFn: () => getSlots(lot.id),
-      enabled: canManageTenant && Boolean(lot.id),
-    })),
-  });
+  const onboarding = onboardingQuery.data;
+  const firstLot = onboarding?.firstLotId ? { id: onboarding.firstLotId } : undefined;
+  const slotNavigationLot = onboarding?.firstLotWithFloorsId
+    ? { id: onboarding.firstLotWithFloorsId }
+    : firstLot;
 
-  const userSummaryQuery = useQuery({
-    queryKey: ['users', 'summary'],
-    queryFn: getUserSummary,
-    enabled: canManageTenant,
-  });
+  const hasLot = onboarding?.hasLot ?? false;
+  const hasFloor = onboarding?.hasFloor ?? false;
+  const hasSlot = onboarding?.hasSlot ?? false;
+  const hasTeamAccess = onboarding?.hasTeamAccess ?? false;
 
-  const firstLot = lots[0];
-  const firstLotWithFloors = lots.find(
-    (lot, index) => (floorsQueries[index]?.data?.length ?? 0) > 0,
-  );
-
-  const hasLot = lots.length > 0;
-  const hasFloor = floorsQueries.some((query) => (query.data?.length ?? 0) > 0);
-  const hasSlot = slotsQueries.some((query) => (query.data?.length ?? 0) > 0);
-  const hasTeamAccess =
-    (userSummaryQuery.data?.admins ?? 0) +
-      (userSummaryQuery.data?.security ?? 0) +
-      (userSummaryQuery.data?.users ?? 0) >
-    0;
-
-  const lotsLoading = lotsQuery.isLoading;
-  // When a tenant has zero lots, floor/slot queries are skipped — show incomplete, not loading.
-  const floorsLoading =
-    lotsLoading || (lots.length > 0 && floorsQueries.some((query) => query.isLoading));
-  const slotsLoading =
-    lotsLoading || (lots.length > 0 && slotsQueries.some((query) => query.isLoading));
-  const teamLoading = userSummaryQuery.isLoading;
+  const onboardingLoading = onboardingQuery.isLoading;
+  const lotsLoading = onboardingLoading;
+  const floorsLoading = onboardingLoading;
+  const slotsLoading = onboardingLoading;
+  const teamLoading = onboardingLoading;
 
   const openCreateUser = (role: Role) => {
     setPresetRole(role);
     setCreateUserOpen(true);
   };
-
-  const slotNavigationLot = firstLotWithFloors ?? firstLot;
 
   const actions = useMemo<DashboardQuickActionGridItem[]>(
     () => [
