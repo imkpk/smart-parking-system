@@ -34,7 +34,7 @@ Supersedes: `docs/multi-agent-roles` (PR #132)
 
 | PR | Title | Status |
 |----|-------|--------|
-| TBD | docs: add quality review rules to multi-agent flow | Opening |
+| [#133](https://github.com/imkpk/smart-parking-system/pull/133) | docs: add quality review rules to multi-agent flow | Open |
 
 ## Current status
 

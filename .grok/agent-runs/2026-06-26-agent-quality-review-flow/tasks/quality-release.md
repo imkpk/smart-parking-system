@@ -1,6 +1,6 @@
 # Role ⑤ — Quality, Architecture & Release
 
-**PR:** TBD (`docs/agent-quality-review-flow` → `develop`)  
+**PR:** [#133](https://github.com/imkpk/smart-parking-system/pull/133) (`docs/agent-quality-review-flow` → `develop`)  
 **Prompt:** `.grok/prompts/docs-agent-quality-review-flow.md`
 
 ## Verdict

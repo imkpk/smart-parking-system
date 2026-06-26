@@ -8,7 +8,7 @@ Added mandatory architecture and code-quality gate documentation for Role ⑤. W
 
 | PR | Branch | Status |
 |----|--------|--------|
-| TBD | `docs/agent-quality-review-flow` | Open — supersedes PR #132 |
+| [#133](https://github.com/imkpk/smart-parking-system/pull/133) | `docs/agent-quality-review-flow` | Open — supersedes closed PR #132 |
 
 ## Branches
 
