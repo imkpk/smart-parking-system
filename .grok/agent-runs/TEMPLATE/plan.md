@@ -35,7 +35,7 @@
 
 ```text
 develop
-  └── <type>/<slug>  →  develop (squash)
+  └── <type>/<slug>  →  develop (merge commit — never squash)
 ```
 
 ## Expected tests

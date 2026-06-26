@@ -647,6 +647,12 @@ Do not make Cypress flaky:
 ```
 
 Never merge an E2E PR with failing CI.
+
+### PR merge policy
+
+- **Never squash-merge** PRs into `develop` or `main` — the human wants commit-by-commit history preserved.
+- Use **merge commits**: `gh pr merge <n> --merge` (or `--auto --merge` when auto-merge is enabled).
+- Do **not** use `gh pr merge --squash`.
 Never silently delete failing smoke coverage.
 Flaky smoke = P0 quality issue; quarantine max 48 hours with a ticket.
 

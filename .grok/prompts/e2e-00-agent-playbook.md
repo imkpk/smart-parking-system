@@ -36,7 +36,7 @@ E2E 05 → Policy and Release Pack Docs
 4. Run fast local validation (`npm run build` + `npm run test:run` for touched services).
 5. Commit and push.
 6. Open PR to develop early.
-7. Enable auto-merge when possible (`gh pr merge <n> --auto --squash` or `--merge`).
+7. Enable auto-merge when possible (`gh pr merge <n> --auto --merge` only — never `--squash`).
 8. Start the next prompt branch immediately — do not idle-wait for CI.
 9. Before opening a dependent PR, fetch latest develop and merge/rebase if needed.
 10. If CI fails on an open PR, inspect logs, fix, push again (max 3 attempts per issue).

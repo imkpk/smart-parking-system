@@ -52,7 +52,7 @@ Existing `test:cov` unchanged. CI PR gate uses `test:run`; push uses `test:cov`.
 ```text
 1. Sync develop before each new branch.
 2. Open PR early after push.
-3. Enable auto-merge when branch protection allows.
+3. Enable auto-merge when branch protection allows (`--merge` only — never `--squash`).
 4. Start the next branch while CI runs — do not idle-wait.
 5. Fetch latest develop before opening a dependent PR.
 6. Never leave stale PRs open across phase boundaries.

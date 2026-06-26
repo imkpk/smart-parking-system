@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.15.1
+**Version:** 1.15.2
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -66,6 +66,7 @@ This is **production SaaS**, not a portfolio demo, not a hackathon project, not 
 9. RUN BUILDS before claiming done.
 10. UPDATE THIS FILE after every completed task.
 11. DESIGN SYSTEM ONLY — research → verify license → compare → apply via theme.ts and shared components. Never paste random UI themes/templates.
+12. PRESERVE COMMIT HISTORY ON MERGE — never squash-merge PRs into develop or main. Use merge commits (`gh pr merge --merge`) so each branch commit stays visible in history.
 ```
 
 **When a generic agent suggests:** full rewrites, new UI libraries, downloading admin themes, merging services, removing payment microservice, or skipping tests — **reject it** unless the human explicitly approves.
@@ -116,7 +117,7 @@ CI runs on PRs and pushes to `main`, `develop`, and `single-tenant`. Hotfixes fo
 PR (fast):     build + test:run per touched service; skip Cypress
 develop push:  build + coverage + Cypress smoke (advisory) on relevant paths
 Docs-only PRs: path filter skips service jobs when safe
-Agent flow:    open PR early, enable auto-merge, continue next branch without idle-wait
+Agent flow:    open PR early, enable auto-merge (--merge only, never --squash), continue next branch without idle-wait
 Report:        .grok/reports/ci-fast-pr-gates-and-agent-flow.md
 ```
 
@@ -564,7 +565,7 @@ cd backend && npm run test:cov
 cd frontend && npm run coverage
 ```
 
-**Agent PR flow:** open PR early → enable auto-merge → start next branch without idle-wait. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
+**Agent PR flow:** open PR early → enable auto-merge with **merge commit** (`gh pr merge --merge`; never `--squash`) → start next branch without idle-wait. See `.grok/reports/ci-fast-pr-gates-and-agent-flow.md`.
 
 **Report format after every task:**
 
@@ -661,6 +662,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-06-26 | 1.15.2 | Agent | PR merge policy: never squash-merge — use merge commits (`gh pr merge --merge`) to preserve commit-by-commit history. Updated MASTER_PROMPT §2, branch strategy §4/§10/§15, `.grok/AGENTS.md`, agent-run templates, loop-engineering prompt. |
 | 2026-06-17 | 1.0.0 | Pratibha Kumar K | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
 | 2026-06-17 | 1.1.0 | Pratibha Kumar K | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
 | 2026-06-17 | 1.1.1 | Pratibha Kumar K | Phase 8c merged (PR #35). docs/saas branch synced with develop. PR #36 open and mergeable; CI green. Updated in-progress and next-up sections. |
