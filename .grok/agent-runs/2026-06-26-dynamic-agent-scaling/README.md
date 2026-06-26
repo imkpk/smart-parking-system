@@ -27,7 +27,7 @@ Inline orchestrator mission (dynamic agent scaling).
 
 | PR | Title | Status |
 |----|-------|--------|
-| TBD | docs: dynamic agent scaling registry | ⏳ In Progress |
+| [#139](https://github.com/imkpk/smart-parking-system/pull/139) | docs: dynamic agent scaling registry | ⏳ In Progress |
 
 ## Report
 
