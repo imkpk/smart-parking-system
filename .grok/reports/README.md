@@ -65,5 +65,6 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-5a-gate-acceptance.md](./phase-5a-gate-acceptance.md) | Phase 5A mobile security gate acceptance (full stack) | PR #97–#100 ✅ |
 | [phase-5b-in-app-chat-mvp-acceptance.md](./phase-5b-in-app-chat-mvp-acceptance.md) | Phase 5B in-app chat MVP acceptance (loops 5B-1–5B-6) | PR #101–#106 |
 | [illustrations-parking-gate-chat-rnd.md](./illustrations-parking-gate-chat-rnd.md) | unDraw R&D — gate/security/chat illustrations (cosmetic preview) | PR pending |
+| [docs-agent-quality-review-flow.md](./docs-agent-quality-review-flow.md) | Multi-agent QUALITY_REVIEW gate + Role ⑤ architecture review docs | PR #133 |
 
-Prompts live in [`.grok/prompts/`](../prompts/). Phase 5 prompts: `phase-5-mobile-security-gate-mvp-loop`, `phase-5a-gate-phone-search-history`, `phase-5a-pr97-*`, `phase-5a-gate-*`, `phase-5b-in-app-chat-mvp-loop`, `phase-5b-manual-test-pr-comments`. E2E rollout prompts: `e2e-00` through `e2e-05`.
+Prompts live in [`.grok/prompts/`](../prompts/). Agent runs: [`.grok/agent-runs/`](../agent-runs/). Phase 5 prompts: `phase-5-mobile-security-gate-mvp-loop`, `phase-5a-gate-phone-search-history`, `phase-5a-pr97-*`, `phase-5a-gate-*`, `phase-5b-in-app-chat-mvp-loop`, `phase-5b-manual-test-pr-comments`. E2E rollout prompts: `e2e-00` through `e2e-05`.

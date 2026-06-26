@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.13.8
-**Last updated:** 2026-06-24  
-**Current branch:** `fix/system-hardening-and-freemium-limits`
+**Version:** 1.14.0
+**Last updated:** 2026-06-26
+**Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -25,6 +25,8 @@ FOR AI AGENTS:
 FOR HUMANS:
 - Point any new CLI tool at: MASTER_PROMPT.md (repo root)
 - Deep docs live in: docs/project-plan/
+- Multi-agent roles: docs/agents/ROLES.md (orchestrator + 5 worker roles)
+- Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ checklist before merge)
 - Agent coding rules also in: .grok/AGENTS.md (must stay aligned with this file)
 ```
 
@@ -710,6 +712,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-23 | 1.13.6 | Pratibha Kumar K | PR #123 merged: tenant admin dashboard onboarding checklist driven by parking-lots/floors/slots APIs and `GET /users/summary` (not role permissions); loading-safe chips with a11y labels; role-gated queries; safe slot navigation guards; lazy-loaded RecentActivityTimeline and SlotStatusDonutChart on AdminDashboardPage; unit tests in `TenantAdminQuickActions.test.tsx`. |
 | 2026-06-24 | 1.13.7 | Pratibha Kumar K | Production deploy fix: `VITE_API_URL` / `VITE_PAYMENT_SERVICE_URL` in `.env.production`, env-only API clients (no localhost fallback), NestJS CORS allows `https://parking.imkpk.in`, `vercel.json` SPA rewrites confirmed, 30s axios timeout + slow-request warning toast for Render cold starts. |
 | 2026-06-24 | 1.13.8 | Pratibha Kumar K | Neon P3009 fix: split `20260623183000_add_plan_free_and_password_reset` into two migrations (PostgreSQL enum `FREE` must commit before default use); `migrate resolve --rolled-back` + `migrate deploy` on production; added `20260623183100_add_password_reset_and_plan_default`. Changelog authors normalized to Pratibha Kumar K. |
+| 2026-06-24 | 1.13.9 | Pratibha Kumar K | Added `docs/agents/ROLES.md`: end-to-end product map + 5-role multi-agent model (Orchestrator, Core API, Experience, Payments, Quality & Release) with workflows, handoffs, and anti-patterns. |
+| 2026-06-26 | 1.14.0 | Pratibha Kumar K | Added `docs/agents/QUALITY_REVIEW.md`: mandatory Role ⑤ gate (architecture, Hooks, React Query, MUI, tenant, backend/payment boundaries, CI/secrets). Expanded ROLES.md workflow: Orchestrator → Worker → ⑤ → CI → Report → Merge. Prompt: `.grok/prompts/docs-agent-quality-review-flow.md`. Report: `.grok/reports/docs-agent-quality-review-flow.md`. |
 
 ---
 
@@ -722,7 +726,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: system hardening + freemium limits. Branch: fix/system-hardening-and-freemium-limits from develop.
+Current focus: use docs/agents/ROLES.md + QUALITY_REVIEW.md multi-agent workflow. Branch: short-lived fix/ or feature/ from develop.
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
