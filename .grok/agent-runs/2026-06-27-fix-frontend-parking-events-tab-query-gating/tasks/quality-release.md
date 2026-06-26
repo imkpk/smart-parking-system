@@ -1,6 +1,6 @@
 # Role ⑤ — Quality, Architecture & Release
 
-**PR:** TBD (`fix/frontend-parking-events-tab-query-gating` → `develop`)  
+**PR:** [#152](https://github.com/imkpk/smart-parking-system/pull/152) (`fix/frontend-parking-events-tab-query-gating` → `develop`)  
 **Prompt:** Inline Step 3 prompt
 
 ## Verdict

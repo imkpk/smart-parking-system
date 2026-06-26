@@ -33,7 +33,7 @@ Inline Step 3 prompt from user.
 
 | PR | Title | Status |
 |----|-------|--------|
-| TBD | fix(frontend): gate parking event queries by active tab | ⏳ In Progress |
+| [#152](https://github.com/imkpk/smart-parking-system/pull/152) | fix(frontend): gate parking event queries by active tab | ⏳ In Progress |
 
 ## Current status
 
