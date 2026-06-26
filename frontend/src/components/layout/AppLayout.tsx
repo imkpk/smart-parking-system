@@ -27,6 +27,7 @@ import {
   Logout,
   Menu,
   MenuOpen,
+  Palette,
   Security,
   SensorOccupied,
   SvgIconComponent,
@@ -43,7 +44,6 @@ import { formatRole } from '../../lib/formatRole';
 import { getNavLabelForRole } from '../../lib/userFacingLabels';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTenantBranding } from '../../providers/TenantBrandingProvider';
-import { brand } from '../../theme/tokens';
 import { Role } from '../../types/auth';
 
 const drawerWidth = 230;
@@ -107,14 +107,13 @@ const navItems: NavItem[] = [
     icon: ContactSupportIcon,
     roles: ['USER'],
   },
-  // Branding settings — disabled for now
-  // {
-  //   label: 'Branding',
-  //   to: '/admin/branding',
-  //   icon: Palette,
-  //   roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
-  //   requiresOrganization: true,
-  // },
+  {
+    label: 'Branding',
+    to: '/admin/branding',
+    icon: Palette,
+    roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
+    requiresOrganization: true,
+  },
   {
     label: 'Parking Lots',
     to: '/parking-lots',
@@ -245,12 +244,12 @@ export function AppLayout() {
               </Tooltip>
             ) : null}
             <Box minWidth={0} sx={{ flex: 1, overflow: 'hidden' }}>
-              <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText />
+              <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText />
             </Box>
           </Stack>
         ) : (
           <Stack alignItems="center" spacing={0.75} sx={{ width: '100%' }}>
-            <AppLogo logoUrl={branding.logoUrl} name={brand.name} showText={false} />
+            <AppLogo logoUrl={branding.logoUrl} name={branding.name} showText={false} />
             {!isMobile ? (
               <Tooltip title="Expand sidebar">
                 <IconButton
