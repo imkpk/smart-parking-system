@@ -23,7 +23,7 @@ A **MAJOR** becomes a **BLOCK** if it:
 2. Crosses a service boundary without an interface contract
 3. Exposes a secret or hardcoded credential
 
-## Checklist §1–12
+## Checklist §1–13
 
 Mark each: ✅ PASS · ❌ FAIL · N/A (only if zero files in that domain touched)
 
@@ -91,6 +91,15 @@ Mark each: ✅ PASS · ❌ FAIL · N/A (only if zero files in that domain touche
 - [ ] No hardcoded IDs, counts, or pricing literals
 - [ ] Feature flags for unreleased behavior where applicable
 - [ ] Reversible DB migrations; new env vars in `.env.example`
+
+### §13 Agent coverage
+
+- [ ] Every touched domain has a matching activated agent in `plan.md`
+- [ ] No domain was worked on by an agent outside its scope
+- [ ] Parallel agents did not create conflicting changes
+- [ ] ⑨ Testing Agent produced specs for all new code
+- [ ] Activation table matches actual files changed
+- [ ] N/A — docs-only (only ① + ⑤)
 
 ## Universal checks (never N/A)
 

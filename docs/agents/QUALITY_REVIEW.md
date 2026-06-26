@@ -14,7 +14,7 @@
 ## How to use
 
 1. Copy [`.grok/agent-runs/TEMPLATE/tasks/quality-release.md`](../../.grok/agent-runs/TEMPLATE/tasks/quality-release.md) into your agent-run folder (`tasks/quality-release.md`).
-2. Work through §1–12, marking each item ✅ PASS, ❌ FAIL, or N/A.
+2. Work through §1–13, marking each item ✅ PASS, ❌ FAIL, or N/A.
 3. Set verdict at the top of `tasks/quality-release.md`.
 4. **BLOCK** = no merge until fixed and re-reviewed by Role ⑤.
 5. **MAJOR** = fix or defer with owner + ticket; **MINOR** = note and merge allowed.
@@ -273,10 +273,25 @@ See [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.m
 
 ---
 
+### 13. Agent coverage
+
+| Check | Pass criteria |
+|-------|---------------|
+| Activation table | Every touched domain had a matching specialist agent in `plan.md` |
+| Scope compliance | No agent worked outside its defined scope (see `ROLES.md` §3) |
+| Parallel safety | Parallel agents produced no conflicting changes (verify `git diff`) |
+| Test ownership | ⑨ Testing Agent produced spec files for all new services/components |
+| Table accuracy | Activation table matches actual changed files |
+| Docs-only | N/A — only ① + ⑤ ran; no writer agents required |
+
+**BLOCK if:** Production code merged without ⑨ specs for new logic; writer modified test files; activation table omits a touched domain.
+
+---
+
 ## Review procedure
 
-1. **Scope** — Confirm PR matches one concern and one primary folder (per `ROLES.md`).
-2. **Diff walk** — File-by-file against checklist sections §1–12.
+1. **Scope** — Confirm PR matches one concern and activation table (per `ROLES.md` §2).
+2. **Diff walk** — File-by-file against checklist sections §1–13.
 3. **Run or trust CI** — Build + unit tests green; note which jobs ran (path filter).
 4. **Architecture pass** — Ask: “If the next agent copies this pattern, does the codebase get better or messier?”
 5. **Verdict** — Blockers listed first; link to file:line where possible.
@@ -325,6 +340,7 @@ Save optional local copy under `.grok/review/pr{N}review.md` or post as PR revie
 | 10 Tests / CI / secrets | … |
 | 11 Performance | … |
 | 12 Future-proofing | … |
+| 13 Agent coverage | … |
 
 ### CI
 - Jobs run: …
@@ -356,8 +372,8 @@ Do not implement features — only test/CI fixes if CI is broken.
 
 ## When workers should self-check (before requesting review)
 
-Workers ②③④ run service build + tests, then skim §1–12 for their folder **before** opening PR. Role ⑤ still runs the full gate — self-check reduces rework.
+Writers (②③④⑥⑦⑧⑩⑫) run service build; **⑨** runs tests. Workers skim §1–12 for their folder **before** requesting ⑤. Role ⑤ runs the full §1–13 gate.
 
 ---
 
-*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · §1–12 universal checklist*
+*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · §1–13 universal checklist*
