@@ -4,7 +4,14 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, ParkingEventStatus, Prisma, Role, SlotStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  OutboxEventType,
+  ParkingEventStatus,
+  Prisma,
+  Role,
+  SlotStatus,
+} from '@prisma/client';
 import { AccessPolicyService } from '../common/access-policy.service';
 import { DEFAULT_ORGANIZATION_ID } from '../organizations/organizations.constants';
 import { ParkingLotValidationService } from '../parking-lots/parking-lot-validation.service';
@@ -52,11 +59,13 @@ function buildEnrichedParkingEvent(
     ...overrides,
   };
 }
-
 describe('ParkingEventsService', () => {
   let service: ParkingEventsService;
   let paymentClientService: {
     initiatePayment: jest.Mock;
+  };
+  let eventPublisher: {
+    publishEventInTransaction: jest.Mock;
   };
   let prisma: {
     $transaction: jest.Mock;
@@ -118,6 +127,14 @@ describe('ParkingEventsService', () => {
         payment: { id: 1, status: 'INITIATED' },
       }),
     };
+    eventPublisher = {
+      publishEventInTransaction: jest.fn().mockResolvedValue({
+        id: 1,
+        eventId: 'event-1',
+        eventType: OutboxEventType.PARKING_CHECKED_IN,
+        status: 'PENDING',
+      }),
+    };
     prisma.slot.updateMany.mockResolvedValue({ count: 1 });
     const parkingLotValidationService = new ParkingLotValidationService(prisma as never);
     const slotLifecycleService = new SlotLifecycleService(
@@ -129,6 +146,7 @@ describe('ParkingEventsService', () => {
       new AccessPolicyService(),
       paymentClientService as never,
       slotLifecycleService,
+      eventPublisher as never,
     );
     jest.useRealTimers();
   });
@@ -175,6 +193,30 @@ describe('ParkingEventsService', () => {
       }),
       include: parkingEventListInclude,
     });
+    expect(eventPublisher.publishEventInTransaction).toHaveBeenCalledWith(prisma, {
+      eventType: OutboxEventType.PARKING_CHECKED_IN,
+      organizationId: booking.organizationId,
+      aggregateType: 'ParkingEvent',
+      aggregateId: String(parkingEvent.id),
+      payload: {
+        organizationId: booking.organizationId,
+        parkingEventId: parkingEvent.id,
+        bookingId: booking.id,
+        parkingLotId: parkingEvent.parkingLotId,
+        slotId: parkingEvent.slotId,
+        vehicleId: parkingEvent.vehicleId,
+        checkedInAt: parkingEvent.checkInTime.toISOString(),
+      },
+    });
+    expect(Object.keys(eventPublisher.publishEventInTransaction.mock.calls[0][1].payload)).toEqual([
+      'organizationId',
+      'parkingEventId',
+      'bookingId',
+      'parkingLotId',
+      'slotId',
+      'vehicleId',
+      'checkedInAt',
+    ]);
     expect(result).toEqual(presentParkingEvent(parkingEvent));
   });
 
@@ -231,6 +273,7 @@ describe('ParkingEventsService', () => {
     await expect(
       service.checkIn({ bookingId: booking.id }, securityUser),
     ).rejects.toThrow('Parking event already exists for this booking');
+    expect(eventPublisher.publishEventInTransaction).not.toHaveBeenCalled();
   });
 
   it('throws when check-in booking is missing', async () => {
@@ -412,16 +455,22 @@ describe('ParkingEventsService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-14T12:01:00.000Z'));
     const activeEvent = {
       id: 100,
+      organizationId: booking.organizationId,
       bookingId: booking.id,
+      userId: booking.userId,
+      vehicleId: booking.vehicleId,
       slotId: booking.slotId,
+      parkingLotId: booking.parkingLotId,
       checkInTime: new Date('2026-06-14T10:00:00.000Z'),
       checkOutTime: null,
       status: ParkingEventStatus.ACTIVE,
     };
+    const checkOutTime = new Date('2026-06-14T12:01:00.000Z');
     const completedEvent = buildEnrichedParkingEvent({
       ...activeEvent,
       userId: booking.userId,
       status: ParkingEventStatus.COMPLETED,
+      checkOutTime,
       durationMinutes: 121,
       feeAmount: 110,
     });
@@ -463,6 +512,30 @@ describe('ParkingEventsService', () => {
       where: { id: booking.slotId, status: SlotStatus.OCCUPIED },
       data: { status: SlotStatus.AVAILABLE },
     });
+    expect(eventPublisher.publishEventInTransaction).toHaveBeenCalledWith(prisma, {
+      eventType: OutboxEventType.PARKING_CHECKED_OUT,
+      organizationId: completedEvent.organizationId,
+      aggregateType: 'ParkingEvent',
+      aggregateId: String(completedEvent.id),
+      payload: {
+        organizationId: completedEvent.organizationId,
+        parkingEventId: completedEvent.id,
+        bookingId: completedEvent.bookingId,
+        parkingLotId: completedEvent.parkingLotId,
+        slotId: completedEvent.slotId,
+        vehicleId: completedEvent.vehicleId,
+        checkedOutAt: checkOutTime.toISOString(),
+      },
+    });
+    expect(Object.keys(eventPublisher.publishEventInTransaction.mock.calls[0][1].payload)).toEqual([
+      'organizationId',
+      'parkingEventId',
+      'bookingId',
+      'parkingLotId',
+      'slotId',
+      'vehicleId',
+      'checkedOutAt',
+    ]);
     expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
       {
         parkingEventId: activeEvent.id,
