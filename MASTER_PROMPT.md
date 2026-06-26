@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.8
+**Version:** 1.16.9
 **Last updated:** 2026-06-27
-**Current branch:** `feat/parking-events-outbox-publish`
+**Current branch:** `feat/outbox-super-admin-monitor-endpoint`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -417,8 +417,8 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 
 ```text
 [x] Transactional outbox foundation — PR #145 ✅
-[x] STEP 1: Parking check-in/check-out publish `PARKING_CHECKED_IN` / `PARKING_CHECKED_OUT` — PR pending
-[ ] STEP 2: SUPER_ADMIN outbox monitor endpoint
+[x] STEP 1: Parking check-in/check-out publish `PARKING_CHECKED_IN` / `PARKING_CHECKED_OUT` — PR #150 ✅
+[ ] STEP 2: SUPER_ADMIN outbox monitor endpoint — implemented on `feat/outbox-super-admin-monitor-endpoint`
 [ ] STEP 3: ParkingEventsPage tab query gating
 [ ] STEP 4: Narrow operational invalidations
 [ ] STEP 5: Parking Finder booking entry flow
@@ -693,6 +693,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-06-27 | 1.16.9 | Agent | Step 2 implemented (PR pending): added protected read-only `GET /events/outbox` and `GET /events/outbox/summary` endpoints for `SUPER_ADMIN`; list supports `status`, `eventType`, `organizationId`, and capped `limit`, excludes `payload`, and summary returns counts by status. Also completed Phase 0 merge sync for PR #150. Report: `.grok/reports/outbox-super-admin-monitor-endpoint.md`. |
 | 2026-06-27 | 1.16.8 | Agent | Step 1 implemented (PR pending): parking check-in/check-out now publish `PARKING_CHECKED_IN` and `PARKING_CHECKED_OUT` through `EventPublisherService.publishEventInTransaction` inside existing Prisma transactions; payloads include `organizationId`, aggregate metadata, IDs, and timestamps only; no broker/payment-service changes. Report: `.grok/reports/parking-events-outbox-publish.md`. |
 | 2026-06-26 | 1.16.6 | Agent | Transactional outbox foundation merged (PR #145): `OutboxEvent` schema + migration, `EventsModule` with `EventPublisherService` / `OutboxWorkerService` / handler registry; Postgres-only async prep; no broker; no flow rewrites. Report: `.grok/reports/events-outbox-foundation.md`. |
 | 2026-06-26 | 1.16.5 | Agent | Dashboard onboarding fan-out fix: `GET /api/dashboard/onboarding-status` replaces per-lot floors/slots queries; throttle default 120/min; dashboard `staleTime` 30s; Cypress network smoke. |

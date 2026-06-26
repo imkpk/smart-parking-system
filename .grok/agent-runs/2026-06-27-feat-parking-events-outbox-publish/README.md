@@ -1,6 +1,6 @@
 # Parking Events Outbox Publish
 
-Status: ⏳ In Progress
+Status: ✅ Merged
 Branch: `feat/parking-events-outbox-publish`
 PR: #150
 Report: `.grok/reports/parking-events-outbox-publish.md`
@@ -26,3 +26,5 @@ Wire parking event check-in/check-out to the existing transactional outbox found
 - `cd backend && npm run prisma:generate` ✅
 - `cd backend && npm run build` ✅
 - `cd backend && npm run test:run` ✅
+
+Merged to `develop`: 2026-06-26T20:10:31Z
