@@ -2,7 +2,8 @@
 
 **Date:** 2026-06-26  
 **Branch:** `feat/parking-finder-foundation`  
-**Status:** PR open — awaiting Role ⑤ + human merge  
+**PR:** [#140](https://github.com/imkpk/smart-parking-system/pull/140)  
+**Status:** Open — awaiting Role ⑤ + human merge (do not squash)
 **Report:** `.grok/reports/parking-finder-foundation.md`
 
 ## Summary
@@ -60,7 +61,7 @@ First foundation slice for public Parking Finder: schema fields, unauthenticated
 | Frontend build | ✅ |
 | Backend build | ⏳ CI (local prisma generate blocked by running dev server) |
 
-**Verdict:** APPROVE WITH NOTES — pending CI backend job on PR.
+**Verdict:** APPROVE WITH NOTES — pending CI backend job on [PR #140](https://github.com/imkpk/smart-parking-system/pull/140).
 
 ## Manual verification
 
