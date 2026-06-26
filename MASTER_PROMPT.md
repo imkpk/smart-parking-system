@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.14.0
+**Version:** 1.15.1
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -27,7 +27,8 @@ FOR HUMANS:
 - Deep docs live in: docs/project-plan/
 - Multi-agent roles: docs/agents/ROLES.md (orchestrator + 5 worker roles)
 - Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ checklist before merge)
-- Agent coding rules also in: .grok/AGENTS.md (must stay aligned with this file)
+- Agent coding rules: .grok/AGENTS.md (canonical)
+- Post-merge status: .github/workflows/agent-run-post-merge.yml (auto-updates agent-runs index on PR merge)
 ```
 
 ---
@@ -714,6 +715,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-24 | 1.13.8 | Pratibha Kumar K | Neon P3009 fix: split `20260623183000_add_plan_free_and_password_reset` into two migrations (PostgreSQL enum `FREE` must commit before default use); `migrate resolve --rolled-back` + `migrate deploy` on production; added `20260623183100_add_password_reset_and_plan_default`. Changelog authors normalized to Pratibha Kumar K. |
 | 2026-06-24 | 1.13.9 | Pratibha Kumar K | Added `docs/agents/ROLES.md`: end-to-end product map + 5-role multi-agent model (Orchestrator, Core API, Experience, Payments, Quality & Release) with workflows, handoffs, and anti-patterns. |
 | 2026-06-26 | 1.14.0 | Pratibha Kumar K | Added `docs/agents/QUALITY_REVIEW.md`: mandatory Role ⑤ gate (architecture, Hooks, React Query, MUI, tenant, backend/payment boundaries, CI/secrets). Expanded ROLES.md workflow: Orchestrator → Worker → ⑤ → CI → Report → Merge. Prompt: `.grok/prompts/docs-agent-quality-review-flow.md`. Report: `.grok/reports/docs-agent-quality-review-flow.md`. |
+| 2026-06-26 | 1.15.1 | Pratibha Kumar K | GitHub Action `agent-run-post-merge.yml` + `scripts/agent-run-post-merge.mjs`: on PR merge to develop, auto-update `.grok/agent-runs/README.md` and report status via github-actions[bot]. ROLES.md post-merge automation section. |
 
 ---
 
