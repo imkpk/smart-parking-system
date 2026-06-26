@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.5
+**Version:** 1.16.6
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -677,6 +677,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-06-26 | 1.16.6 | Agent | Transactional outbox foundation (PR open): `OutboxEvent` schema + migration, `EventsModule` with `EventPublisherService` / `OutboxWorkerService` / handler registry; Postgres-only async prep; no broker; no flow rewrites. Report: `.grok/reports/events-outbox-foundation.md`. |
 | 2026-06-26 | 1.16.5 | Agent | Dashboard onboarding fan-out fix: `GET /api/dashboard/onboarding-status` replaces per-lot floors/slots queries; throttle default 120/min; dashboard `staleTime` 30s; Cypress network smoke. |
 | 2026-06-26 | 1.16.3 | Agent | Parking Finder console-error fix: skip stale `auth/me` on public routes, omit JWT on public APIs, suppress handled React Query errors, add `spyConsoleErrors()` tests; QUALITY_REVIEW §10 browser console gate. |
 | 2026-06-26 | 1.16.2 | Agent | Parking Finder foundation merged (PR #140): Prisma visibility/geo/pricing fields, `GET /api/public/parking-finder`, public `/parking-finder` page, admin finder fields, tests. Report: `.grok/reports/parking-finder-foundation.md`. |

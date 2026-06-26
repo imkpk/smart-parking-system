@@ -55,3 +55,8 @@ Example: `2026-06-26-docs-agent-run-infrastructure`
 | 2026-06-26 | [agent-run-infrastructure](./2026-06-26-agent-run-infrastructure/) | docs: reusable agent-run scaffolding | ①⑤ | [#134](https://github.com/imkpk/smart-parking-system/pull/134) | ✅ Merged |
 | 2026-06-26 | [dynamic-agent-scaling](./2026-06-26-dynamic-agent-scaling/) | docs: dynamic agent registry ①–⑫ + CI activation summary | ①⑦⑩⑤ | [#139](https://github.com/imkpk/smart-parking-system/pull/139) | ✅ Merged |
 | 2026-06-26 | [parking-finder-foundation](./2026-06-26-parking-finder-foundation/) | feat: public parking finder foundation | ①⑥②③⑧⑨⑪⑤ | [#140](https://github.com/imkpk/smart-parking-system/pull/140) | ✅ Merged |
+| 2026-06-26 | — | docs: parking-finder merge sync | ①⑤ | [#141](https://github.com/imkpk/smart-parking-system/pull/141) | ✅ Merged |
+| 2026-06-26 | — | fix: parking-finder console errors | ①③⑨⑤ | [#142](https://github.com/imkpk/smart-parking-system/pull/142) | ✅ Merged |
+| 2026-06-26 | — | fix: dashboard onboarding API fan-out | ①②⑪⑨⑤ | [#143](https://github.com/imkpk/smart-parking-system/pull/143) | ✅ Merged |
+| 2026-06-26 | — | fix: frontend query fan-out staleTime + labels | ①③⑨⑤ | [#144](https://github.com/imkpk/smart-parking-system/pull/144) | ✅ Merged |
+| 2026-06-26 | [feat-events-outbox-foundation](./2026-06-26-feat-events-outbox-foundation/) | feat: transactional outbox foundation | ①⑥②⑧⑨⑤ | TBD | ⏳ In Progress |
