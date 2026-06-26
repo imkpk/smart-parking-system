@@ -17,7 +17,7 @@ describe('DashboardService', () => {
   let service: DashboardService;
   let prisma: {
     booking: { count: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
-    floor: { count: jest.Mock };
+    floor: { count: jest.Mock; findFirst: jest.Mock };
     organization: { count: jest.Mock; findUnique: jest.Mock };
     parkingEvent: {
       aggregate: jest.Mock;
@@ -26,19 +26,19 @@ describe('DashboardService', () => {
     };
     parkingLot: { count: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock };
     slot: { count: jest.Mock; groupBy: jest.Mock };
-    user: { count: jest.Mock };
+    user: { count: jest.Mock; findMany: jest.Mock };
     vehicle: { count: jest.Mock };
   };
 
   beforeEach(() => {
     prisma = {
       booking: { count: jest.fn(), findMany: jest.fn(), groupBy: jest.fn() },
-      floor: { count: jest.fn() },
+      floor: { count: jest.fn(), findFirst: jest.fn() },
       organization: { count: jest.fn(), findUnique: jest.fn() },
       parkingEvent: { aggregate: jest.fn(), count: jest.fn(), findMany: jest.fn() },
       parkingLot: { count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
       slot: { count: jest.fn(), groupBy: jest.fn() },
-      user: { count: jest.fn() },
+      user: { count: jest.fn(), findMany: jest.fn() },
       vehicle: { count: jest.fn() },
     };
 
@@ -99,6 +99,27 @@ describe('DashboardService', () => {
     expect(prisma.parkingEvent.count).toHaveBeenCalledWith({
       where: { status: ParkingEventStatus.COMPLETED, organizationId: DEFAULT_ORGANIZATION_ID },
     });
+  });
+
+  it('returns onboarding status without per-lot fan-out queries', async () => {
+    prisma.parkingLot.count.mockResolvedValue(2);
+    prisma.floor.count.mockResolvedValue(1);
+    prisma.slot.count.mockResolvedValue(3);
+    prisma.parkingLot.findFirst.mockResolvedValue({ id: 1 });
+    prisma.floor.findFirst.mockResolvedValue({ parkingLotId: 2 });
+    prisma.user.findMany.mockResolvedValue([{ id: 10 }]);
+
+    await expect(service.getOnboardingStatus(tenantAdminUser)).resolves.toEqual({
+      hasLot: true,
+      hasFloor: true,
+      hasSlot: true,
+      hasTeamAccess: true,
+      firstLotId: 1,
+      firstLotWithFloorsId: 2,
+    });
+
+    expect(prisma.floor.count).toHaveBeenCalledTimes(1);
+    expect(prisma.slot.count).toHaveBeenCalledTimes(1);
   });
 
   it('uses a different organization scope for another tenant admin', async () => {

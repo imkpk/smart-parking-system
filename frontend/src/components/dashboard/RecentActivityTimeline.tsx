@@ -13,6 +13,7 @@ import { SxProps, Theme } from '@mui/material/styles';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { getRecentActivity } from '../../api/dashboardApi';
+import { DASHBOARD_QUERY_STALE_MS } from '../../lib/dashboardQueryOptions';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { formatActivityTypeLabel } from '../../lib/operatorDashboardLabels';
@@ -126,6 +127,7 @@ export function RecentActivityTimeline({
       }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
+    staleTime: DASHBOARD_QUERY_STALE_MS,
   });
 
   const items = activityQuery.data?.pages.flatMap((page) => page.items) ?? [];

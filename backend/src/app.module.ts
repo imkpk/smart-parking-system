@@ -26,7 +26,12 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: Number(process.env.THROTTLE_LIMIT ?? 120),
+      },
+    ]),
     PrismaModule,
     CommonModule,
     AuthModule,

@@ -46,6 +46,12 @@ export class DashboardController {
     return this.dashboardService.getSlotStatusSummary(currentUser);
   }
 
+  @Get('onboarding-status')
+  @Roles(Role.TENANT_ADMIN, Role.ADMIN)
+  getOnboardingStatus(@CurrentUser() currentUser: SafeUser) {
+    return this.dashboardService.getOnboardingStatus(currentUser);
+  }
+
   @Get('operator-metrics')
   @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.ADMIN, Role.SECURITY, Role.USER)
   getOperatorMetrics(@CurrentUser() currentUser: SafeUser) {
