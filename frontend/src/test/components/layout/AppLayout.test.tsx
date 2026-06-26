@@ -110,7 +110,7 @@ describe('AppLayout', () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it('hides branding navigation for tenant admin', () => {
+  it('shows branding navigation for tenant admin', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: createMockUser({ role: 'TENANT_ADMIN', name: 'Tenant Admin' }),
       token: 'token',
@@ -125,7 +125,7 @@ describe('AppLayout', () => {
 
     expect(screen.getByRole('link', { name: /support inbox/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /parking lots/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^branding$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^branding$/i })).toBeInTheDocument();
   });
 
   it('renders security navigation items', () => {

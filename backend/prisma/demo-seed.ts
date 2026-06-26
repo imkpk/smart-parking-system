@@ -17,6 +17,7 @@ const prisma = new PrismaClient();
 const DEMO_ORG_SLUG = 'default';
 const DEMO_MARKER_LOT = 'Hitech City Mall Parking';
 const DEMO_PASSWORD = 'password123';
+const DEMO_LOGO_URL = `${(process.env.FRONTEND_URL ?? 'http://localhost:5173').replace(/\/$/, '')}/sunrise-logo.svg`;
 
 const LEGACY_DEMO_LOT_NAMES = [
   'City Center Mall',
@@ -99,6 +100,7 @@ async function upsertDemoOrganization() {
     where: { slug: DEMO_ORG_SLUG },
     update: {
       name: 'Sunrise Properties',
+      logoUrl: DEMO_LOGO_URL,
       loginTitle: 'Sunrise Smart Parking',
       primaryColor: '#1565C0',
       secondaryColor: '#0D47A1',
@@ -111,6 +113,7 @@ async function upsertDemoOrganization() {
       id: 1,
       name: 'Sunrise Properties',
       slug: DEMO_ORG_SLUG,
+      logoUrl: DEMO_LOGO_URL,
       loginTitle: 'Sunrise Smart Parking',
       primaryColor: '#1565C0',
       secondaryColor: '#0D47A1',
