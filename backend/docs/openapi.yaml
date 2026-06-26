@@ -566,6 +566,71 @@ paths:
         "200":
           description: Parking event
 
+  /events/outbox:
+    get:
+      tags: [Events]
+      summary: List outbox events for platform monitoring
+      description: SUPER_ADMIN-only read endpoint. Response intentionally excludes event payloads.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/OutboxEventStatus"
+        - name: eventType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/OutboxEventType"
+        - name: organizationId
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+            example: 50
+      responses:
+        "200":
+          description: Safe outbox event list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboxMonitorEvent"
+        "401":
+          description: Authentication required
+        "403":
+          description: SUPER_ADMIN role is required
+
+  /events/outbox/summary:
+    get:
+      tags: [Events]
+      summary: Summarize outbox event counts by status
+      description: SUPER_ADMIN-only read endpoint.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Outbox counts by status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxStatusSummary"
+        "401":
+          description: Authentication required
+        "403":
+          description: SUPER_ADMIN role is required
+
   /dashboard/admin-summary:
     get:
       tags: [Dashboard]
@@ -690,6 +755,19 @@ components:
     ParkingEventStatus:
       type: string
       enum: [ACTIVE, COMPLETED, CANCELLED]
+    OutboxEventStatus:
+      type: string
+      enum: [PENDING, PROCESSING, PROCESSED, FAILED]
+    OutboxEventType:
+      type: string
+      enum:
+        - PARKING_CHECKED_IN
+        - PARKING_CHECKED_OUT
+        - BOOKING_CREATED
+        - BOOKING_CANCELLED
+        - PAYMENT_VERIFIED
+        - NOTIFICATION_REQUESTED
+        - GENERIC
 
     HealthResponse:
       type: object
@@ -1002,6 +1080,76 @@ components:
           type: string
           nullable: true
           example: Payment service unavailable
+    OutboxMonitorEvent:
+      type: object
+      description: Safe outbox event monitor row. Payload is intentionally not exposed.
+      properties:
+        id:
+          type: integer
+          example: 1
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          $ref: "#/components/schemas/OutboxEventType"
+        organizationId:
+          type: integer
+          nullable: true
+          example: 1
+        aggregateType:
+          type: string
+          nullable: true
+          example: ParkingEvent
+        aggregateId:
+          type: string
+          nullable: true
+          example: "12"
+        status:
+          $ref: "#/components/schemas/OutboxEventStatus"
+        attempts:
+          type: integer
+          example: 0
+        maxAttempts:
+          type: integer
+          example: 5
+        nextRunAt:
+          type: string
+          format: date-time
+        lockedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lockedBy:
+          type: string
+          nullable: true
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    OutboxStatusSummary:
+      type: object
+      properties:
+        pending:
+          type: integer
+          example: 5
+        processing:
+          type: integer
+          example: 1
+        processed:
+          type: integer
+          example: 40
+        failed:
+          type: integer
+          example: 2
     SlotStatusSummary:
       type: object
       properties:

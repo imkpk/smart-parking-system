@@ -1,6 +1,6 @@
 # Parking Events Outbox Publish
 
-Status: PR #150
+Status: ✅ Merged (PR #150)
 Branch: `feat/parking-events-outbox-publish`
 PR: #150
 Date: 2026-06-27

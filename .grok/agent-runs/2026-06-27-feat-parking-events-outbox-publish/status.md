@@ -7,4 +7,4 @@
 - [x] Backend verification passed
 - [x] Report created
 - [x] PR opened
-- [ ] Merged
+- [x] Merged
