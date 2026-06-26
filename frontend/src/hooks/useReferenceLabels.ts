@@ -15,14 +15,12 @@ import { Slot } from '../types/slot';
 import { Vehicle } from '../types/vehicle';
 
 interface ReferenceLabelOptions {
-  context: string;
   includeParkingStructure?: boolean;
   includeUsers?: boolean;
   role?: Role;
 }
 
 export function useReferenceLabels({
-  context,
   includeParkingStructure = false,
   includeUsers = false,
   role,
@@ -35,31 +33,33 @@ export function useReferenceLabels({
     includeParkingStructure && (canUseOperationalData || isUser);
 
   const bookingsQuery = useQuery({
-    queryKey: ['bookings', isUser ? 'my' : 'all', context],
+    queryKey: ['bookings', isUser ? 'my' : 'all'],
     queryFn: isUser ? getMyBookings : getBookings,
     enabled: Boolean(isUser || canUseOperationalData),
   });
 
   const vehiclesQuery = useQuery({
-    queryKey: ['vehicles', isUser ? 'my' : 'all', context],
+    queryKey: ['vehicles', isAdmin ? 'all' : 'my'],
     queryFn: isUser ? getMyVehicles : getVehicles,
     enabled: Boolean(isUser || isAdmin),
   });
 
   const usersQuery = useQuery({
-    queryKey: ['users', context],
+    queryKey: ['users'],
     queryFn: getUsers,
     enabled: includeUsers && isAdmin,
   });
 
   const parkingLotsQuery = useQuery({
-    queryKey: ['parking-lots', context],
+    queryKey: ['parking-lots'],
     queryFn: getParkingLots,
     enabled: canLoadParkingStructure,
   });
 
+  const lotIdsKey = parkingLotsQuery.data?.map((lot) => lot.id).join(',') ?? '';
+
   const slotsQuery = useQuery({
-    queryKey: ['slots', context, parkingLotsQuery.data?.map((lot) => lot.id).join(',')],
+    queryKey: ['reference-labels', 'all-slots', lotIdsKey],
     queryFn: async () => {
       const lots = parkingLotsQuery.data ?? [];
       const nestedSlots = await Promise.all(lots.map((lot) => getSlots(lot.id)));
