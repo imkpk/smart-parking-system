@@ -1,6 +1,7 @@
 # Events Outbox Foundation
 
 **Branch:** `feat/events-outbox-foundation`  
+**PR:** [#145](https://github.com/imkpk/smart-parking-system/pull/145) — ✅ Merged to `develop` (2026-06-26, merge commit `2012716`)  
 **PR title:** `feat(events): add transactional outbox foundation`  
 **Date:** 2026-06-26  
 **Agents:** ① Orchestrator · ⑥ Database · ② Core API · ⑧ Security · ⑨ Testing · ⑤ Quality
