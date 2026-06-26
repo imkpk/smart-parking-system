@@ -91,9 +91,7 @@ const slot: Slot = {
   updatedAt: '2026-06-18T00:00:00.000Z',
 };
 
-function createWrapper() {
-  const queryClient = createTestQueryClient();
-
+function createWrapper(queryClient = createTestQueryClient()) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
@@ -101,6 +99,7 @@ function createWrapper() {
 
 describe('useReferenceLabels', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(getBookings).mockResolvedValue([booking]);
     vi.mocked(getVehicles).mockResolvedValue([vehicle]);
     vi.mocked(getUsers).mockResolvedValue([
@@ -119,11 +118,79 @@ describe('useReferenceLabels', () => {
     vi.mocked(getSlots).mockResolvedValue([slot]);
   });
 
-  it('resolves admin labels with parking structure data', async () => {
+  it('uses shared query keys without context suffixes', async () => {
+    const queryClient = createTestQueryClient();
+
+    renderHook(
+      () =>
+        useReferenceLabels({
+          includeUsers: true,
+          role: 'ADMIN',
+        }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => {
+      expect(getBookings).toHaveBeenCalled();
+    });
+
+    const queryKeys = queryClient
+      .getQueryCache()
+      .getAll()
+      .map((entry) => entry.queryKey);
+
+    expect(queryKeys).toContainEqual(['bookings', 'all']);
+    expect(queryKeys).toContainEqual(['vehicles', 'all']);
+    expect(queryKeys).toContainEqual(['users']);
+    expect(queryKeys.some((key) => key.includes('payment-enrichment'))).toBe(false);
+    expect(queryKeys.some((key) => key.includes('vehicles-page'))).toBe(false);
+  });
+
+  it('reuses cached bookings and vehicles when shared keys are already populated', async () => {
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(['bookings', 'all'], [booking]);
+    queryClient.setQueryData(['vehicles', 'all'], [vehicle]);
+
+    renderHook(
+      () =>
+        useReferenceLabels({
+          role: 'ADMIN',
+        }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => {
+      expect(
+        queryClient.getQueryCache().find({ queryKey: ['bookings', 'all'] })?.state.data,
+      ).toEqual([booking]);
+    });
+
+    expect(getBookings).not.toHaveBeenCalled();
+    expect(getVehicles).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch parking structure unless includeParkingStructure is true', async () => {
+    renderHook(
+      () =>
+        useReferenceLabels({
+          includeUsers: true,
+          role: 'ADMIN',
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(getBookings).toHaveBeenCalled();
+    });
+
+    expect(getParkingLots).not.toHaveBeenCalled();
+    expect(getSlots).not.toHaveBeenCalled();
+  });
+
+  it('resolves admin labels with parking structure data when explicitly enabled', async () => {
     const { result } = renderHook(
       () =>
         useReferenceLabels({
-          context: 'test',
           includeParkingStructure: true,
           includeUsers: true,
           role: 'ADMIN',
@@ -135,6 +202,8 @@ describe('useReferenceLabels', () => {
       expect(result.current.getBookingLabel(1)).toBe('BK-001');
     });
 
+    expect(getParkingLots).toHaveBeenCalled();
+    expect(getSlots).toHaveBeenCalledWith(5);
     expect(result.current.getBookingCode(1)).toBe('BK-001');
     expect(result.current.getVehicleLabel(3)).toBe('KA01AB1234');
     expect(result.current.getVehicleLabelForBooking(1)).toBe('KA01AB1234');
@@ -148,7 +217,6 @@ describe('useReferenceLabels', () => {
     const { result } = renderHook(
       () =>
         useReferenceLabels({
-          context: 'fallback',
           includeParkingStructure: true,
           role: 'ADMIN',
         }),

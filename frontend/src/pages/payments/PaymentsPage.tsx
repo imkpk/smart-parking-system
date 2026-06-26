@@ -154,7 +154,6 @@ export function PaymentsPage() {
     enabled: isUser && Boolean(user?.id),
   });
   const labels = useReferenceLabels({
-    context: 'payment-enrichment',
     includeUsers: isAdmin,
     role: user?.role,
   });

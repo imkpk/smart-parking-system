@@ -85,7 +85,6 @@ export function VehiclesPage() {
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
   const labels = useReferenceLabels({
-    context: 'vehicles',
     includeUsers: isAdmin,
     role: user?.role,
   });
