@@ -3,12 +3,6 @@ name: CI
 on:
   pull_request:
     branches: [main, develop, single-tenant]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.grok/**'
-      - 'scripts/**'
-      - '.github/**'
   push:
     branches: [main, develop, single-tenant]
     paths-ignore:
