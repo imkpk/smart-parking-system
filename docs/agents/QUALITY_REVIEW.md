@@ -4,6 +4,23 @@
 > **Owner:** Role ⑤ — Quality, Architecture & Release Agent  
 > **Companion:** [`ROLES.md`](./ROLES.md) (roles + workflow) · [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (coding standards) · [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.md)
 
+> This checklist is run by Role ⑤ on **EVERY** worker PR before merge.  
+> Mark **N/A** only if zero files in that domain were touched.  
+> Every non-N/A section must have an explicit **PASS** or finding.  
+> Verdict must be: **APPROVE** · **APPROVE WITH NOTES** · **BLOCK**
+
+---
+
+## How to use
+
+1. Copy [`.grok/agent-runs/TEMPLATE/tasks/quality-release.md`](../../.grok/agent-runs/TEMPLATE/tasks/quality-release.md) into your agent-run folder (`tasks/quality-release.md`).
+2. Work through §1–12, marking each item ✅ PASS, ❌ FAIL, or N/A.
+3. Set verdict at the top of `tasks/quality-release.md`.
+4. **BLOCK** = no merge until fixed and re-reviewed by Role ⑤.
+5. **MAJOR** = fix or defer with owner + ticket; **MINOR** = note and merge allowed.
+
+See also: [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) · [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md)
+
 ---
 
 ## Where this fits in the flow
@@ -55,10 +72,12 @@ Before reviewing, read:
 
 | Level | Meaning | Merge impact |
 |-------|---------|--------------|
-| **BLOCKER** | Security, tenant leak, hooks violation, prod URL in tests, secrets in diff, broken build/tests | Must fix before merge |
-| **MAJOR** | Duplicate logic, wrong layer, design-system bypass, missing invalidation, controller bloat | Fix in PR or immediate follow-up branch named by Orchestrator |
-| **MINOR** | Naming, comment noise, optional refactor | Note in review; merge OK if no blockers |
+| **BLOCK** | Security, tenant leak, hooks violation, prod URL in tests, secrets in diff, broken build/tests, or MAJOR that risks data inconsistency, crosses service boundary without contract, or exposes credentials | No merge until fixed; re-run Role ⑤ |
+| **MAJOR** | Duplicate logic, wrong layer, design-system bypass, missing invalidation, controller bloat, N+1 queries | Fix in PR or defer with owner + ticket |
+| **MINOR** | Naming, comment noise, optional refactor | Note in report; merge allowed |
 | **NIT** | Style preference | Optional |
+
+A **MAJOR** becomes a **BLOCK** if it: (a) introduces data inconsistency risk, (b) crosses a service boundary without an interface contract, (c) exposes a secret or hardcoded credential.
 
 ---
 
@@ -76,7 +95,7 @@ Use every section that applies to the PR’s touched paths. Mark **N/A** when a 
 | Types/interfaces | No duplicate DTO shapes across files; extend existing types |
 | Extract when repeated | Same column defs, dialog flow, or status-color logic twice → extract or use shared |
 
-**BLOCKER if:** New duplicate DataGrid setup, status chip styling, confirm dialog, or axios client when a shared one exists.
+**BLOCK if:** New duplicate DataGrid setup, status chip styling, confirm dialog, or axios client when a shared one exists.
 
 ---
 
@@ -94,7 +113,7 @@ Use every section that applies to the PR’s touched paths. Mark **N/A** when a 
 - Frontend uses `paymentsApiClient` + `VITE_PAYMENT_SERVICE_URL` for payment endpoints.
 - Checkout UI may load Razorpay.js; **secrets stay on Render payment service only**.
 
-**BLOCKER if:** Business logic placed in the wrong service or folder; payment secrets in frontend/backend diff.
+**BLOCK if:** Business logic placed in the wrong service or folder; payment secrets in frontend/backend diff.
 
 ---
 
@@ -122,7 +141,7 @@ Use every section that applies to the PR’s touched paths. Mark **N/A** when a 
 | Dependencies | Exhaustive deps; no stale closures causing wrong tenant/user data |
 | Context | `AuthProvider`, `TenantBrandingProvider` — do not duplicate auth state elsewhere |
 
-**BLOCKER if:** Conditional hook call or hook after early return.
+**BLOCK if:** Conditional hook call or hook after early return.
 
 ---
 
@@ -170,7 +189,7 @@ See [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.m
 | Frontend | Role gates via `roleUtils` / route guards — USER cannot see other users’ records |
 | URLs | No tenant id in URLs unless API contract requires it; prefer JWT scope |
 
-**BLOCKER if:** Missing `organizationId` filter on new tenant data access; cross-tenant data exposure.
+**BLOCK if:** Missing `organizationId` filter on new tenant data access; cross-tenant data exposure.
 
 ---
 
@@ -205,7 +224,7 @@ See [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.m
 | Tests | H2 + Mockito + MockMvc — never real Razorpay or Render |
 | Java version | **Java 21** on `develop` unless Orchestrator approved JDK upgrade |
 
-**BLOCKER if:** Parking/booking logic added to payment-service; live API keys in repo.
+**BLOCK if:** Parking/booking logic added to payment-service; live API keys in repo.
 
 ---
 
@@ -221,14 +240,43 @@ See [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.m
 | Env docs | New `VITE_*` or Render vars documented in PR or `.env.example` |
 | Migrations | `prisma migrate deploy` safe — never `migrate reset` on production path |
 
-**BLOCKER if:** Secrets in diff; tests hitting production URLs; required CI job failing.
+**BLOCK if:** Secrets in diff; tests hitting production URLs; required CI job failing.
+
+---
+
+### 11. Performance
+
+| Check | Pass criteria |
+|-------|---------------|
+| N+1 queries | Prisma `include`/`select` intentional; no unbounded relation fan-out in loops |
+| Pagination | List endpoints paginated when result sets can grow |
+| React Query | Intentional `staleTime`/`gcTime`; document overrides in code or PR |
+| Polling | No `refetchInterval` &lt; 2000ms on non-critical data without justification |
+| Real-time | Sub-2s freshness → WebSocket/SSE preferred over tight polling |
+| NestJS handlers | No synchronous blocking work on request thread |
+
+**MAJOR if:** Obvious N+1 on hot path; unbounded list endpoint without pagination plan.
+
+---
+
+### 12. Future-proofing
+
+| Check | Pass criteria |
+|-------|---------------|
+| Hardcoded business values | No magic tenant IDs, slot counts, pricing literals in code |
+| Feature flags | Unreleased behavior behind flags or env where applicable |
+| Migrations | Reversible/additive; enum changes split when PostgreSQL requires commit-before-use |
+| Env vars | New `VITE_*` / Render vars in `.env.example` and PR description |
+| Contracts | API/payment contract changes documented for downstream agents |
+
+**MAJOR if:** Hardcoded production identifiers or non-reversible migration without Orchestrator approval.
 
 ---
 
 ## Review procedure
 
 1. **Scope** — Confirm PR matches one concern and one primary folder (per `ROLES.md`).
-2. **Diff walk** — File-by-file against checklist sections 1–10.
+2. **Diff walk** — File-by-file against checklist sections §1–12.
 3. **Run or trust CI** — Build + unit tests green; note which jobs ran (path filter).
 4. **Architecture pass** — Ask: “If the next agent copies this pattern, does the codebase get better or messier?”
 5. **Verdict** — Blockers listed first; link to file:line where possible.
@@ -249,8 +297,9 @@ Save optional local copy under `.grok/review/pr{N}review.md` or post as PR revie
 **Prompt:** .grok/prompts/xxx.md (or inline)
 
 ### Verdict
-- [ ] APPROVED
-- [ ] CHANGES REQUESTED
+- [ ] APPROVE
+- [ ] APPROVE WITH NOTES
+- [ ] BLOCK
 
 ### Blockers
 - …
@@ -274,6 +323,8 @@ Save optional local copy under `.grok/review/pr{N}review.md` or post as PR revie
 | 8 Backend boundaries | … |
 | 9 Payment separation | … |
 | 10 Tests / CI / secrets | … |
+| 11 Performance | … |
+| 12 Future-proofing | … |
 
 ### CI
 - Jobs run: …
@@ -305,8 +356,8 @@ Do not implement features — only test/CI fixes if CI is broken.
 
 ## When workers should self-check (before requesting review)
 
-Workers ②③④ run service build + tests, then skim sections 1–10 for their folder **before** opening PR. Role ⑤ still runs the full gate — self-check reduces rework.
+Workers ②③④ run service build + tests, then skim §1–12 for their folder **before** opening PR. Role ⑤ still runs the full gate — self-check reduces rework.
 
 ---
 
-*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K*
+*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · §1–12 universal checklist*
