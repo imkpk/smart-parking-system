@@ -28,7 +28,7 @@
 
 ## Merge order
 
-1. `<branch>` → `develop` (squash recommended)
+1. `<branch>` → `develop` (merge commit — never squash)
 
 ## PR links
 

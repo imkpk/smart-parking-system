@@ -82,6 +82,7 @@ gitGraph
 8. NO DIRECT PUSH      to develop or main (enforced by GitHub rules)
 9. CONVENTIONAL COMMITS on every commit (see §6)
 10. FEATURE FLAGS      for incomplete SaaS features on develop (Phase 6+)
+11. NO SQUASH MERGE    preserve branch commit history — use merge commits only (`gh pr merge --merge`)
 ```
 
 ---
@@ -257,9 +258,9 @@ Path filtering skips untouched services. Report: `.grok/reports/ci-fast-pr-gates
 **Agent delivery flow:**
 
 ```text
-Open PR early → enable auto-merge → start next branch without idle-wait
+Open PR early → enable auto-merge (--merge only, never --squash) → start next branch without idle-wait
 Fetch develop before dependent PRs → never leave stale PRs across phases
-Merge stacked PRs in dependency order
+Merge stacked PRs in dependency order (merge commit preserves each branch commit)
 ```
 
 **Future (recommended):**
@@ -350,6 +351,7 @@ git branch -d <merged-branch>
 ✗ Leaving 15+ stale milestone branches on remote
 ✗ Naming branches after people or dates (alice-fix-june)
 ✗ Force-push to develop or main
+✗ Squash-merge PRs (hides commit-by-commit history on develop)
 ```
 
 ---
@@ -357,9 +359,9 @@ git branch -d <merged-branch>
 ## 15. Quick reference card
 
 ```text
-Daily work:     develop ← feature/phase-Xa-* (PR, ≤3 days)
-Documentation:  develop ← docs/* (PR, squash)
-Production:     main ← develop (release PR + tag)
+Daily work:     develop ← feature/phase-Xa-* (PR, merge commit, ≤3 days)
+Documentation:  develop ← docs/* (PR, merge commit)
+Production:     main ← develop (release PR + tag, merge commit)
 Emergency:      main ← hotfix/* → back-merge develop
 Next branch:    feature/phase-1a-organization-schema
 ```
