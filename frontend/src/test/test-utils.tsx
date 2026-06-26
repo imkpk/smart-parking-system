@@ -3,6 +3,7 @@ import { expect, vi } from 'vitest';
 import { render, screen, type RenderOptions, within } from '@testing-library/react';
 import { Component, ReactElement, ReactNode } from 'react';
 import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom';
+import { createAppQueryClient } from '../lib/createAppQueryClient';
 import { ThemeModeProvider } from '../providers/ThemeModeProvider';
 import { TestThemeShell } from './TestThemeShell';
 import type { OrganizationSummary, User } from '../types/auth';
@@ -15,17 +16,17 @@ export type RenderWithProvidersOptions = {
 } & Omit<RenderOptions, 'wrapper'>;
 
 export function createTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        refetchOnWindowFocus: false,
-      },
-      mutations: {
-        retry: false,
-      },
+  const queryClient = createAppQueryClient();
+  queryClient.setDefaultOptions({
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: false,
     },
   });
+  return queryClient;
 }
 
 export function renderWithProviders(

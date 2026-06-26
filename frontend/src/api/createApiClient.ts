@@ -1,5 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { dispatchPlanLimitEvent, getPlanLimitDetail } from '../lib/planLimitError';
+import { isPublicApiRequest } from '../lib/publicApiPaths';
 import { dispatchSlowRequestWarning } from '../lib/slowRequestWarning';
 import { tokenStorage } from '../lib/tokenStorage';
 
@@ -34,8 +35,9 @@ export function createApiClient(baseURL: string) {
     }, SLOW_REQUEST_WARNING_MS);
 
     const token = tokenStorage.get();
+    const requestUrl = requestConfig.url ?? '';
 
-    if (token) {
+    if (token && !isPublicApiRequest(requestUrl)) {
       requestConfig.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -50,7 +52,9 @@ export function createApiClient(baseURL: string) {
     (error) => {
       clearSlowRequestTimer(error.config);
 
-      if (error.response?.status === 401) {
+      const requestUrl = error.config?.url ?? '';
+
+      if (error.response?.status === 401 && !isPublicApiRequest(requestUrl)) {
         window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
       }
 

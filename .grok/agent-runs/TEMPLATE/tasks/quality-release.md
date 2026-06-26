@@ -79,6 +79,10 @@ Mark each: ✅ PASS · ❌ FAIL · N/A (only if zero files in that domain touche
 - [ ] No secrets in diff; no hardcoded prod URLs in tests
 - [ ] New env vars documented in `.env.example`
 - [ ] Tests updated for changed logic
+- [ ] Browser console clean on new/changed pages (happy, empty, handled error)
+- [ ] Vitest uses `spyConsoleErrors()` (or equivalent) for public/UX page tests
+- [ ] Public routes skip stale `auth/me` bootstrap; public APIs omit JWT
+- [ ] Prisma migrations applied before manual UI smoke when schema changed
 
 ### §11 Performance
 

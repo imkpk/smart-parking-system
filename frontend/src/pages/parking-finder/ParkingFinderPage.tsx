@@ -22,6 +22,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { getPublicParkingFinderResults } from '../../api/publicParkingFinderApi';
 import { EmptyState } from '../../components/common/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
+import { QUERY_META_SUPPRESS_CONSOLE_ERROR } from '../../lib/createAppQueryClient';
 import { formatStatusLabel } from '../../lib/formatters';
 import { PublicParkingFinderQuery } from '../../types/publicParkingFinder';
 import { VehicleType, vehicleTypeOptions } from '../../types/vehicle';
@@ -73,6 +74,10 @@ export function ParkingFinderPage() {
     queryKey: ['public-parking-finder', queryParams],
     queryFn: () => getPublicParkingFinderResults(queryParams),
     staleTime: 30_000,
+    retry: false,
+    meta: {
+      [QUERY_META_SUPPRESS_CONSOLE_ERROR]: true,
+    },
   });
 
   const results = resultsQuery.data ?? [];
