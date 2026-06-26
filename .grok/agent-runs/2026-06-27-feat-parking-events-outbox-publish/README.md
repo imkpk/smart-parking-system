@@ -2,7 +2,7 @@
 
 Status: ⏳ In Progress
 Branch: `feat/parking-events-outbox-publish`
-PR: TBD
+PR: #150
 Report: `.grok/reports/parking-events-outbox-publish.md`
 
 ## Scope

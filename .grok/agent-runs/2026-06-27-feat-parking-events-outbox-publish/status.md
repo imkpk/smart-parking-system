@@ -6,5 +6,5 @@
 - [x] Tests updated
 - [x] Backend verification passed
 - [x] Report created
-- [ ] PR opened
+- [x] PR opened
 - [ ] Merged

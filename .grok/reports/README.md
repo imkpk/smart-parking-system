@@ -37,7 +37,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
 | [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |
 | [dynamic-agent-scaling.md](./dynamic-agent-scaling.md) | Dynamic agent registry ①–⑫ + activation CI | [#139](https://github.com/imkpk/smart-parking-system/pull/139) ✅ |
-| [parking-events-outbox-publish.md](./parking-events-outbox-publish.md) | Parking check-in/check-out transactional outbox events | PR pending |
+| [parking-events-outbox-publish.md](./parking-events-outbox-publish.md) | Parking check-in/check-out transactional outbox events | PR #150 |
 | [parking-finder-foundation.md](./parking-finder-foundation.md) | Public parking finder foundation | PR #140 ✅ |
 | [single-tenant-branch-preservation.md](./single-tenant-branch-preservation.md) | `single-tenant` branch from `main`, CI triggers, protection checklist | PR #53 ✅ |
 | [e2e-agent-playbook.md](./e2e-agent-playbook.md) | Cypress/E2E agent playbook and prompt pack (LOOP 00) | PR #55 ✅ |
@@ -46,7 +46,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [cypress-core-parking-smoke.md](./cypress-core-parking-smoke.md) | Core parking lifecycle smoke J4/J5/J6/J8 + fan-out (LOOP 03) | PR #58 ✅ |
 | [cypress-ci-smoke-stage.md](./cypress-ci-smoke-stage.md) | Cypress E2E CI job (LOOP 04, advisory) | PR #59 ✅ |
 | [e2e-policy-and-release-pack.md](./e2e-policy-and-release-pack.md) | Release regression policy + PR template (LOOP 05) | PR #60 ✅ |
-| [e2e-rollout-final-summary.md](./e2e-rollout-final-summary.md) | Full E2E rollout summary (LOOP 00–05) | `docs/e2e-rollout-final-summary` (PR pending) |
+| [e2e-rollout-final-summary.md](./e2e-rollout-final-summary.md) | Full E2E rollout summary (LOOP 00–05) | `docs/e2e-rollout-final-summary` (PR #150) |
 | [ci-fast-pr-gates-and-agent-flow.md](./ci-fast-pr-gates-and-agent-flow.md) | Fast PR CI gates + agent delivery flow (pre–Phase 3) | PR #79 ✅ |
 | [phase-3a-operator-dashboard-api.md](./phase-3a-operator-dashboard-api.md) | Phase 3A operator dashboard metrics API | PR #80 ✅ |
 | [phase-3b-operator-dashboard-ui.md](./phase-3b-operator-dashboard-ui.md) | Phase 3B operator dashboard UI | PR #81 |
@@ -67,9 +67,9 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [phase-5a-gate-illustrations-polish.md](./phase-5a-gate-illustrations-polish.md) | Phase 5A gate + list page illustrations | PR #100 ✅ |
 | [phase-5a-gate-acceptance.md](./phase-5a-gate-acceptance.md) | Phase 5A mobile security gate acceptance (full stack) | PR #97–#100 ✅ |
 | [phase-5b-in-app-chat-mvp-acceptance.md](./phase-5b-in-app-chat-mvp-acceptance.md) | Phase 5B in-app chat MVP acceptance (loops 5B-1–5B-6) | PR #101–#106 |
-| [illustrations-parking-gate-chat-rnd.md](./illustrations-parking-gate-chat-rnd.md) | unDraw R&D — gate/security/chat illustrations (cosmetic preview) | PR pending |
+| [illustrations-parking-gate-chat-rnd.md](./illustrations-parking-gate-chat-rnd.md) | unDraw R&D — gate/security/chat illustrations (cosmetic preview) | PR #150 |
 | [docs-agent-quality-review-flow.md](./docs-agent-quality-review-flow.md) | Multi-agent QUALITY_REVIEW gate + Role ⑤ architecture review docs | PR #133 ✅ |
 | [agent-run-infrastructure.md](./agent-run-infrastructure.md) | Reusable agent-run templates + §1–12 quality gate + living index | PR #134 ✅ |
-| [agent-run-post-merge-automation.md](./agent-run-post-merge-automation.md) | GitHub Action auto-updates agent-run index on PR merge | PR pending |
+| [agent-run-post-merge-automation.md](./agent-run-post-merge-automation.md) | GitHub Action auto-updates agent-run index on PR merge | PR #150 |
 
 Prompts live in [`.grok/prompts/`](../prompts/). Agent runs: [`.grok/agent-runs/`](../agent-runs/). Phase 5 prompts: `phase-5-mobile-security-gate-mvp-loop`, `phase-5a-gate-phone-search-history`, `phase-5a-pr97-*`, `phase-5a-gate-*`, `phase-5b-in-app-chat-mvp-loop`, `phase-5b-manual-test-pr-comments`. E2E rollout prompts: `e2e-00` through `e2e-05`.
