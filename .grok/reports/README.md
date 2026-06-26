@@ -37,7 +37,7 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [frontend-test-coverage-rtl-vitest.md](./frontend-test-coverage-rtl-vitest.md) | Frontend Vitest + RTL test foundation | PR #51 ✅ |
 | [ci-path-based-jobs.md](./ci-path-based-jobs.md) | CI path-based job filtering | PR #52 ✅ |
 | [dynamic-agent-scaling.md](./dynamic-agent-scaling.md) | Dynamic agent registry ①–⑫ + activation CI | [#139](https://github.com/imkpk/smart-parking-system/pull/139) ✅ |
-| [parking-finder-foundation.md](./parking-finder-foundation.md) | Public parking finder foundation | TBD |
+| [parking-finder-foundation.md](./parking-finder-foundation.md) | Public parking finder foundation | PR #140 ✅ |
 | [single-tenant-branch-preservation.md](./single-tenant-branch-preservation.md) | `single-tenant` branch from `main`, CI triggers, protection checklist | PR #53 ✅ |
 | [e2e-agent-playbook.md](./e2e-agent-playbook.md) | Cypress/E2E agent playbook and prompt pack (LOOP 00) | PR #55 ✅ |
 | [e2e-strategy-hybrid-model.md](./e2e-strategy-hybrid-model.md) | Cypress hybrid strategy + journey registry (LOOP 01) | PR #56 ✅ |
