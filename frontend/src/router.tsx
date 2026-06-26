@@ -14,6 +14,7 @@ import { SecurityDashboardPage } from './pages/dashboard/SecurityDashboardPage';
 import { UserDashboardPage } from './pages/dashboard/UserDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ParkingEventsPage } from './pages/parking-events/ParkingEventsPage';
+import { ParkingFinderPage } from './pages/parking-finder/ParkingFinderPage';
 import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPage';
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: <ResetPasswordPage />,
+  },
+  {
+    path: '/parking-finder',
+    element: <ParkingFinderPage />,
   },
   {
     path: '/',

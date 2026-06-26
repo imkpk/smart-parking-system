@@ -44,6 +44,7 @@ import { getParkingLotWorkspacePath } from '../../lib/parkingLotWorkspace';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatDateTime } from '../../lib/formatters';
 import { filterParkingLots } from '../../lib/searchFilters';
+import { ParkingLotFinderFields } from '../../components/parking-lots/ParkingLotFinderFields';
 import {
   ParkingLot,
   ParkingLotPayload,
@@ -73,6 +74,12 @@ const emptyForm: ParkingLotPayload = {
   city: '',
   state: '',
   pincode: '',
+  visibility: 'PRIVATE',
+  latitude: null,
+  longitude: null,
+  baseHourlyRate: null,
+  currency: 'INR',
+  openingHours: '',
   isActive: true,
 };
 
@@ -304,6 +311,13 @@ export function ParkingLotsPage() {
       city: parkingLot.city ?? '',
       state: parkingLot.state ?? '',
       pincode: parkingLot.pincode ?? '',
+      visibility: parkingLot.visibility ?? 'PRIVATE',
+      latitude: parkingLot.latitude != null ? Number(parkingLot.latitude) : null,
+      longitude: parkingLot.longitude != null ? Number(parkingLot.longitude) : null,
+      baseHourlyRate:
+        parkingLot.baseHourlyRate != null ? Number(parkingLot.baseHourlyRate) : null,
+      currency: parkingLot.currency ?? 'INR',
+      openingHours: parkingLot.openingHours ?? '',
       isActive: parkingLot.isActive,
     });
     setFormOpen(true);
@@ -332,6 +346,9 @@ export function ParkingLotsPage() {
     city: form.city?.trim() || undefined,
     state: form.state?.trim() || undefined,
     pincode: form.pincode?.trim() || undefined,
+    openingHours: form.openingHours?.trim() || undefined,
+    currency: form.currency?.trim() || 'INR',
+    visibility: form.visibility ?? 'PRIVATE',
     name: form.name.trim(),
   });
 
@@ -466,6 +483,7 @@ export function ParkingLotsPage() {
                 }
                 label="Active"
               />
+              <ParkingLotFinderFields form={form} onChange={updateField} />
             </Stack>
           </DialogContent>
           <DialogActions>

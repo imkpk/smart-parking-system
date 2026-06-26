@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.0
+**Version:** 1.16.1
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -67,6 +67,7 @@ This is **production SaaS**, not a portfolio demo, not a hackathon project, not 
 10. UPDATE THIS FILE after every completed task.
 11. DESIGN SYSTEM ONLY — research → verify license → compare → apply via theme.ts and shared components. Never paste random UI themes/templates.
 12. PRESERVE COMMIT HISTORY ON MERGE — never squash-merge PRs into develop or main. Use merge commits (`gh pr merge --merge`) so each branch commit stays visible in history.
+13. FIX BEFORE BUILD — if existing code in the task area is broken or smells wrong, fix it before adding new behavior; assign ⑪ Performance Agent when duplicate API calls, re-renders, or N+1 risk appear.
 ```
 
 **When a generic agent suggests:** full rewrites, new UI libraries, downloading admin themes, merging services, removing payment microservice, or skipping tests — **reject it** unless the human explicitly approves.
@@ -662,6 +663,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-06-26 | 1.16.1 | Agent | Parking Finder foundation (PR pending): Prisma visibility/geo/pricing fields, `GET /api/public/parking-finder`, public `/parking-finder` page, admin finder fields, tests. Report: `.grok/reports/parking-finder-foundation.md`. |
 | 2026-06-26 | 1.16.0 | Agent | Dynamic agent scaling: ROLES.md registry ①–⑫ (core ①⑤ + specialists ②–④⑥–⑫); Phase 0 git-diff activation table; writers vs ⑨ Testing Agent separation; parallel/sequential execution model; QUALITY_REVIEW §13 agent coverage; TEMPLATE activation tables; `agent-activation-summary.yml` PR comment workflow. Report: `.grok/reports/dynamic-agent-scaling.md`. |
 | 2026-06-26 | 1.15.2 | Agent | PR merge policy: never squash-merge — use merge commits (`gh pr merge --merge`) to preserve commit-by-commit history. Updated MASTER_PROMPT §2, branch strategy §4/§10/§15, `.grok/AGENTS.md`, agent-run templates, loop-engineering prompt. |
 | 2026-06-17 | 1.0.0 | Pratibha Kumar K | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |

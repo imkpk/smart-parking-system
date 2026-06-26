@@ -38,6 +38,12 @@ enum ParkingLotType {
   PUBLIC
 }
 
+enum ParkingLotVisibility {
+  PRIVATE
+  PUBLIC
+  INVITE_ONLY
+}
+
 enum SlotType {
   CAR
   BIKE
@@ -138,24 +144,34 @@ model User {
 }
 
 model ParkingLot {
-  id             Int            @id @default(autoincrement())
+  id             Int                  @id @default(autoincrement())
   organizationId Int
   name           String
-  type           ParkingLotType @default(APARTMENT)
+  type           ParkingLotType       @default(APARTMENT)
   address        String?
   city           String?
   state          String?
   pincode        String?
-  isActive       Boolean        @default(true)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  visibility     ParkingLotVisibility @default(PRIVATE)
+  latitude       Decimal?             @db.Decimal(10, 7)
+  longitude      Decimal?             @db.Decimal(10, 7)
+  baseHourlyRate Decimal?             @db.Decimal(10, 2)
+  currency       String?              @default("INR")
+  openingHours   String?
+  isActive       Boolean              @default(true)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   floors         Floor[]
   bookings       Booking[]
   parkingEvents  ParkingEvent[]
   conversations  Conversation[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@index([organizationId])
+  @@index([visibility])
+  @@index([city])
+  @@index([type])
+  @@index([isActive])
   @@map("parking_lots")
 }
 

@@ -40,6 +40,7 @@ import { AppSnackbar } from '../../components/common/AppSnackbar';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DetailsDialog, DetailsRow } from '../../components/common/DetailsDialog';
 import { ToolbarButton } from '../../components/common/PageHeader';
+import { ParkingLotFinderFields } from '../../components/parking-lots/ParkingLotFinderFields';
 import { ParkingLotWorkspaceShell } from '../../components/parking-lots/ParkingLotWorkspaceShell';
 import { createDetailsColumn } from '../../components/common/gridColumns';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
@@ -195,6 +196,17 @@ export function ParkingLotDetailsPage() {
       city: parkingLotQuery.data.city ?? '',
       state: parkingLotQuery.data.state ?? '',
       pincode: parkingLotQuery.data.pincode ?? '',
+      visibility: parkingLotQuery.data.visibility ?? 'PRIVATE',
+      latitude:
+        parkingLotQuery.data.latitude != null ? Number(parkingLotQuery.data.latitude) : null,
+      longitude:
+        parkingLotQuery.data.longitude != null ? Number(parkingLotQuery.data.longitude) : null,
+      baseHourlyRate:
+        parkingLotQuery.data.baseHourlyRate != null
+          ? Number(parkingLotQuery.data.baseHourlyRate)
+          : null,
+      currency: parkingLotQuery.data.currency ?? 'INR',
+      openingHours: parkingLotQuery.data.openingHours ?? '',
       isActive: parkingLotQuery.data.isActive,
     });
   }, [parkingLotQuery.data]);
@@ -502,6 +514,9 @@ export function ParkingLotDetailsPage() {
       city: settingsForm.city?.trim() || undefined,
       state: settingsForm.state?.trim() || undefined,
       pincode: settingsForm.pincode?.trim() || undefined,
+      openingHours: settingsForm.openingHours?.trim() || undefined,
+      currency: settingsForm.currency?.trim() || 'INR',
+      visibility: settingsForm.visibility ?? 'PRIVATE',
     });
   };
 
@@ -727,6 +742,16 @@ export function ParkingLotDetailsPage() {
                   }
                   value={settingsForm.pincode}
                 />
+                {settingsForm ? (
+                  <ParkingLotFinderFields
+                    form={settingsForm}
+                    onChange={(field, value) =>
+                      setSettingsForm((current) =>
+                        current ? { ...current, [field]: value } : current,
+                      )
+                    }
+                  />
+                ) : null}
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
                     disabled={updateParkingLotMutation.isPending}
