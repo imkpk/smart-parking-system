@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.15.2
+**Version:** 1.16.0
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -26,7 +26,7 @@ FOR HUMANS:
 - Point any new CLI tool at: MASTER_PROMPT.md (repo root)
 - Deep docs live in: docs/project-plan/
 - Multi-agent roles: docs/agents/ROLES.md (orchestrator + 5 worker roles)
-- Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ §1–12 checklist before merge)
+- Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ §1–13 checklist before merge)
 - Agent coding rules: .grok/AGENTS.md (canonical — not root Agents.md)
 - Agent run index: .grok/agent-runs/README.md
 - Prompt/run templates: .grok/prompts/TEMPLATE.md · .grok/agent-runs/TEMPLATE/
@@ -662,6 +662,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-06-26 | 1.16.0 | Agent | Dynamic agent scaling: ROLES.md registry ①–⑫ (core ①⑤ + specialists ②–④⑥–⑫); Phase 0 git-diff activation table; writers vs ⑨ Testing Agent separation; parallel/sequential execution model; QUALITY_REVIEW §13 agent coverage; TEMPLATE activation tables; `agent-activation-summary.yml` PR comment workflow. Report: `.grok/reports/dynamic-agent-scaling.md`. |
 | 2026-06-26 | 1.15.2 | Agent | PR merge policy: never squash-merge — use merge commits (`gh pr merge --merge`) to preserve commit-by-commit history. Updated MASTER_PROMPT §2, branch strategy §4/§10/§15, `.grok/AGENTS.md`, agent-run templates, loop-engineering prompt. |
 | 2026-06-17 | 1.0.0 | Pratibha Kumar K | Initial MASTER_PROMPT created. Captures mission, architecture v2, phases 0–8 status, phases 1–7 queue, coding standards, anti-patterns, update protocol. Phase 8c webhook in progress on feature branch. Next: merge 8c, E2E payment test, Phase 1 multi-tenancy. |
 | 2026-06-17 | 1.1.0 | Pratibha Kumar K | Added design system governance: research→license→compare→apply rule in MASTER_PROMPT §2 and §16. Created docs/project-plan/08-design-system.md with license audit, rejected alternatives, and agent checklist. Formalized what was done implicitly earlier (MUI-only, Inter, curated unDraw). |
@@ -727,15 +728,17 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 ## Starting a new agent run
 
 ```text
+0.5 Phase 0:      git diff origin/develop --name-only → map to agent registry → fill activation table in plan.md
 1. Copy .grok/prompts/TEMPLATE.md        → .grok/prompts/<slug>.md
 2. Copy .grok/agent-runs/TEMPLATE/       → .grok/agent-runs/YYYY-MM-DD-<type>-<slug>/
 3. Add row to .grok/agent-runs/README.md (Phase 3)
-4. Role guide:     docs/agents/ROLES.md
-5. Quality gate:   docs/agents/QUALITY_REVIEW.md  (Role ⑤ §1–12)
+4. Role guide:     docs/agents/ROLES.md  (dynamic registry ①–⑫; ⑨ tests after writers; ⑤ always last)
+5. Quality gate:   docs/agents/QUALITY_REVIEW.md  (Role ⑤ §1–13)
 6. Coding rules:   .grok/AGENTS.md
-7. Execute phases 0 → 15; Role ⑤ before merge; report after merge
+7. Execute phases 0 → 15; ⑨ after writers; Role ⑤ before merge; report after merge
 8. Phase 0 merge sync: scan .grok/agent-runs/README.md for ⏳ rows; gh pr view → auto-update to ✅ Merged (agent fallback)
 9. After merge: GitHub Action agent-run-post-merge.yml auto-commits status updates to develop
+10. PR comment: agent-activation-summary.yml posts activated agents on every develop PR
 ```
 
 ---

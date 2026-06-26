@@ -71,45 +71,116 @@ Register/Login → Vehicle → Book slot → Check-in → Check-out → Pay → 
 
 ---
 
-## 2. Multi-agent model (5 roles + you)
+## 2. Dynamic multi-agent model
+
+The system no longer assumes exactly five workers. **Role ①** inspects the PR diff at Phase 0 and spins up only the specialist agents whose domains are touched. **Role ⑤** always gates the result — regardless of how many agents ran.
+
+### Key principle — one job per agent
+
+| Agent type | Writes | Never writes |
+|------------|--------|--------------|
+| Writers (②③④⑥⑦⑧⑩⑪⑫) | Production code / infra / docs in their scope | Tests (⑨ owns tests) |
+| ⑨ Testing Agent | `*.spec.ts`, `*.test.ts`, test utils | Production source files |
+| ⑤ Quality Agent | Review verdicts, CI/doc fixes for the gate | Feature implementation |
+| ① Orchestrator | Plans, prompts, activation tables, branches | Application code |
 
 ```text
-                    ┌──────────────────────┐
-                    │  YOU (Product Owner) │
-                    │  Approve merge/env │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │ ① ORCHESTRATOR       │
-                    │ Plan · split · route │
-                    └──────────┬───────────┘
-           ┌───────────────────┼───────────────────┐
-           │                   │                   │
-  ┌────────▼────────┐ ┌────────▼────────┐ ┌────────▼────────┐
-  │ ② CORE API      │ │ ③ EXPERIENCE    │ │ ④ PAYMENTS      │
-  │ NestJS + Prisma │ │ React + MUI     │ │ Spring Boot     │
-  └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-           │                   │                   │
-           └───────────────────┼───────────────────┘
-                               │
-                    ┌──────────▼──────────────────────┐
-                    │ ⑤ QUALITY, ARCHITECTURE & RELEASE │
-                    │ Review · architecture · CI        │
-                    └───────────────────────────────────┘
+Work comes in
+     ↓
+① Orchestrator — git diff → activation table → split if too large
+     ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PARALLEL SPECIALISTS (only those activated)                │
+│  ⑥ Database (if schema)   ⑧ Security (if auth)            │
+│  ② Core API   ③ Experience   ④ Payments   ⑦ DevOps …      │
+└─────────────────────────────────────────────────────────────┘
+     ↓
+⑨ Testing Agent — writes/updates specs for all implementation above
+     ↓
+⑤ Quality + Review — reviews code + tests together
+     BLOCK → back to relevant writer → fix → ⑤ again
+     APPROVE → CI → Report → Merge
+```
+
+### Core roles (always present)
+
+| ID | Role | Always active |
+|----|------|---------------|
+| ① | Orchestrator | Yes — every PR / agent run |
+| ⑤ | Quality, Architecture & Release | Yes — every PR; runs **last** |
+
+### Specialist agents (activated on demand)
+
+| ID | Agent | Triggered when PR touches |
+|----|-------|---------------------------|
+| ② | Core API Agent | `backend/src/` (excluding pure schema-only — see ⑥) |
+| ③ | Experience Agent | `frontend/src/` |
+| ④ | Payments Agent | `payment-service/src/` |
+| ⑥ | Database Agent | `backend/prisma/**`, `schema.prisma`, migrations, seed scripts |
+| ⑦ | DevOps / Infra Agent | `.github/workflows/`, `Dockerfile`, `docker-compose*`, `.env.example`, `scripts/` |
+| ⑧ | Security Agent | `auth/`, `guards/`, `interceptors/`, JWT, roles, permissions, `*auth*`, `*guard*`, `*permission*` |
+| ⑨ | Testing Agent | `**/*.spec.ts`, `**/*.test.ts`, `jest.config*`, `vitest*`, coverage config |
+| ⑩ | Documentation Agent | `docs/`, `*.md`, `.grok/`, `README*`, `MASTER_PROMPT.md`, `AGENTS.md` |
+| ⑪ | Performance Agent | **Manual only** — ① invokes when N+1, pagination, caching, or WebSocket risk |
+| ⑫ | Notification / Event Agent | `events/`, `listeners/`, `subscribers/`, `notification*`, `email*`, `websocket*`, `gateway*` |
+
+**Activation rules:**
+
+- One path can activate **multiple** agents (e.g. `backend/src/auth/` → ② + ⑧).
+- **⑥** activates alongside **②** when any Prisma schema or migration file changes.
+- **⑪** is never auto-activated — ① must document the reason in `plan.md`.
+- If only docs/`.grok` change → **① + ⑤** only (no writers).
+- **⑨** runs **after** implementation agents; **⑤** runs **after** ⑨.
+
+### Scaling by load
+
+| Load | Agents active (typical) |
+|------|-------------------------|
+| Small PR (1 file) | ① + one writer + ⑨ + ⑤ |
+| Medium PR (backend + frontend) | ① + ② + ③ + ⑨ + ⑤ |
+| Large PR (full stack) | ① + ②③④⑥ + ⑦⑧ + ⑨ + ⑤ |
+| Massive PR | ① **splits into sub-PRs**, each with its own pipeline |
+
+### When ① splits a huge feature
+
+```text
+Huge feature → ① detects > N files or cross-service scope
+     ↓
+Sub-PRs (dependency order):
+  PR-A: DB schema (⑥)
+  PR-B: Backend API (②) — after A merged
+  PR-C: Frontend UI (③) — after B merged
+Each sub-PR: own ⑨ + ⑤ gate
+     ↓
+① merges sub-PRs in order
 ```
 
 **Rule:** One concern per branch. One concern per PR. Never reuse a long-lived `fix/everything` branch.
 
-### Role selection guide
+### Active agents table (required in every `plan.md`)
 
-| Task shape | Roles required |
-|------------|----------------|
-| Backend only | ① Orchestrator + ② Core API + ⑤ Quality, Architecture & Release |
-| Frontend only | ① + ③ Experience + ⑤ |
-| Payment only | ① + ④ Payments + ⑤ |
-| Full stack (no payment-service) | ① + ② + ③ + ⑤ |
-| Full stack + payment contract | ① + ② + ④ + ③ + ⑤ (merge order: API → payment → frontend) |
-| Docs only | ① + ⑤ |
+```markdown
+## Active agents this run
+| Agent | ID | Reason activated |
+|-------|----|------------------|
+| Orchestrator | ① | Always |
+| Core API Agent | ② | backend/src/parking/ changed |
+| Database Agent | ⑥ | schema.prisma changed |
+| Testing Agent | ⑨ | After ② completes |
+| Quality Agent | ⑤ | Always — runs last |
+```
+
+### Role selection guide (quick)
+
+| Task shape | Agents activated |
+|------------|------------------|
+| Backend only | ① + ② (+ ⑥ if Prisma) + ⑨ + ⑤ |
+| Frontend only | ① + ③ + ⑨ + ⑤ |
+| Payment only | ① + ④ + ⑨ + ⑤ |
+| Auth change | ① + ⑧ + ② + ⑨ + ⑤ |
+| CI / workflow only | ① + ⑦ + ⑤ |
+| Docs only | ① + ⑩ + ⑤ |
+| Full stack | ① + ②③④ (+ ⑥⑦⑧ as paths dictate) + ⑨ + ⑤ |
 
 ---
 
@@ -132,7 +203,8 @@ Register/Login → Vehicle → Book slot → Check-in → Check-out → Pay → 
 You are the Orchestrator for Smart Parking SaaS.
 Read MASTER_PROMPT.md and docs/agents/ROLES.md.
 Goal: [USER GOAL]
-Split into subtasks, assign roles ②–⑤, name branches (fix/ or feature/), define merge order.
+Run git diff origin/develop --name-only; build activation table (§2); assign specialist agents ②–⑫ as needed; always end with ⑨ then ⑤.
+Split into subtasks if scope is large; name branches (fix/ or feature/); define merge order.
 Do not write code until workers are assigned.
 ```
 
@@ -222,7 +294,7 @@ Do not change NestJS or React in the same PR.
 | **Owns** | [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist, `.github/workflows/`, Cypress smoke (when relevant), review comments, deploy checklists, `.grok/reports/` close-out. |
 | **Never touches** | Feature implementation (only test fixes and CI config directly related to the gate). |
 | **Reviews** | Reusable code · duplicate logic · service boundaries · design patterns · React Hooks · React Query · MUI/design-system · tenant-aware architecture · backend service/controller split · payment-service separation · tests/CI/secrets |
-| **Key duties** | Apply `QUALITY_REVIEW.md` §1–12; run `/review`; block merge on BLOCK verdict; confirm mocks not hitting prod; post-merge report + env reminders. |
+| **Key duties** | Apply `QUALITY_REVIEW.md` §1–13; verify agent activation table (§13); run `/review`; block merge on BLOCK verdict; confirm mocks not hitting prod; post-merge report + env reminders. |
 | **Outputs** | PR review (template in `QUALITY_REVIEW.md`), optional `.grok/review/pr{N}review.md`, CI fix PRs, completion report. |
 | **Verify** | Checklist complete; CI green; no secrets in diff; no tenant or hooks blockers. |
 
@@ -243,41 +315,180 @@ Do not implement features — only test/CI fixes if CI is broken.
 
 ---
 
+### Role ⑥ — Database Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | Prisma schema, migrations, seeds, PostgreSQL-safe deploy paths. |
+| **Owns** | `backend/prisma/` — `schema.prisma`, `migrations/`, `seed.ts`, `demo-seed.ts` |
+| **Responsibilities** | Migrations additive and deploy-safe; enum changes split when PostgreSQL requires commit-before-use; no breaking schema without migration; relations and indexes declared in schema |
+| **Forbidden** | Business logic, controllers, `frontend/`, `payment-service/` |
+| **Hands off to** | ② Core API for service-layer changes the schema requires |
+
+---
+
+### Role ⑦ — DevOps / Infra Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | CI workflows, containers, env templates, automation scripts. |
+| **Owns** | `.github/workflows/`, `Dockerfile`, `docker-compose*`, `.env.example`, `scripts/` |
+| **Responsibilities** | Path filters on workflows; no secrets hardcoded; env vars documented; docs/md changes must not trigger test jobs; health checks defined |
+| **Forbidden** | `backend/src/`, `frontend/src/`, `payment-service/src/` |
+| **Hands off to** | ⑤ for final secrets scan (§10) |
+
+---
+
+### Role ⑧ — Security Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | Auth, RBAC, guards, JWT, CORS, sensitive-data handling. |
+| **Owns** | `backend/src/auth/`, guards, interceptors, JWT config, permission decorators, role enums |
+| **Responsibilities** | No unguarded endpoints; roles enforced at controller level; JWT expiry set; no sensitive data in logs; no hardcoded secrets; CORS reviewed |
+| **Forbidden** | UI components, migration files, payment processing logic |
+| **Hands off to** | ② and ③ after auth contracts are locked; ⑤ for §10 |
+
+---
+
+### Role ⑨ — Testing Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | Write and maintain tests for code produced by writers — **never production code**. |
+| **Owns** | `**/*.spec.ts`, `**/*.test.ts`, Jest/Vitest config, test utilities, mocks, fixtures |
+| **Responsibilities** | Every new service/component has a matching spec; no skipped tests without comment; no `console.log` in tests; mocks isolated between tests |
+| **Forbidden** | Production source files (read-only access to understand behavior) |
+| **Hands off to** | ⑤ for coverage and CI checks (§10, §13) |
+
+**Runs after:** ②③④⑥⑦⑧⑩⑪⑫ complete implementation.
+
+---
+
+### Role ⑩ — Documentation Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | Docs, prompts, reports, MASTER_PROMPT consistency. |
+| **Owns** | `docs/`, `*.md`, `.grok/`, `README*`, `MASTER_PROMPT.md`, `AGENTS.md` |
+| **Responsibilities** | No broken links; consistent terminology; phase numbers correct; agent IDs consistent; new agents documented in `ROLES.md` |
+| **Forbidden** | All application source code |
+| **Hands off to** | ⑤ for final consistency check |
+
+---
+
+### Role ⑪ — Performance Agent (manual)
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | N+1, caching, pagination, real-time patterns — **only when ① explicitly activates**. |
+| **Owns** | Files with heavy queries, React Query hooks, WebSocket handlers, pagination logic |
+| **Responsibilities** | N+1 check; `staleTime`/`gcTime` review; pagination on list endpoints; no sync blocking in handlers; slot availability via WebSocket not polling where required |
+| **Forbidden** | Schema changes, auth logic |
+| **Hands off to** | ⑤ §11 |
+
+---
+
+### Role ⑫ — Notification / Event Agent
+
+| Field | Definition |
+|-------|------------|
+| **Mission** | Event bus, listeners, notifications, email, WebSocket gateways. |
+| **Owns** | Event emitters, listeners, subscribers, notification services, email templates, WebSocket gateways |
+| **Responsibilities** | Events through bus only; no direct cross-module notification calls; email templates reviewed; WebSocket rooms scoped to `organizationId` |
+| **Forbidden** | Payment processing, auth guards |
+| **Hands off to** | ② for backend module wiring |
+
+---
+
 ## 4. Standard workflow (going forward)
 
 ```text
-Orchestrator → Worker(s) → Role ⑤ review
-                              ↓
-                        BLOCK? → back to Worker → fix → Role ⑤ again
-                              ↓
-                        APPROVE → CI → Report → Merge
+① Phase 0 diff → activation table
+     ↓
+Specialists (⑥⑧ first if triggered, then ②③④⑦⑩⑪⑫ in parallel where safe)
+     ↓
+⑨ Testing Agent (specs for all new code)
+     ↓
+⑤ Quality review
+     ↓
+BLOCK? → back to relevant agent → fix → ⑤ again
+     ↓
+APPROVE → CI → Report → Merge
 ```
 
-Workers implement. Role ⑤ reviews **before** merge — not only after CI fails. See [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md).
+Writers implement production code. **⑨** writes tests. **⑤** reviews **before** merge — not only after CI fails. See [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md).
+
+### Phase 0 — Orchestrator decision algorithm
+
+Runs at the start of **every** agent run and PR planning session:
+
+```text
+Step 1: git fetch origin develop
+Step 2: git diff origin/develop --name-only → changed file list
+Step 3: Map each file to agent registry (§2) → build active agent list
+Step 4: Resolve overlaps by scope rules (forbidden zones in §3)
+Step 5: Output activation table in plan.md (required format in §2)
+Step 6: Set execution order (parallel vs sequential below)
+Step 7: Per activated agent — set allowed/forbidden paths in plan.md
+```
+
+### Parallel vs sequential execution
+
+| Order | Agents | Rule |
+|-------|--------|------|
+| 1 | ⑥ Database | **Before** ② when schema/migrations touched |
+| 2 | ⑧ Security | **Before** ② and ③ when auth contracts change |
+| 3 | ② ③ ④ ⑦ ⑩ ⑫ | **Parallel** when folders do not overlap |
+| 4 | ⑨ Testing | **After** all implementation agents |
+| 5 | ⑤ Quality | **Always last** |
+
+```text
+Phase 0:  ① Orchestrator — diff scan → activation table
+          ↓
+Phase 5:  ⑥ Database (if triggered) → schema locked
+          ⑧ Security (if triggered) → auth contracts locked
+          ↓
+Phase 6:  ② Core API  ─────────────────────────────┐
+          ③ Experience ─────────────── parallel    │
+          ④ Payments (if triggered) ───────────────│
+          ⑦ DevOps (if triggered) ───── parallel   │
+          ⑩ Docs (if triggered) ─────── parallel   ┘
+          ↓
+Phase 10: ⑨ Testing — writes/updates specs for all above
+          ↓
+Phase 13: ⑤ Quality — gates everything (§1–13)
+          ↓
+          BLOCK? → back to relevant agent → ⑤ again
+          APPROVE → CI → Report → Merge
+```
 
 ### Canonical phase numbering
 
 | Phase | Action | Owner |
 |-------|--------|-------|
-| 0 | Safety check + **merge sync** (scan `.grok/agent-runs/README.md` for ⏳ rows; `gh pr view` → update to ✅ Merged if merged) | ① or ⑤ |
+| 0 | Safety + **merge sync** + **git diff → activation table** | ① |
+| 0.5 | Fill active agents table in `plan.md` | ① |
 | 1 | Orchestration summary | ① |
 | 2 | Create prompt file (from [`TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md)) | ① |
-| 3 | Create agent-run folder (from [`TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/)); add row to [agent-runs README](../../.grok/agent-runs/README.md) | ① |
-| 4 | Create agent-run task files (`tasks/quality-release.md`, worker tasks if needed) | ① |
-| 5 | Branch from `develop` | ① |
-| 6 | Implementation | ②③④ |
-| 13 | Role ⑤ quality review | ⑤ |
+| 3 | Create agent-run folder; add row to [agent-runs README](../../.grok/agent-runs/README.md) | ① |
+| 4 | Create agent-run task files | ① |
+| 5 | ⑥ Database / ⑧ Security (if activated) | ⑥⑧ |
+| 6 | Implementation | Activated writers (②③④⑦⑩⑫…) |
+| 10 | Test authoring | ⑨ |
+| 13 | Role ⑤ quality review (§1–13) | ⑤ |
 | 14 | Report + `MASTER_PROMPT` changelog | ⑤ |
 | 15 | Push + open PR | ① |
 
 ### How to start a new agent run
 
-1. Copy [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) → `.grok/agent-runs/YYYY-MM-DD-<type>-<slug>/`
-2. Copy [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) → `.grok/prompts/<slug>.md`
-3. Fill all placeholders **before** running any phase
-4. Add a row to [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) during Phase 3
-5. Execute phases 0 → 15 in order; mark ✅ in `status.md` as you go
-6. Coding standards: [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (not root `Agents.md`)
+1. **Phase 0.5:** `git diff origin/develop --name-only` → map to agent registry → fill activation table in `plan.md`
+2. Copy [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) → `.grok/agent-runs/YYYY-MM-DD-<type>-<slug>/`
+3. Copy [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) → `.grok/prompts/<slug>.md`
+4. Fill all placeholders **before** running any phase
+5. Add a row to [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) during Phase 3
+6. Execute phases 0 → 15 in order; mark ✅ in `status.md` as you go
+7. Coding standards: [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (not root `Agents.md`)
 
 ### Phase A — Intake (Orchestrator)
 
@@ -294,7 +505,7 @@ Merge order: 1 → 2 → 3
 Parallel OK: yes/no per row
 ```
 
-### Phase B — Execute (Workers ②③④)
+### Phase B — Execute (Writers ②③④⑥⑦⑧⑩⑫, then ⑨)
 
 | Order | When |
 |-------|------|
@@ -319,7 +530,7 @@ git push -u origin fix/short-description
 ### Phase C — Quality, architecture & CI gate (Role ⑤)
 
 1. Worker opens PR → fast CI runs (touched services only).
-2. Role ⑤ runs [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist (§1–12).
+2. Role ⑤ runs [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist (§1–13).
 3. Verdict: **APPROVE** | **APPROVE WITH NOTES** | **BLOCK** (BLOCK must be fixed in PR before re-review).
 4. After approval + green CI → merge eligible.
 5. Push to `develop`: full CI on all three services.
@@ -399,25 +610,31 @@ Copy between agents:
 
 ## 7. Quick routing table
 
-| If the task is about… | Agent |
-|------------------------|-------|
-| Login, JWT, CORS, Prisma, bookings, check-in/out, chat API | ② Core API |
-| Page UI, DataGrid, charts, env vars, Vercel SPA routing | ③ Experience |
-| Razorpay, payment status, webhooks, `payment-service` build | ④ Payments |
-| CI failing, PR review, architecture/duplication audit, Cypress, deploy checklist | ⑤ Quality, Architecture & Release |
-| "Fix production" / multi-surface outage | ① Orchestrator splits → ②③④⑤ |
-| MASTER_PROMPT, roadmap, design doc only | ① Orchestrator or `docs/` branch |
+| If the task is about… | Agent(s) |
+|------------------------|----------|
+| Login, JWT, CORS, Prisma, bookings, check-in/out, chat API | ② (+ ⑧ if auth) |
+| Page UI, DataGrid, charts, env vars, Vercel SPA routing | ③ |
+| Razorpay, payment status, webhooks, `payment-service` build | ④ |
+| Prisma schema, migrations, seeds | ⑥ → then ② |
+| CI workflows, Docker, scripts, `.env.example` | ⑦ |
+| Guards, RBAC, permissions, JWT config | ⑧ → then ②③ |
+| Unit/integration specs, Vitest/Jest config | ⑨ (after writers) |
+| MASTER_PROMPT, roadmap, agent docs | ⑩ |
+| N+1, pagination, WebSocket performance | ⑪ (manual) + ⑤ §11 |
+| Events, notifications, email, WebSocket gateways | ⑫ |
+| CI failing, PR review, architecture audit | ⑤ |
+| "Fix production" / multi-surface outage | ① splits → specialists → ⑨ → ⑤ |
 
 ---
 
 ## 8. How `.grok/prompts` and `.grok/reports` fit in
 
-These folders existed **before** `ROLES.md`. They are not replaced by the 5 roles — they **feed** them.
+These folders existed **before** `ROLES.md`. They are not replaced by the dynamic registry — they **feed** it.
 
 ```text
 MASTER_PROMPT.md              ← laws (always read)
-docs/agents/ROLES.md          ← who does what (roles + routing)
-docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–12)
+docs/agents/ROLES.md          ← dynamic agent registry + routing (①–⑫)
+docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–13)
 .grok/AGENTS.md               ← how to code (standards — canonical)
 .grok/prompts/TEMPLATE.md     ← copy for new missions
 .grok/prompts/                ← WHAT to do next (executable missions)
@@ -432,7 +649,7 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–12)
 |------------|----------------------------------------------------------|
 | Examples | `phase-5b-in-app-chat-mvp-loop.md`, `e2e-03-core-parking-smoke.md`, `feature-tenant-self-service-onboarding.md` |
 | Written by | Orchestrator (①) or human when scoping a phase |
-| Used by | Workers ②③④ — paste prompt + role starter from §3 |
+| Used by | Activated specialists — paste prompt + role starter from §3 |
 | Contains | Scope, files allowed, do-not-touch rules, branch name, verification commands, loop protocol |
 
 **When to create a new prompt file:**
@@ -462,7 +679,7 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–12)
 |------|------|--------|
 | 1. Pick next work | ① Orchestrator | Read `MASTER_PROMPT` Next Up + `.grok/reports/README` |
 | 2. Scope mission | ① Orchestrator | Pick or write `.grok/prompts/xxx.md` |
-| 3. Execute | ②③④ Worker | Follow prompt + `ROLES.md` §3 starter; self-check `QUALITY_REVIEW.md` |
+| 3. Execute | Activated writers + ⑨ | Follow prompt + `ROLES.md` §3; writers skip tests; ⑨ writes specs |
 | 4. Architecture gate | ⑤ Quality, Architecture & Release | Full `QUALITY_REVIEW.md` checklist + CI |
 | 5. Close loop | ⑤ → ① | Write `.grok/reports/xxx.md`, update reports README, MASTER_PROMPT changelog |
 
@@ -496,7 +713,13 @@ Path filter treats `.grok/**` like docs — **backend/frontend/payment CI skips 
 | Architecture review | "Act as Role ⑤. Apply docs/agents/QUALITY_REVIEW.md to PR #N. Verdict + checklist." |
 | Review (short) | "Act as Quality, Architecture & Release Agent (Role ⑤). Review PR #N." |
 | Parallel | "Orchestrator: split [goal]. Launch ② and ③ in parallel on separate branches." |
+| Dynamic scaling | "Act as Orchestrator (①). Run git diff origin/develop --name-only. Build activation table per ROLES.md §2." |
+| Testing only | "Act as Testing Agent (⑨). Write specs for [feature]. Do not modify production source." |
+
+### CI — agent activation summary
+
+Workflow [`.github/workflows/agent-activation-summary.yml`](../../.github/workflows/agent-activation-summary.yml) posts a PR comment listing which agents would be activated for the changed files — use it to verify ①'s activation table matches the diff.
 
 ---
 
-*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K*
+*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · Dynamic agent registry ①–⑫*

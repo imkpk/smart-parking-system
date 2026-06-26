@@ -16,6 +16,18 @@
 | ④ Payments | Yes/No | [payment-service work] |
 | ⑤ Quality, Architecture & Release | Yes | Review gate + report |
 
+## Agent activation
+
+<!-- Role ① fills at Phase 0: git diff origin/develop --name-only -->
+
+| Agent | ID | Activated | Reason |
+|-------|----|-----------|--------|
+| Orchestrator | ① | Yes | Always |
+| | | | |
+| Quality Agent | ⑤ | Yes | Always — runs last |
+
+See `docs/agents/ROLES.md` §2 for full registry (②–⑫).
+
 ## Allowed paths
 
 ```text
@@ -51,7 +63,8 @@ Role ⑤ must verify before APPROVE:
 - [ ] [Criterion 1]
 - [ ] [Criterion 2]
 - [ ] Build/tests pass for touched services (or N/A docs-only)
-- [ ] `QUALITY_REVIEW.md` §1–12 reviewed; no BLOCK findings
+- [ ] `QUALITY_REVIEW.md` §1–13 reviewed; no BLOCK findings
+- [ ] Activation table in `plan.md` matches changed files
 - [ ] Report at `.grok/reports/<slug>.md`
 - [ ] Row added to `.grok/agent-runs/README.md`
 
