@@ -15,4 +15,4 @@
 
 ## Branch
 
-`feat/parking-finder-foundation` → `develop` (merge commit — human merges after review)
+`feat/parking-finder-foundation` → `develop` — ✅ merged PR #140 (merge commit, 2026-06-26)
