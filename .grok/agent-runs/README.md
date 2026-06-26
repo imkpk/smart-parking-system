@@ -62,3 +62,4 @@ Example: `2026-06-26-docs-agent-run-infrastructure`
 | 2026-06-26 | [feat-events-outbox-foundation](./2026-06-26-feat-events-outbox-foundation/) | feat: transactional outbox foundation | ①⑥②⑧⑨⑤ | [#145](https://github.com/imkpk/smart-parking-system/pull/145) | ✅ Merged |
 | 2026-06-27 | [parking-events-outbox-publish](./2026-06-27-feat-parking-events-outbox-publish/) | feat: parking check-in/out outbox events | ①②⑧⑨⑩⑫⑤ | [#150](https://github.com/imkpk/smart-parking-system/pull/150) | ✅ Merged |
 | 2026-06-27 | [feat-outbox-super-admin-monitor-endpoint](./2026-06-27-feat-outbox-super-admin-monitor-endpoint/) | feat: SUPER_ADMIN outbox monitor endpoint | ①②⑧⑨⑩⑫⑤ | [#151](https://github.com/imkpk/smart-parking-system/pull/151) | ⏳ In Progress |
+| 2026-06-27 | [fix-frontend-parking-events-tab-query-gating](./2026-06-27-fix-frontend-parking-events-tab-query-gating/) | fix: ParkingEventsPage tab query gating | ①③⑨⑩⑪⑤ | TBD | ⏳ In Progress |

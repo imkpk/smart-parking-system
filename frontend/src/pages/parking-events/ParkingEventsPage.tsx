@@ -270,12 +270,12 @@ export function ParkingEventsPage() {
   const activeEventsQuery = useQuery({
     queryKey: ['parking-events', 'active'],
     queryFn: getActiveParkingEvents,
-    enabled: canOperateParkingEvents
+    enabled: canOperateParkingEvents && activeTab === 'active'
   });
   const historyQuery = useQuery({
     queryKey: ['parking-events', isUser ? 'history' : 'all'],
     queryFn: isUser ? getParkingEventHistory : getParkingEvents,
-    enabled: isUser || isAdmin
+    enabled: isUser || (isAdmin && activeTab === 'history')
   });
 
   const checkInMutation = useMutation({
