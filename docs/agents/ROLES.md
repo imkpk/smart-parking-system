@@ -2,7 +2,10 @@
 
 > **Purpose:** Define how AI agents (and humans) split work on this monorepo.  
 > **Read first:** [`MASTER_PROMPT.md`](../../MASTER_PROMPT.md) — every agent obeys it over generic tool defaults.  
-> **Branch rules:** [`docs/project-plan/09-branch-strategy.md`](../project-plan/09-branch-strategy.md)
+> **Branch rules:** [`docs/project-plan/09-branch-strategy.md`](../project-plan/09-branch-strategy.md)  
+> **Task library:** [`.grok/prompts/`](../../.grok/prompts/) — copy-paste agent missions per phase  
+> **Completion archive:** [`.grok/reports/`](../../.grok/reports/) — what was done, PR links, lessons learned  
+> **Review gate:** [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) — architecture + code quality checklist for Role ⑤
 
 ---
 
@@ -89,10 +92,10 @@ Register/Login → Vehicle → Book slot → Check-in → Check-out → Pay → 
            │                   │                   │
            └───────────────────┼───────────────────┘
                                │
-                    ┌──────────▼───────────┐
-                    │ ⑤ QUALITY & RELEASE  │
-                    │ Test · review · CI   │
-                    └──────────────────────┘
+                    ┌──────────▼──────────────────────┐
+                    │ ⑤ QUALITY, ARCHITECTURE & RELEASE │
+                    │ Review · architecture · CI        │
+                    └───────────────────────────────────┘
 ```
 
 **Rule:** One concern per branch. One concern per PR. Never reuse a long-lived `fix/everything` branch.
@@ -107,7 +110,7 @@ Register/Login → Vehicle → Book slot → Check-in → Check-out → Pay → 
 |-------|------------|
 | **Mission** | Turn a human goal into a small, ordered plan; assign workers; prevent scope creep and file conflicts. |
 | **Owns** | Task breakdown, branch names, PR order, handoff notes, MASTER_PROMPT changelog entries (or delegates to workers). |
-| **Never touches** | Application code (except tiny doc fixes). Never merges without Quality agent sign-off. |
+| **Never touches** | Application code (except tiny doc fixes). Never merges without Role ⑤ sign-off. |
 | **Reads** | `MASTER_PROMPT.md`, `docs/project-plan/`, open PRs, CI status. |
 | **Outputs** | Plan (max 5 bullets), branch list, per-agent prompts, merge sequence. |
 | **Verify** | Each subtask maps to exactly one worker; no two workers edit the same folder in parallel. |
@@ -200,31 +203,42 @@ Do not change NestJS or React in the same PR.
 
 ---
 
-### Role ⑤ — Quality & Release Agent
+### Role ⑤ — Quality, Architecture & Release Agent
 
 | Field | Definition |
 |-------|------------|
-| **Mission** | Tests, CI, code review, deploy readiness, env documentation — gate before merge. |
-| **Owns** | `.github/workflows/`, Cypress smoke (when relevant), review comments, deploy checklists, `MASTER_PROMPT` verification section. |
+| **Mission** | Code quality, architecture compliance, tests, CI, deploy readiness — **mandatory gate between worker and merge**. |
+| **Owns** | [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist, `.github/workflows/`, Cypress smoke (when relevant), review comments, deploy checklists, `.grok/reports/` close-out. |
 | **Never touches** | Feature implementation (only test fixes and CI config directly related to the gate). |
-| **Key duties** | Run `/review`, confirm path filters, confirm mocks not hitting prod, PR merge when green, post-merge deploy reminders. |
-| **Outputs** | Review file or PR review, CI fix PRs, smoke checklist for Vercel/Render/Neon env vars. |
-| **Verify** | All required CI jobs pass; `ci-summary` green; no secrets in diff. |
+| **Reviews** | Reusable code · duplicate logic · service boundaries · design patterns · React Hooks · React Query · MUI/design-system · tenant-aware architecture · backend service/controller split · payment-service separation · tests/CI/secrets |
+| **Key duties** | Apply `QUALITY_REVIEW.md` §1–10; run `/review`; block merge on architecture blockers; confirm mocks not hitting prod; post-merge report + env reminders. |
+| **Outputs** | PR review (template in `QUALITY_REVIEW.md`), optional `.grok/review/pr{N}review.md`, CI fix PRs, completion report. |
+| **Verify** | Checklist complete; CI green; no secrets in diff; no tenant or hooks blockers. |
 
 **Human-only:** Paste production secrets in Vercel/Render dashboards (never commit `.env`).
 
 **Starter prompt:**
 
 ```text
-You are the Quality & Release Agent.
-Review PR #[N] against MASTER_PROMPT.md and docs/agents/ROLES.md.
-Check: scope, mocks, CI path impact, migration safety, env vars documented.
-List blockers by severity. Do not implement features — only test/CI fixes if broken.
+You are the Quality, Architecture & Release Agent (Role ⑤).
+Read docs/agents/QUALITY_REVIEW.md and apply every applicable checklist section.
+Review PR #[N] against MASTER_PROMPT.md, ROLES.md, and .grok/AGENTS.md.
+Check: reusable code, duplication, service boundaries, design patterns,
+React Hooks, React Query, MUI/design-system, tenant scoping,
+backend controller/service split, payment-service separation, tests/CI/secrets.
+Output verdict using the template in QUALITY_REVIEW.md.
+Do not implement features — only test/CI fixes if CI is broken.
 ```
 
 ---
 
 ## 4. Standard workflow (going forward)
+
+```text
+Orchestrator → Worker agent → Quality, Architecture & Review (⑤) → CI/release gate → Report → Merge
+```
+
+Workers implement. Role ⑤ reviews **before** merge — not only after CI fails. See [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md).
 
 ### Phase A — Intake (Orchestrator)
 
@@ -263,11 +277,15 @@ git push -u origin fix/short-description
 # open PR → develop
 ```
 
-### Phase C — Gate (Role ⑤)
+### Phase C — Quality, architecture & CI gate (Role ⑤)
 
-- PR: fast CI (touched services only).
-- Push to `develop`: full CI.
-- Quality agent approves or files CI fix branch.
+1. Worker opens PR → fast CI runs (touched services only).
+2. Role ⑤ runs [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist (§1–10).
+3. Verdict: **APPROVED** | **CHANGES REQUESTED** (blockers must be fixed in PR).
+4. After approval + green CI → merge eligible.
+5. Push to `develop`: full CI on all three services.
+
+Role ⑤ may file a `fix/review-xxx` branch only for broken CI or test gaps — not feature rework unless Orchestrator assigns it.
 
 ### Phase D — Release (Human + Role ⑤)
 
@@ -299,6 +317,7 @@ Copy between agents:
 ### Done
 - [ ] Build passes
 - [ ] Tests pass (mocked, no prod URLs)
+- [ ] Self-check against QUALITY_REVIEW.md (worker folder sections)
 
 ### Your task
 - …
@@ -317,7 +336,10 @@ Copy between agents:
 | Java 25 on payment-service without Spring Boot upgrade | Stay Java 21 until stack is ready |
 | Hardcode `localhost` in frontend production fallbacks | `VITE_API_URL` / `apiEnv.ts` only |
 | Agent edits all three services in one PR | Orchestrator splits; sequential merge |
-| Skip Quality agent on "small" changes | Always run build + review before merge |
+| Skip Role ⑤ on "small" changes | Always run QUALITY_REVIEW.md gate before merge |
+| Merge on green CI only, no architecture review | Worker → ⑤ review → CI → merge |
+| Duplicate DataGrid/chip/dialog per page | Extend `components/common/*` |
+| `useEffect` fetch instead of `useQuery` | React Query with proper `queryKey` + invalidation |
 | Commit Razorpay/Neon secrets | Dashboard env vars only |
 
 ---
@@ -329,23 +351,93 @@ Copy between agents:
 | Login, JWT, CORS, Prisma, bookings, check-in/out, chat API | ② Core API |
 | Page UI, DataGrid, charts, env vars, Vercel SPA routing | ③ Experience |
 | Razorpay, payment status, webhooks, `payment-service` build | ④ Payments |
-| CI failing, PR review, Cypress, deploy checklist | ⑤ Quality & Release |
+| CI failing, PR review, architecture/duplication audit, Cypress, deploy checklist | ⑤ Quality, Architecture & Release |
 | "Fix production" / multi-surface outage | ① Orchestrator splits → ②③④⑤ |
 | MASTER_PROMPT, roadmap, design doc only | ① Orchestrator or `docs/` branch |
 
 ---
 
-## 8. Cursor / Grok invocation cheat sheet
+## 8. How `.grok/prompts` and `.grok/reports` fit in
+
+These folders existed **before** `ROLES.md`. They are not replaced by the 5 roles — they **feed** them.
+
+```text
+MASTER_PROMPT.md              ← laws (always read)
+docs/agents/ROLES.md          ← who does what (roles + routing)
+docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤)
+.grok/AGENTS.md               ← how to code (standards)
+.grok/prompts/                ← WHAT to do next (executable missions)
+.grok/reports/                ← WHAT was done (proof + handoff)
+```
+
+### `.grok/prompts/` — task library (input to workers)
+
+| What it is | Ready-to-run agent briefs for a **specific slice** of work |
+|------------|----------------------------------------------------------|
+| Examples | `phase-5b-in-app-chat-mvp-loop.md`, `e2e-03-core-parking-smoke.md`, `feature-tenant-self-service-onboarding.md` |
+| Written by | Orchestrator (①) or human when scoping a phase |
+| Used by | Workers ②③④ — paste prompt + role starter from §3 |
+| Contains | Scope, files allowed, do-not-touch rules, branch name, verification commands, loop protocol |
+
+**When to create a new prompt file:**
+
+- Multi-step phase (e.g. Phase 6 tenant billing) with 3+ PRs
+- Repeatable playbook (E2E loops `e2e-00` … `e2e-05`)
+- Handoff to a fresh agent session without re-explaining context
+
+**When NOT to create one:** tiny one-file fix → Orchestrator gives a 3-line inline task instead.
+
+**Naming convention:** `phase-Nx-short-name.md`, `fix-short-name.md`, `e2e-NN-description.md`, `feature-short-name.md`
+
+### `.grok/reports/` — completion archive (output from workers + ⑤)
+
+| What it is | Post-merge summary: changes, PR #, verification, known gaps |
+|------------|---------------------------------------------------------------|
+| Index | [`.grok/reports/README.md`](../../.grok/reports/README.md) — table of all reports |
+| Written by | Quality, Architecture & Release (⑤) or the worker who finished the slice |
+| Used by | Orchestrator (①) for “do not redo” checks; MASTER_PROMPT changelog |
+| Contains | Problem, solution, files touched, test evidence, follow-ups |
+
+**Rule:** Every merged phase PR should have **one report** (or update README index). Link the report in the PR description.
+
+### How roles use both folders
+
+| Step | Role | Action |
+|------|------|--------|
+| 1. Pick next work | ① Orchestrator | Read `MASTER_PROMPT` Next Up + `.grok/reports/README` |
+| 2. Scope mission | ① Orchestrator | Pick or write `.grok/prompts/xxx.md` |
+| 3. Execute | ②③④ Worker | Follow prompt + `ROLES.md` §3 starter; self-check `QUALITY_REVIEW.md` |
+| 4. Architecture gate | ⑤ Quality, Architecture & Release | Full `QUALITY_REVIEW.md` checklist + CI |
+| 5. Close loop | ⑤ → ① | Write `.grok/reports/xxx.md`, update reports README, MASTER_PROMPT changelog |
+
+### Related `.grok/` assets
+
+| Path | Purpose |
+|------|---------|
+| [`.grok/AGENTS.md`](../../.grok/AGENTS.md) | Coding standards all workers follow |
+| [`.grok/e2e/journey-registry.md`](../../.grok/e2e/journey-registry.md) | Cypress journey IDs (J1, J4, …) for Role ⑤ |
+| [`.grok/prompts/loop-engineering-prompt.md`](../../.grok/prompts/loop-engineering-prompt.md) | Autonomous multi-PR loop protocol (auto-merge, no idle-wait) |
+
+### CI note (why docs/prompts changes skip service jobs)
+
+Path filter treats `.grok/**` like docs — **backend/frontend/payment CI skips on PR** unless workflow files also changed. Reports and prompts are safe to commit without triggering full service builds.
+
+---
+
+## 9. Cursor / Grok invocation cheat sheet
 
 | Intent | What to say |
 |--------|-------------|
-| Plan only | "Act as Orchestrator (Role ①). Read MASTER_PROMPT + ROLES.md. Plan [goal]. No code." |
+| Plan only | "Act as Orchestrator (Role ①). Read MASTER_PROMPT + ROLES.md + .grok/reports/README. Plan [goal]. No code." |
+| Run a phase | "Execute .grok/prompts/phase-5b-in-app-chat-mvp-loop.md as Role ②/③ per section headers." |
+| After merge | "Role ⑤: write .grok/reports/[name].md and update reports README." |
 | Backend | "Act as Core API Agent (Role ②). Branch fix/… Task: …" |
 | Frontend | "Act as Experience Agent (Role ③). Branch fix/… Task: …" |
 | Payment | "Act as Payments Agent (Role ④). Branch fix/… Task: …" |
-| Review | "Act as Quality Agent (Role ⑤). Review PR #N." |
+| Architecture review | "Act as Role ⑤. Apply docs/agents/QUALITY_REVIEW.md to PR #N. Verdict + checklist." |
+| Review (short) | "Act as Quality, Architecture & Release Agent (Role ⑤). Review PR #N." |
 | Parallel | "Orchestrator: split [goal]. Launch ② and ③ in parallel on separate branches." |
 
 ---
 
-*Last updated: 2026-06-24 · Maintainer: Pratibha Kumar K*
+*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K*
