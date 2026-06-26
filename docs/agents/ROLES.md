@@ -482,6 +482,7 @@ Phase 13: ⑤ Quality — gates everything (§1–13)
 
 ### How to start a new agent run
 
+0. **Any AI tool:** paste [`.grok/prompts/ai-tool-bootstrap.md`](../../.grok/prompts/ai-tool-bootstrap.md) at session start (Codex, Claude, Cursor, Grok, Copilot, …). Guide: [`AI-TOOL-BOOTSTRAP.md`](./AI-TOOL-BOOTSTRAP.md). No subagents? simulate roles ①→⑨→⑤ in one session.
 1. **Phase 0.5:** `git diff origin/develop --name-only` → map to agent registry → fill activation table in `plan.md`
 2. Copy [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) → `.grok/agent-runs/YYYY-MM-DD-<type>-<slug>/`
 3. Copy [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) → `.grok/prompts/<slug>.md`
@@ -693,6 +694,8 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–13)
 | [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) | Living index of all agent runs |
 | [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) | Copy for every new run |
 | [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) | Copy for every new mission prompt |
+| [`.grok/prompts/ai-tool-bootstrap.md`](../../.grok/prompts/ai-tool-bootstrap.md) | Universal session opener — paste into any AI tool |
+| [`AI-TOOL-BOOTSTRAP.md`](./AI-TOOL-BOOTSTRAP.md) | Tool mapping, single-agent mode, Codex quick start |
 
 ### CI note (why docs/prompts changes skip service jobs)
 
@@ -700,10 +703,13 @@ Path filter treats `.grok/**` like docs — **backend/frontend/payment CI skips 
 
 ---
 
-## 9. Cursor / Grok invocation cheat sheet
+## 9. AI tool invocation cheat sheet (any tool)
+
+**Session opener (all tools):** paste [`.grok/prompts/ai-tool-bootstrap.md`](../../.grok/prompts/ai-tool-bootstrap.md) + your task. Full guide: [`AI-TOOL-BOOTSTRAP.md`](./AI-TOOL-BOOTSTRAP.md).
 
 | Intent | What to say |
 |--------|-------------|
+| New session (Codex / Claude / generic) | Paste `ai-tool-bootstrap.md` + `Task: [goal]` or `Execute prompt: .grok/prompts/<slug>.md` |
 | Plan only | "Act as Orchestrator (Role ①). Read MASTER_PROMPT + ROLES.md + .grok/reports/README. Plan [goal]. No code." |
 | Run a phase | "Execute .grok/prompts/phase-5b-in-app-chat-mvp-loop.md as Role ②/③ per section headers." |
 | After merge | "Role ⑤: write .grok/reports/[name].md and update reports README." |
@@ -722,4 +728,4 @@ Workflow [`.github/workflows/agent-activation-summary.yml`](../../.github/workfl
 
 ---
 
-*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · Dynamic agent registry ①–⑫*
+*Last updated: 2026-06-27 · Maintainer: Pratibha Kumar K · Dynamic agent registry ①–⑫ · Tool-agnostic via AI-TOOL-BOOTSTRAP.md*

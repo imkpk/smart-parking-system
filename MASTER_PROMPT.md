@@ -4,8 +4,8 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.6
-**Last updated:** 2026-06-26
+**Version:** 1.16.7
+**Last updated:** 2026-06-27
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
@@ -24,13 +24,16 @@ FOR AI AGENTS:
 
 FOR HUMANS:
 - Point any new CLI tool at: MASTER_PROMPT.md (repo root)
+- Tool-agnostic bootstrap: docs/agents/AI-TOOL-BOOTSTRAP.md + copy-paste .grok/prompts/ai-tool-bootstrap.md (Codex, Claude, Cursor, Grok, Copilot, …)
 - Deep docs live in: docs/project-plan/
-- Multi-agent roles: docs/agents/ROLES.md (orchestrator + 5 worker roles)
+- Multi-agent roles: docs/agents/ROLES.md (dynamic registry ①–⑫; single session can simulate all roles)
 - Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ §1–13 checklist before merge)
 - Agent coding rules: .grok/AGENTS.md (canonical — not root Agents.md)
 - Agent run index: .grok/agent-runs/README.md
 - Prompt/run templates: .grok/prompts/TEMPLATE.md · .grok/agent-runs/TEMPLATE/
 - Post-merge status: .github/workflows/agent-run-post-merge.yml (auto-updates agent-runs index on PR merge)
+
+Note: `.grok/` is project folder naming — not tied to Grok. Same paths work with any AI tool.
 ```
 
 ---
@@ -652,6 +655,7 @@ Generic agents will suggest: monolith merge, library rewrites, over-abstracted p
 | Branch strategy | docs/project-plan/09-branch-strategy.md |
 | PR template | .github/pull_request_template.md |
 | Agent coding rules | .grok/AGENTS.md |
+| Tool-agnostic bootstrap | docs/agents/AI-TOOL-BOOTSTRAP.md · .grok/prompts/ai-tool-bootstrap.md |
 | Phase reports | .grok/reports/ |
 
 ---
@@ -742,6 +746,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-26 | 1.14.0 | Pratibha Kumar K | Added `docs/agents/QUALITY_REVIEW.md`: mandatory Role ⑤ gate (architecture, Hooks, React Query, MUI, tenant, backend/payment boundaries, CI/secrets). Expanded ROLES.md workflow: Orchestrator → Worker → ⑤ → CI → Report → Merge. Prompt: `.grok/prompts/docs-agent-quality-review-flow.md`. Report: `.grok/reports/docs-agent-quality-review-flow.md`. |
 | 2026-06-26 | 1.15.0 | Pratibha Kumar K | Reusable multi-agent scaffolding: `.grok/prompts/TEMPLATE.md`, `.grok/agent-runs/TEMPLATE/` (README, plan, status, quality-release §1–12), `.grok/agent-runs/README.md` living index. Extended QUALITY_REVIEW.md to §1–12 + severity/reject loop. ROLES.md: role selection guide, canonical phases 0–15 (fixed missing Phase 4), how-to-start agent run. PR #133 indexed as ✅ Merged. Report: `.grok/reports/agent-run-infrastructure.md`. |
 | 2026-06-26 | 1.15.1 | Pratibha Kumar K | GitHub Action `agent-run-post-merge.yml` + `scripts/agent-run-post-merge.mjs`: on PR merge to develop, auto-update `.grok/agent-runs/README.md` and report status via github-actions[bot]. ROLES.md post-merge automation section. |
+| 2026-06-27 | 1.16.7 | Pratibha Kumar K | Tool-agnostic agent bootstrap: `docs/agents/AI-TOOL-BOOTSTRAP.md` + `.grok/prompts/ai-tool-bootstrap.md` — same multi-agent workflow for Codex, Claude, Cursor, Grok, Copilot, and any CLI agent. Updated `Agents.md`, `MASTER_PROMPT.md` §0, `ROLES.md` §9. |
 
 ---
 
@@ -765,14 +770,18 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 ## Quick-start for a new agent session
 
-Copy-paste this to any CLI tool:
+**Preferred (all tools):** paste the full contents of [`.grok/prompts/ai-tool-bootstrap.md`](./.grok/prompts/ai-tool-bootstrap.md), then add your task. Details: [`docs/agents/AI-TOOL-BOOTSTRAP.md`](./docs/agents/AI-TOOL-BOOTSTRAP.md).
+
+Minimal fallback if you cannot open files:
 
 ```text
 You are working on Smart Parking SaaS — a multi-tenant sellable parking platform.
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
+Simulate multi-agent roles ①–⑫ in order if no subagents (⑨ tests after writers; ⑤ always last).
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: use ROLES.md + QUALITY_REVIEW.md + agent-run templates (.grok/prompts/TEMPLATE.md, .grok/agent-runs/TEMPLATE/). Branch: short-lived fix/ or feature/ from develop.
+Current focus: ROLES.md + QUALITY_REVIEW.md + agent-run templates (.grok/prompts/TEMPLATE.md, .grok/agent-runs/TEMPLATE/). Branch: short-lived fix/ or feature/ from develop.
+Merge PRs with merge commit only: gh pr merge --merge (never --squash).
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```
