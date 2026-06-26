@@ -2,7 +2,8 @@
   "name": "smart-parking-frontend",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "author": "Pratibha Kumar K",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "scripts": {
     "dev": "vite",
