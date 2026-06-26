@@ -59,9 +59,10 @@ First foundation slice for public Parking Finder: schema fields, unauthenticated
 | No payment-service changes | ✅ |
 | React Query debounce/staleTime | ✅ |
 | Frontend build | ✅ |
-| Backend build | ⏳ CI (local prisma generate blocked by running dev server) |
+| Backend build | ✅ CI |
+| CI (PR #140) | ✅ NestJS + Frontend + secrets-scan |
 
-**Verdict:** APPROVE WITH NOTES — pending CI backend job on [PR #140](https://github.com/imkpk/smart-parking-system/pull/140).
+**Verdict:** **APPROVE** — ready for human merge (merge commit only, never squash).
 
 ## Manual verification
 

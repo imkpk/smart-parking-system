@@ -5,7 +5,7 @@
 
 ## Verdict
 
-**APPROVE WITH NOTES** — pending CI backend job confirmation on PR #140.
+**APPROVE** — CI green on PR #140 (NestJS Backend, React Frontend, secrets-scan).
 
 ## Checklist §1–13
 
@@ -52,12 +52,12 @@
 
 - No payment changes
 
-### §10 Tests / CI / secrets — ✅ PASS (notes)
+### §10 Tests / CI / secrets — ✅ PASS
 
 - Backend service spec covers visibility, slots, city, vehicle, limit cap, distance sort
 - Frontend finder page tests cover auth-free render, filters, states, sign-in link
 - No secrets or hardcoded prod URLs in diff
-- **Note:** Local `prisma generate` blocked by running dev server; CI must confirm backend build/tests
+- CI: NestJS Backend ✅ · React Frontend ✅ · secrets-scan ✅
 
 ### §11 Prisma / migrations — ✅ PASS
 
