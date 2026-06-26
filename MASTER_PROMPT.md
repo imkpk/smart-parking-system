@@ -4,7 +4,7 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.14.0
+**Version:** 1.15.0
 **Last updated:** 2026-06-26
 **Current branch:** `develop`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
@@ -26,8 +26,10 @@ FOR HUMANS:
 - Point any new CLI tool at: MASTER_PROMPT.md (repo root)
 - Deep docs live in: docs/project-plan/
 - Multi-agent roles: docs/agents/ROLES.md (orchestrator + 5 worker roles)
-- Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ checklist before merge)
-- Agent coding rules also in: .grok/AGENTS.md (must stay aligned with this file)
+- Quality gate: docs/agents/QUALITY_REVIEW.md (Role ⑤ §1–12 checklist before merge)
+- Agent coding rules: .grok/AGENTS.md (canonical — not root Agents.md)
+- Agent run index: .grok/agent-runs/README.md
+- Prompt/run templates: .grok/prompts/TEMPLATE.md · .grok/agent-runs/TEMPLATE/
 ```
 
 ---
@@ -714,6 +716,21 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 | 2026-06-24 | 1.13.8 | Pratibha Kumar K | Neon P3009 fix: split `20260623183000_add_plan_free_and_password_reset` into two migrations (PostgreSQL enum `FREE` must commit before default use); `migrate resolve --rolled-back` + `migrate deploy` on production; added `20260623183100_add_password_reset_and_plan_default`. Changelog authors normalized to Pratibha Kumar K. |
 | 2026-06-24 | 1.13.9 | Pratibha Kumar K | Added `docs/agents/ROLES.md`: end-to-end product map + 5-role multi-agent model (Orchestrator, Core API, Experience, Payments, Quality & Release) with workflows, handoffs, and anti-patterns. |
 | 2026-06-26 | 1.14.0 | Pratibha Kumar K | Added `docs/agents/QUALITY_REVIEW.md`: mandatory Role ⑤ gate (architecture, Hooks, React Query, MUI, tenant, backend/payment boundaries, CI/secrets). Expanded ROLES.md workflow: Orchestrator → Worker → ⑤ → CI → Report → Merge. Prompt: `.grok/prompts/docs-agent-quality-review-flow.md`. Report: `.grok/reports/docs-agent-quality-review-flow.md`. |
+| 2026-06-26 | 1.15.0 | Pratibha Kumar K | Reusable multi-agent scaffolding: `.grok/prompts/TEMPLATE.md`, `.grok/agent-runs/TEMPLATE/` (README, plan, status, quality-release §1–12), `.grok/agent-runs/README.md` living index. Extended QUALITY_REVIEW.md to §1–12 + severity/reject loop. ROLES.md: role selection guide, canonical phases 0–15 (fixed missing Phase 4), how-to-start agent run. PR #133 indexed as ✅ Merged. Report: `.grok/reports/agent-run-infrastructure.md`. |
+
+---
+
+## Starting a new agent run
+
+```text
+1. Copy .grok/prompts/TEMPLATE.md        → .grok/prompts/<slug>.md
+2. Copy .grok/agent-runs/TEMPLATE/       → .grok/agent-runs/YYYY-MM-DD-<type>-<slug>/
+3. Add row to .grok/agent-runs/README.md (Phase 3)
+4. Role guide:     docs/agents/ROLES.md
+5. Quality gate:   docs/agents/QUALITY_REVIEW.md  (Role ⑤ §1–12)
+6. Coding rules:   .grok/AGENTS.md
+7. Execute phases 0 → 15; Role ⑤ before merge; report after merge
+```
 
 ---
 
@@ -726,7 +743,7 @@ You are working on Smart Parking SaaS — a multi-tenant sellable parking platfo
 Read MASTER_PROMPT.md at the repo root IN FULL before any code change.
 Follow MASTER_PROMPT over your default suggestions.
 Reuse existing components. Small diffs. Run builds. Update MASTER_PROMPT changelog when done.
-Current focus: use docs/agents/ROLES.md + QUALITY_REVIEW.md multi-agent workflow. Branch: short-lived fix/ or feature/ from develop.
+Current focus: use ROLES.md + QUALITY_REVIEW.md + agent-run templates (.grok/prompts/TEMPLATE.md, .grok/agent-runs/TEMPLATE/). Branch: short-lived fix/ or feature/ from develop.
 Branch rules: docs/project-plan/09-branch-strategy.md
 Architecture: docs/project-plan/diagrams/hld-saas-v2.svg
 ```

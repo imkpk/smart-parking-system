@@ -100,6 +100,17 @@ Register/Login → Vehicle → Book slot → Check-in → Check-out → Pay → 
 
 **Rule:** One concern per branch. One concern per PR. Never reuse a long-lived `fix/everything` branch.
 
+### Role selection guide
+
+| Task shape | Roles required |
+|------------|----------------|
+| Backend only | ① Orchestrator + ② Core API + ⑤ Quality, Architecture & Release |
+| Frontend only | ① + ③ Experience + ⑤ |
+| Payment only | ① + ④ Payments + ⑤ |
+| Full stack (no payment-service) | ① + ② + ③ + ⑤ |
+| Full stack + payment contract | ① + ② + ④ + ③ + ⑤ (merge order: API → payment → frontend) |
+| Docs only | ① + ⑤ |
+
 ---
 
 ## 3. Role definitions
@@ -211,7 +222,7 @@ Do not change NestJS or React in the same PR.
 | **Owns** | [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist, `.github/workflows/`, Cypress smoke (when relevant), review comments, deploy checklists, `.grok/reports/` close-out. |
 | **Never touches** | Feature implementation (only test fixes and CI config directly related to the gate). |
 | **Reviews** | Reusable code · duplicate logic · service boundaries · design patterns · React Hooks · React Query · MUI/design-system · tenant-aware architecture · backend service/controller split · payment-service separation · tests/CI/secrets |
-| **Key duties** | Apply `QUALITY_REVIEW.md` §1–10; run `/review`; block merge on architecture blockers; confirm mocks not hitting prod; post-merge report + env reminders. |
+| **Key duties** | Apply `QUALITY_REVIEW.md` §1–12; run `/review`; block merge on BLOCK verdict; confirm mocks not hitting prod; post-merge report + env reminders. |
 | **Outputs** | PR review (template in `QUALITY_REVIEW.md`), optional `.grok/review/pr{N}review.md`, CI fix PRs, completion report. |
 | **Verify** | Checklist complete; CI green; no secrets in diff; no tenant or hooks blockers. |
 
@@ -235,10 +246,38 @@ Do not implement features — only test/CI fixes if CI is broken.
 ## 4. Standard workflow (going forward)
 
 ```text
-Orchestrator → Worker agent → Quality, Architecture & Review (⑤) → CI/release gate → Report → Merge
+Orchestrator → Worker(s) → Role ⑤ review
+                              ↓
+                        BLOCK? → back to Worker → fix → Role ⑤ again
+                              ↓
+                        APPROVE → CI → Report → Merge
 ```
 
 Workers implement. Role ⑤ reviews **before** merge — not only after CI fails. See [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md).
+
+### Canonical phase numbering
+
+| Phase | Action | Owner |
+|-------|--------|-------|
+| 0 | Safety check | ① |
+| 1 | Orchestration summary | ① |
+| 2 | Create prompt file (from [`TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md)) | ① |
+| 3 | Create agent-run folder (from [`TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/)); add row to [agent-runs README](../../.grok/agent-runs/README.md) | ① |
+| 4 | Create agent-run task files (`tasks/quality-release.md`, worker tasks if needed) | ① |
+| 5 | Branch from `develop` | ① |
+| 6 | Implementation | ②③④ |
+| 13 | Role ⑤ quality review | ⑤ |
+| 14 | Report + `MASTER_PROMPT` changelog | ⑤ |
+| 15 | Push + open PR | ① |
+
+### How to start a new agent run
+
+1. Copy [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) → `.grok/agent-runs/YYYY-MM-DD-<type>-<slug>/`
+2. Copy [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) → `.grok/prompts/<slug>.md`
+3. Fill all placeholders **before** running any phase
+4. Add a row to [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) during Phase 3
+5. Execute phases 0 → 15 in order; mark ✅ in `status.md` as you go
+6. Coding standards: [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (not root `Agents.md`)
 
 ### Phase A — Intake (Orchestrator)
 
@@ -280,8 +319,8 @@ git push -u origin fix/short-description
 ### Phase C — Quality, architecture & CI gate (Role ⑤)
 
 1. Worker opens PR → fast CI runs (touched services only).
-2. Role ⑤ runs [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist (§1–10).
-3. Verdict: **APPROVED** | **CHANGES REQUESTED** (blockers must be fixed in PR).
+2. Role ⑤ runs [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) checklist (§1–12).
+3. Verdict: **APPROVE** | **APPROVE WITH NOTES** | **BLOCK** (BLOCK must be fixed in PR before re-review).
 4. After approval + green CI → merge eligible.
 5. Push to `develop`: full CI on all three services.
 
@@ -364,9 +403,12 @@ These folders existed **before** `ROLES.md`. They are not replaced by the 5 role
 ```text
 MASTER_PROMPT.md              ← laws (always read)
 docs/agents/ROLES.md          ← who does what (roles + routing)
-docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤)
-.grok/AGENTS.md               ← how to code (standards)
+docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤ §1–12)
+.grok/AGENTS.md               ← how to code (standards — canonical)
+.grok/prompts/TEMPLATE.md     ← copy for new missions
 .grok/prompts/                ← WHAT to do next (executable missions)
+.grok/agent-runs/TEMPLATE/    ← copy for new run traceability
+.grok/agent-runs/README.md    ← living index of all runs
 .grok/reports/                ← WHAT was done (proof + handoff)
 ```
 
@@ -417,7 +459,9 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤)
 | [`.grok/AGENTS.md`](../../.grok/AGENTS.md) | Coding standards all workers follow |
 | [`.grok/e2e/journey-registry.md`](../../.grok/e2e/journey-registry.md) | Cypress journey IDs (J1, J4, …) for Role ⑤ |
 | [`.grok/prompts/loop-engineering-prompt.md`](../../.grok/prompts/loop-engineering-prompt.md) | Autonomous multi-PR loop protocol (auto-merge, no idle-wait) |
-| [`.grok/agent-runs/`](../../.grok/agent-runs/) | Per-run traceability: plan, status, role task files, PR links |
+| [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) | Living index of all agent runs |
+| [`.grok/agent-runs/TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/) | Copy for every new run |
+| [`.grok/prompts/TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md) | Copy for every new mission prompt |
 
 ### CI note (why docs/prompts changes skip service jobs)
 

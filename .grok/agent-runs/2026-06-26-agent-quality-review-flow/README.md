@@ -34,7 +34,7 @@ Supersedes: `docs/multi-agent-roles` (PR #132)
 
 | PR | Title | Status |
 |----|-------|--------|
-| [#133](https://github.com/imkpk/smart-parking-system/pull/133) | docs: add quality review rules to multi-agent flow | Open |
+| [#133](https://github.com/imkpk/smart-parking-system/pull/133) | docs: add quality review rules to multi-agent flow | ✅ Merged |
 
 ## Current status
 
@@ -44,11 +44,10 @@ Supersedes: `docs/multi-agent-roles` (PR #132)
 - Phase 3 agent-run folder: created
 - Phase 5 branch: `docs/agent-quality-review-flow` from `develop`
 - Phase 6 worker: docs committed (cherry-picked + additions)
-- Phase 13 quality review: in progress
-- Phase 14 report: draft prepared (finalize after merge)
+- Phase 13 quality review: ✅ Done — APPROVE, see `tasks/quality-release.md`
+- Phase 14 report: ✅ Done — `.grok/reports/docs-agent-quality-review-flow.md`
+- Phase 15 merge: ✅ Done — PR #133 merged to `develop`
 
 ## Human actions required
 
-1. Review and merge PR when green
-2. Close PR #132 as superseded (optional)
-3. No env/deploy actions (docs-only)
+None — run complete.
