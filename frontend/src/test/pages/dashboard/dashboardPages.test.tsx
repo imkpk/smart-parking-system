@@ -2,7 +2,11 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getOperatorMetrics, getRecentActivity } from '@/api/dashboardApi';
+import {
+  getOnboardingStatus,
+  getOperatorMetrics,
+  getRecentActivity,
+} from '@/api/dashboardApi';
 import { renderWithProviders } from '@/test/test-utils';
 import {
   platformOperatorMetrics,
@@ -17,6 +21,7 @@ import { UserDashboardPage } from '@/pages/dashboard/UserDashboardPage';
 vi.mock('@/api/dashboardApi', () => ({
   getOperatorMetrics: vi.fn(),
   getRecentActivity: vi.fn(),
+  getOnboardingStatus: vi.fn(),
 }));
 
 vi.mock('@/api/parkingLotsApi', () => ({
@@ -75,6 +80,15 @@ const recentActivityPage = {
   hasMore: false,
 };
 
+const emptyOnboarding = {
+  hasLot: false,
+  hasFloor: false,
+  hasSlot: false,
+  hasTeamAccess: false,
+  firstLotId: null,
+  firstLotWithFloorsId: null,
+};
+
 async function expandQuickActions(user: ReturnType<typeof userEvent.setup>) {
   const quickActionsHeader = screen.getByRole('button', { name: /^quick actions$/i });
 
@@ -91,6 +105,7 @@ describe('AdminDashboardPage', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
     vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+    vi.mocked(getOnboardingStatus).mockResolvedValue(emptyOnboarding);
   });
 
   it('shows access denied when operator metrics returns forbidden', async () => {
@@ -219,6 +234,7 @@ describe('AdminDashboardPage role-specific quick actions', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
     vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+    vi.mocked(getOnboardingStatus).mockResolvedValue(emptyOnboarding);
   });
 
   it('hides Create Admin for ADMIN role', async () => {
@@ -353,6 +369,7 @@ describe('Dashboard mobile layout', () => {
   beforeEach(() => {
     vi.mocked(getOperatorMetrics).mockResolvedValue(tenantOperatorMetrics);
     vi.mocked(getRecentActivity).mockResolvedValue(recentActivityPage);
+    vi.mocked(getOnboardingStatus).mockResolvedValue(emptyOnboarding);
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 390,
