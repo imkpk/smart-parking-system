@@ -387,7 +387,7 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤)
 
 **When NOT to create one:** tiny one-file fix → Orchestrator gives a 3-line inline task instead.
 
-**Naming convention:** `phase-Nx-short-name.md`, `fix-short-name.md`, `e2e-NN-description.md`, `feature-short-name.md`
+**Naming convention:** `phase-Nx-short-name.md`, `fix-short-name.md`, `e2e-NN-description.md`, `feature-short-name.md`, `docs-short-task.md`
 
 ### `.grok/reports/` — completion archive (output from workers + ⑤)
 
@@ -417,6 +417,7 @@ docs/agents/QUALITY_REVIEW.md ← how to gate before merge (Role ⑤)
 | [`.grok/AGENTS.md`](../../.grok/AGENTS.md) | Coding standards all workers follow |
 | [`.grok/e2e/journey-registry.md`](../../.grok/e2e/journey-registry.md) | Cypress journey IDs (J1, J4, …) for Role ⑤ |
 | [`.grok/prompts/loop-engineering-prompt.md`](../../.grok/prompts/loop-engineering-prompt.md) | Autonomous multi-PR loop protocol (auto-merge, no idle-wait) |
+| [`.grok/agent-runs/`](../../.grok/agent-runs/) | Per-run traceability: plan, status, role task files, PR links |
 
 ### CI note (why docs/prompts changes skip service jobs)
 
