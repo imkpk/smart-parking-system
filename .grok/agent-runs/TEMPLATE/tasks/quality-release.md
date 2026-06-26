@@ -117,8 +117,13 @@ Mark each: ✅ PASS · ❌ FAIL · N/A (only if zero files in that domain touche
 
 ## Post-merge actions
 
-- [ ] `.grok/reports/<slug>.md` finalized
-- [ ] `.grok/reports/README.md` row added
-- [ ] `.grok/agent-runs/README.md` status → ✅ Merged
-- [ ] `MASTER_PROMPT.md` changelog entry (new version row — do not rewrite history)
+Automated when agent detects `gh pr view` → `MERGED` (Phase 0 merge sync or immediately after human merge):
+
+- [ ] `.grok/agent-runs/README.md` index Status → **✅ Merged**
+- [ ] Run folder `README.md` + `status.md` → merged
+- [ ] `.grok/reports/<slug>.md` finalized (`Status: merged`)
+- [ ] `.grok/reports/README.md` row updated
+- [ ] `MASTER_PROMPT.md` changelog if not already done
 - [ ] Deploy/env checklist if applicable
+
+Human does **not** need to ask for README updates — agent owns merge sync.

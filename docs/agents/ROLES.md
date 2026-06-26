@@ -259,7 +259,7 @@ Workers implement. Role ⑤ reviews **before** merge — not only after CI fails
 
 | Phase | Action | Owner |
 |-------|--------|-------|
-| 0 | Safety check | ① |
+| 0 | Safety check + **merge sync** (scan `.grok/agent-runs/README.md` for ⏳ rows; `gh pr view` → update to ✅ Merged if merged) | ① or ⑤ |
 | 1 | Orchestration summary | ① |
 | 2 | Create prompt file (from [`TEMPLATE.md`](../../.grok/prompts/TEMPLATE.md)) | ① |
 | 3 | Create agent-run folder (from [`TEMPLATE/`](../../.grok/agent-runs/TEMPLATE/)); add row to [agent-runs README](../../.grok/agent-runs/README.md) | ① |

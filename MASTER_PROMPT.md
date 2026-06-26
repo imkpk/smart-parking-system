@@ -730,6 +730,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 5. Quality gate:   docs/agents/QUALITY_REVIEW.md  (Role ⑤ §1–12)
 6. Coding rules:   .grok/AGENTS.md
 7. Execute phases 0 → 15; Role ⑤ before merge; report after merge
+8. Phase 0 merge sync: scan .grok/agent-runs/README.md for ⏳ rows; gh pr view → auto-update to ✅ Merged when human merges (no reminder needed)
 ```
 
 ---

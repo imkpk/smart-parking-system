@@ -2,6 +2,24 @@
 
 > Every agent run **MUST** add a row here during Phase 3 (create agent-run folder).
 
+## Merge sync (automatic — run every session)
+
+**Role ⑤ or ①** runs this at **Phase 0** (before any new work) and again after human merges a PR — no manual “please update README” required.
+
+```bash
+git fetch origin
+# For each row below still marked ⏳ In Progress:
+gh pr view <N> --json state,mergedAt
+```
+
+| If `state` is | Agent action (same session) |
+|---------------|------------------------------|
+| `MERGED` | Set index Status → **✅ Merged**; update run folder `README.md`, `status.md`, report `Status`; finalize `MASTER_PROMPT` if pending |
+| `OPEN` | Leave **⏳ In Progress** |
+| `CLOSED` (not merged) | Set **❌ Abandoned** or **🔀 Superseded** per PR comments |
+
+Human may merge whenever they choose. The agent **notices on the next run** (or end of current run after merge) and closes the loop.
+
 ## Naming convention
 
 ```text
