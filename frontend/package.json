@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:affected": "vitest run --changed origin/develop --passWithNoTests",
     "test:run": "vitest run",
     "coverage": "vitest run --coverage",
     "e2e:open": "cypress open",

@@ -12,6 +12,7 @@
     "build": "nest build",
     "migrate:deploy": "prisma migrate deploy",
     "test": "jest",
+    "test:affected": "jest --changedSince=origin/develop --passWithNoTests --forceExit --coverage=false",
     "test:run": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
