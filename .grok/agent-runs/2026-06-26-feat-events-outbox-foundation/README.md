@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-26  
 **Branch:** `feat/events-outbox-foundation`  
-**PR:** TBD  
+**PR:** [#145](https://github.com/imkpk/smart-parking-system/pull/145)  
 **Status:** ⏳ In Progress
 
 ## Scope

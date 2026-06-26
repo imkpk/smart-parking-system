@@ -59,4 +59,4 @@ Example: `2026-06-26-docs-agent-run-infrastructure`
 | 2026-06-26 | — | fix: parking-finder console errors | ①③⑨⑤ | [#142](https://github.com/imkpk/smart-parking-system/pull/142) | ✅ Merged |
 | 2026-06-26 | — | fix: dashboard onboarding API fan-out | ①②⑪⑨⑤ | [#143](https://github.com/imkpk/smart-parking-system/pull/143) | ✅ Merged |
 | 2026-06-26 | — | fix: frontend query fan-out staleTime + labels | ①③⑨⑤ | [#144](https://github.com/imkpk/smart-parking-system/pull/144) | ✅ Merged |
-| 2026-06-26 | [feat-events-outbox-foundation](./2026-06-26-feat-events-outbox-foundation/) | feat: transactional outbox foundation | ①⑥②⑧⑨⑤ | TBD | ⏳ In Progress |
+| 2026-06-26 | [feat-events-outbox-foundation](./2026-06-26-feat-events-outbox-foundation/) | feat: transactional outbox foundation | ①⑥②⑧⑨⑤ | [#145](https://github.com/imkpk/smart-parking-system/pull/145) | ⏳ In Progress |
