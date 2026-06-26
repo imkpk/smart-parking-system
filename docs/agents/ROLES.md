@@ -326,6 +326,20 @@ git push -u origin fix/short-description
 
 Role ⑤ may file a `fix/review-xxx` branch only for broken CI or test gaps — not feature rework unless Orchestrator assigns it.
 
+### Post-merge status automation (GitHub Actions)
+
+When a PR merges to `develop`, workflow [`.github/workflows/agent-run-post-merge.yml`](../../.github/workflows/agent-run-post-merge.yml) runs automatically:
+
+1. Reads merged PR number, title, branch, and body
+2. Finds `.grok/reports/<name>.md` from PR body (if present)
+3. Updates [`.grok/agent-runs/README.md`](../../.grok/agent-runs/README.md) row `⏳ In Progress` → `✅ Merged`
+4. Updates matching report `Status` and [`.grok/reports/README.md`](../../.grok/reports/README.md)
+5. Commits to `develop` as `github-actions[bot]` (warnings only if no match — workflow does not fail)
+
+Script: [`scripts/agent-run-post-merge.mjs`](../../scripts/agent-run-post-merge.mjs). Agent session merge-sync (Phase 0) remains a fallback.
+
+**PR body tip:** include `Report: .grok/reports/<slug>.md` so the workflow finds the report.
+
 ### Phase D — Release (Human + Role ⑤)
 
 After merge to `develop`:

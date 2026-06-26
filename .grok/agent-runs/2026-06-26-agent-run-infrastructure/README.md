@@ -32,7 +32,7 @@ Build reusable multi-agent scaffolding (templates + index + §1–12 quality gat
 
 | PR | Title | Status |
 |----|-------|--------|
-| [#134](https://github.com/imkpk/smart-parking-system/pull/134) | docs: add reusable agent-run infrastructure | ⏳ In Progress |
+| [#134](https://github.com/imkpk/smart-parking-system/pull/134) | docs: add reusable agent-run infrastructure | ✅ Merged |
 
 ## Current status
 

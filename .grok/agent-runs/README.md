@@ -52,4 +52,4 @@ Example: `2026-06-26-docs-agent-run-infrastructure`
 | Date | Folder | Scope | Roles | PR | Status |
 |------|--------|-------|-------|-----|--------|
 | 2026-06-26 | [agent-quality-review-flow](./2026-06-26-agent-quality-review-flow/) | docs: QUALITY_REVIEW gate + Role ⑤ | ①⑤ | [#133](https://github.com/imkpk/smart-parking-system/pull/133) | ✅ Merged |
-| 2026-06-26 | [agent-run-infrastructure](./2026-06-26-agent-run-infrastructure/) | docs: reusable agent-run scaffolding | ①⑤ | [#134](https://github.com/imkpk/smart-parking-system/pull/134) | ⏳ In Progress |
+| 2026-06-26 | [agent-run-infrastructure](./2026-06-26-agent-run-infrastructure/) | docs: reusable agent-run scaffolding | ①⑤ | [#134](https://github.com/imkpk/smart-parking-system/pull/134) | ✅ Merged |

@@ -8,7 +8,7 @@ Permanent multi-agent scaffolding so every future PR can start from templates, f
 
 | PR | Branch | Status |
 |----|--------|--------|
-| [#134](https://github.com/imkpk/smart-parking-system/pull/134) | `docs/agent-run-infrastructure` | Open |
+| [#134](https://github.com/imkpk/smart-parking-system/pull/134) | `docs/agent-run-infrastructure` | Merged |
 
 ## Roles involved
 
@@ -70,4 +70,4 @@ git diff develop --stat  # docs/.grok/MASTER_PROMPT only
 
 ## Status
 
-**PR open — pending merge**
+**Merged — PR #134**

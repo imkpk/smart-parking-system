@@ -12,7 +12,7 @@
 | Phase 13 quality review | ✅ Done | APPROVE |
 | Phase 14 report + changelog | ✅ Done | v1.15.0 |
 | Phase 15 push + PR | ⏳ Pending | |
-| Merge to develop | ⏳ Human | |
+| Merge to develop | ✅ Done | PR #134 merged |
 
 ## Last updated
 
