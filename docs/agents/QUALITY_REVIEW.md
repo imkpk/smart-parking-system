@@ -239,8 +239,12 @@ See [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.m
 | Secrets | No `.env`, API keys, `DATABASE_URL`, Razorpay secret in diff |
 | Env docs | New `VITE_*` or Render vars documented in PR or `.env.example` |
 | Migrations | `prisma migrate deploy` safe — never `migrate reset` on production path |
+| Browser console | New/changed pages checked in devtools: **no unexpected `console.error` / `console.warn`** during happy path, empty state, and handled error state |
+| Console tests | Public/UX pages add `spyConsoleErrors()` (or equivalent) in Vitest for render + handled API failure paths |
+| Public routes | Public pages do not bootstrap `auth/me` with stale tokens; public API calls omit `Authorization` header |
+| Schema sync | After Prisma schema PRs, local/prod DB has migration applied before manual UI smoke (`prisma migrate deploy`) |
 
-**BLOCK if:** Secrets in diff; tests hitting production URLs; required CI job failing.
+**BLOCK if:** Secrets in diff; tests hitting production URLs; required CI job failing; public page spams console on handled errors or triggers auth bootstrap noise.
 
 ---
 

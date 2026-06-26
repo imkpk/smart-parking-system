@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getOperatorMetrics, getRecentActivity } from '@/api/dashboardApi';
+import {
+  getOnboardingStatus,
+  getOperatorMetrics,
+  getRecentActivity,
+} from '@/api/dashboardApi';
 
 const getMock = vi.fn();
 
@@ -12,6 +16,29 @@ vi.mock('@/api/client', () => ({
 describe('dashboardApi', () => {
   beforeEach(() => {
     getMock.mockReset();
+  });
+
+  it('fetches onboarding status', async () => {
+    getMock.mockResolvedValue({
+      data: {
+        hasLot: true,
+        hasFloor: false,
+        hasSlot: false,
+        hasTeamAccess: true,
+        firstLotId: 1,
+        firstLotWithFloorsId: null,
+      },
+    });
+
+    await expect(getOnboardingStatus()).resolves.toEqual({
+      hasLot: true,
+      hasFloor: false,
+      hasSlot: false,
+      hasTeamAccess: true,
+      firstLotId: 1,
+      firstLotWithFloorsId: null,
+    });
+    expect(getMock).toHaveBeenCalledWith('/dashboard/onboarding-status');
   });
 
   it('fetches operator metrics', async () => {

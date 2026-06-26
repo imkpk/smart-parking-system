@@ -77,6 +77,23 @@ describe('createApiClient', () => {
     expect(result.headers.Authorization).toBeUndefined();
   });
 
+  it('does not add Authorization header for public parking finder requests', () => {
+    getTokenMock.mockReturnValue('test-token');
+    createApiClient('http://localhost:3000/api');
+
+    const requestHandler = requestUseMock.mock.calls[0][0] as (
+      config: InternalAxiosRequestConfig,
+    ) => InternalAxiosRequestConfig;
+
+    const config = {
+      headers: {},
+      url: '/public/parking-finder',
+    } as InternalAxiosRequestConfig;
+    const result = requestHandler(config);
+
+    expect(result.headers.Authorization).toBeUndefined();
+  });
+
   it('passes through successful responses', () => {
     createApiClient('http://localhost:3000/api');
 
@@ -104,6 +121,30 @@ describe('createApiClient', () => {
 
     await expect(errorHandler(error)).rejects.toBe(error);
     expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'smart-parking:unauthorized' }));
+  });
+
+  it('does not dispatch unauthorized event for public API 401 responses', async () => {
+    createApiClient('http://localhost:3000/api');
+
+    const errorHandler = responseUseMock.mock.calls[0][1] as (error: AxiosError) => Promise<never>;
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    const error = new AxiosError(
+      'Unauthorized',
+      '401',
+      { url: '/public/parking-finder' } as InternalAxiosRequestConfig,
+      undefined,
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {},
+        config: { url: '/public/parking-finder' } as InternalAxiosRequestConfig,
+        data: {},
+      },
+    );
+
+    await expect(errorHandler(error)).rejects.toBe(error);
+    expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
   it('rejects non-401 errors without dispatching unauthorized event', async () => {

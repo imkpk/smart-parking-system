@@ -1,28 +1,16 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getFloors } from '@/api/floorsApi';
-import { getParkingLots } from '@/api/parkingLotsApi';
-import { getSlots } from '@/api/slotsApi';
-import { getUserSummary } from '@/api/usersApi';
+import { getOnboardingStatus } from '@/api/dashboardApi';
 import { TenantAdminQuickActions } from '@/components/dashboard/TenantAdminQuickActions';
 import { useUserRole } from '@/hooks/useUserRole';
 import { renderWithProviders } from '@/test/test-utils';
 
-vi.mock('@/api/parkingLotsApi', () => ({
-  getParkingLots: vi.fn(),
-}));
-
-vi.mock('@/api/floorsApi', () => ({
-  getFloors: vi.fn(),
-}));
-
-vi.mock('@/api/slotsApi', () => ({
-  getSlots: vi.fn(),
+vi.mock('@/api/dashboardApi', () => ({
+  getOnboardingStatus: vi.fn(),
 }));
 
 vi.mock('@/api/usersApi', () => ({
-  getUserSummary: vi.fn(),
   createUser: vi.fn(),
 }));
 
@@ -52,6 +40,15 @@ const tenantAdminRole = {
   canViewOperationalPayments: true,
 };
 
+const emptyOnboarding = {
+  hasLot: false,
+  hasFloor: false,
+  hasSlot: false,
+  hasTeamAccess: false,
+  firstLotId: null,
+  firstLotWithFloorsId: null,
+};
+
 async function expandQuickActions(user: ReturnType<typeof userEvent.setup>) {
   const header = screen.getByRole('button', { name: /^quick actions$/i });
   if (header.getAttribute('aria-expanded') === 'false') {
@@ -65,18 +62,7 @@ async function expandQuickActions(user: ReturnType<typeof userEvent.setup>) {
 describe('TenantAdminQuickActions', () => {
   beforeEach(() => {
     vi.mocked(useUserRole).mockReturnValue(tenantAdminRole);
-    vi.mocked(getParkingLots).mockResolvedValue([]);
-    vi.mocked(getFloors).mockResolvedValue([]);
-    vi.mocked(getSlots).mockResolvedValue([]);
-    vi.mocked(getUserSummary).mockResolvedValue({
-      totalUsers: 1,
-      activeUsers: 1,
-      inactiveUsers: 0,
-      tenantAdmins: 1,
-      admins: 0,
-      security: 0,
-      users: 0,
-    });
+    vi.mocked(getOnboardingStatus).mockResolvedValue(emptyOnboarding);
   });
 
   it('does not render for roles without tenant admin access', () => {
@@ -95,7 +81,15 @@ describe('TenantAdminQuickActions', () => {
     const { container } = renderWithProviders(<TenantAdminQuickActions />);
 
     expect(container).toBeEmptyDOMElement();
-    expect(getParkingLots).not.toHaveBeenCalled();
+    expect(getOnboardingStatus).not.toHaveBeenCalled();
+  });
+
+  it('uses a single onboarding-status query instead of per-lot fan-out', async () => {
+    renderWithProviders(<TenantAdminQuickActions />);
+
+    await waitFor(() => {
+      expect(getOnboardingStatus).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders quick action tiles after expanding the panel', async () => {
@@ -127,17 +121,11 @@ describe('TenantAdminQuickActions', () => {
 
   it('enables create floor when a parking lot exists', async () => {
     const user = userEvent.setup();
-    vi.mocked(getParkingLots).mockResolvedValue([
-      {
-        id: 1,
-        name: 'Lot A',
-        type: 'MALL',
-        city: 'Hyderabad',
-        organizationId: 1,
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      },
-    ]);
+    vi.mocked(getOnboardingStatus).mockResolvedValue({
+      ...emptyOnboarding,
+      hasLot: true,
+      firstLotId: 1,
+    });
 
     renderWithProviders(<TenantAdminQuickActions />);
     await expandQuickActions(user);
@@ -151,26 +139,14 @@ describe('TenantAdminQuickActions', () => {
 
   it('enables create slot when a lot and floor exist', async () => {
     const user = userEvent.setup();
-    vi.mocked(getParkingLots).mockResolvedValue([
-      {
-        id: 1,
-        name: 'Lot A',
-        type: 'MALL',
-        city: 'Hyderabad',
-        organizationId: 1,
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      },
-    ]);
-    vi.mocked(getFloors).mockResolvedValue([
-      {
-        id: 10,
-        name: 'Ground',
-        parkingLotId: 1,
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      },
-    ]);
+    vi.mocked(getOnboardingStatus).mockResolvedValue({
+      hasLot: true,
+      hasFloor: true,
+      hasSlot: false,
+      hasTeamAccess: false,
+      firstLotId: 1,
+      firstLotWithFloorsId: 1,
+    });
 
     renderWithProviders(<TenantAdminQuickActions />);
     await expandQuickActions(user);

@@ -29,6 +29,7 @@ import {
   decodeRecentActivityCursor,
   encodeRecentActivityCursor,
 } from './recent-activity-cursor';
+import { DashboardOnboardingStatus } from './types/onboarding-status.type';
 import { OperatorDashboardMetrics } from './types/operator-dashboard-metrics.type';
 import { RecentActivityPage } from './types/recent-activity-page.type';
 
@@ -77,6 +78,55 @@ export class DashboardService {
       totalBookings,
       activeParkingEvents,
       completedParkingEvents,
+    };
+  }
+
+  async getOnboardingStatus(currentUser: SafeUser): Promise<DashboardOnboardingStatus> {
+    const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
+    const activeLotWhere = { isActive: true, organizationId };
+
+    const [
+      lotCount,
+      floorCount,
+      slotCount,
+      firstLot,
+      firstLotWithFloor,
+      teamUsers,
+    ] = await Promise.all([
+      this.prisma.parkingLot.count({ where: activeLotWhere }),
+      this.prisma.floor.count({
+        where: { parkingLot: activeLotWhere },
+      }),
+      this.prisma.slot.count({
+        where: { floor: { parkingLot: activeLotWhere } },
+      }),
+      this.prisma.parkingLot.findFirst({
+        where: activeLotWhere,
+        orderBy: { id: 'asc' },
+        select: { id: true },
+      }),
+      this.prisma.floor.findFirst({
+        where: { parkingLot: activeLotWhere },
+        orderBy: [{ parkingLotId: 'asc' }, { id: 'asc' }],
+        select: { parkingLotId: true },
+      }),
+      this.prisma.user.findMany({
+        where: {
+          organizationId,
+          isActive: true,
+          role: { in: [Role.ADMIN, Role.SECURITY, Role.USER] },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return {
+      hasLot: lotCount > 0,
+      hasFloor: floorCount > 0,
+      hasSlot: slotCount > 0,
+      hasTeamAccess: teamUsers.length > 0,
+      firstLotId: firstLot?.id ?? null,
+      firstLotWithFloorsId: firstLotWithFloor?.parkingLotId ?? null,
     };
   }
 

@@ -1,4 +1,8 @@
-import { AdminSummary, SlotStatusSummary } from '../types/dashboard';
+import {
+  AdminSummary,
+  DashboardOnboardingStatus,
+  SlotStatusSummary,
+} from '../types/dashboard';
 import { OperatorDashboardMetrics, RecentActivityPage } from '../types/operatorDashboard';
 import { apiClient } from './client';
 
@@ -15,6 +19,13 @@ export async function getAdminSummary() {
 
 export async function getSlotStatusSummary() {
   const response = await apiClient.get<SlotStatusSummary>('/dashboard/slot-status-summary');
+  return response.data;
+}
+
+export async function getOnboardingStatus() {
+  const response = await apiClient.get<DashboardOnboardingStatus>(
+    '/dashboard/onboarding-status',
+  );
   return response.data;
 }
 

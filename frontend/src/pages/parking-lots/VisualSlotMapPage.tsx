@@ -24,6 +24,7 @@ import { SlotMapGrid } from '../../components/slot-map/SlotMapGrid';
 import { SlotMapLegend } from '../../components/slot-map/SlotMapLegend';
 import { useUserRole } from '../../hooks/useUserRole';
 import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
+import { PARKING_LOT_QUERY_STALE_MS } from '../../lib/parkingLotQueryOptions';
 import { isSlotStatus } from '../../lib/slotStatusNavigation';
 import { SlotMapQuery, SlotMapSlotItem } from '../../types/slotMap';
 import { SlotType, slotStatusOptions, slotTypeOptions } from '../../types/slot';
@@ -66,17 +67,20 @@ export function VisualSlotMapPage() {
     queryKey: ['parking-lots', parkingLotId],
     queryFn: () => getParkingLot(parkingLotId),
     enabled: Number.isFinite(parkingLotId),
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
 
   const slotMapQueryResult = useQuery({
     queryKey: ['slot-map', parkingLotId, slotMapQuery],
     queryFn: () => getSlotMap(parkingLotId, slotMapQuery),
     enabled: Number.isFinite(parkingLotId),
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
 
   const parkingLotsQuery = useQuery({
     queryKey: ['parking-lots'],
     queryFn: getParkingLots,
+    staleTime: PARKING_LOT_QUERY_STALE_MS,
   });
 
   const filteredGroups = useMemo(() => {
@@ -127,7 +131,7 @@ export function VisualSlotMapPage() {
   const mapData = slotMapQueryResult.data;
   const parkingLot = parkingLotQuery.data;
 
-  if (parkingLotQuery.isLoading) {
+  if (parkingLotQuery.isPending && !parkingLotQuery.data) {
     return (
       <Stack alignItems="center" py={8}>
         <CircularProgress />
@@ -248,7 +252,7 @@ export function VisualSlotMapPage() {
         </Stack>
       </Paper>
 
-      {slotMapQueryResult.isLoading ? (
+      {slotMapQueryResult.isPending && !slotMapQueryResult.data ? (
         <Stack alignItems="center" py={8}>
           <CircularProgress />
         </Stack>
