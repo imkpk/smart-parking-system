@@ -186,7 +186,8 @@ describe('BookingsPage', () => {
       },
     ]);
 
-    renderWithProviders(<BookingsPage />);
+    const { queryClient } = renderWithProviders(<BookingsPage />);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     await screen.findByText('BK-001');
 
     expect(getAvailableSlotsForBooking).not.toHaveBeenCalled();
@@ -218,6 +219,17 @@ describe('BookingsPage', () => {
     });
 
     expect(await screen.findByText('Booking created.')).toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'all'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'my'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 1] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5, 'slots'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['parking-lots', 5, 'available-slots', 'CAR'],
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map', 5] });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['bookings'] });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-lots'] });
   });
 
   it('shows access denied alert when admin bookings request is forbidden', async () => {
@@ -301,7 +313,8 @@ describe('BookingsPage', () => {
       logout: vi.fn(),
     });
 
-    renderWithProviders(<BookingsPage />);
+    const { queryClient } = renderWithProviders(<BookingsPage />);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     await screen.findByText('BK-001');
 
     const cancelButton = getDataGridRowButtons('BK-001').at(-1);
@@ -317,5 +330,13 @@ describe('BookingsPage', () => {
     });
 
     expect(await screen.findByText('Booking cancelled.')).toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'all'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'my'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 1] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5, 'slots'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map', 5] });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['bookings'] });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-lots'] });
   });
 });

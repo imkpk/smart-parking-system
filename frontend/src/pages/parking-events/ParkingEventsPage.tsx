@@ -282,7 +282,10 @@ export function ParkingEventsPage() {
     mutationFn: checkInParkingEvent,
     onSuccess: async (parkingEvent) => {
       await invalidateOperationalQueries(queryClient, {
+        bookingId: parkingEvent.bookingId,
+        operation: 'check-in',
         parkingLotId: parkingEvent.parkingLotId,
+        userId: parkingEvent.userId,
       });
       setBookingCode('');
       setBookingId('');
@@ -294,7 +297,10 @@ export function ParkingEventsPage() {
     mutationFn: checkOutParkingEvent,
     onSuccess: async (result) => {
       await invalidateOperationalQueries(queryClient, {
+        bookingId: result.parkingEvent.bookingId,
+        operation: 'check-out',
         parkingLotId: result.parkingEvent.parkingLotId,
+        userId: result.parkingEvent.userId,
       });
       setCheckoutTarget(null);
       setCheckoutResult(result);

@@ -10,9 +10,9 @@
 | Phase 10 testing | ✅ Complete | Focused and full frontend tests pass |
 | Phase 13 quality review | ✅ Complete | Verdict: APPROVE |
 | Phase 14 report + changelog | ✅ Complete | Report and indexes updated |
-| Phase 15 push + PR | ⏳ Pending | Awaiting commit/push/PR |
-| Merge to develop | ⏳ Human | Never merged by agent |
+| Phase 15 push + PR | ✅ Complete | PR #152 opened and merged |
+| Merge to develop | ✅ Merged | Merge commit `012e0a4` |
 
 ## Last updated
 
-2026-06-27 — Full frontend test suite passed in 322.56s.
+2026-06-27 — PR #152 merged to `develop`.

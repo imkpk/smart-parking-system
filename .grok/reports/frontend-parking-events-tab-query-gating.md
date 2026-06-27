@@ -1,6 +1,6 @@
 # Frontend Parking Events Tab Query Gating
 
-Status: PR #152
+Status: merged (PR #152)
 Branch: `fix/frontend-parking-events-tab-query-gating`
 PR: https://github.com/imkpk/smart-parking-system/pull/152
 Date: 2026-06-27

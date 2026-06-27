@@ -632,7 +632,10 @@ export function SecurityGatePage() {
     mutationFn: checkInParkingEvent,
     onSuccess: async (parkingEvent) => {
       await invalidateOperationalQueries(queryClient, {
+        bookingId: parkingEvent.bookingId,
+        operation: 'check-in',
         parkingLotId: parkingEvent.parkingLotId,
+        userId: parkingEvent.userId,
       });
       setConfirmOpen(false);
       setSuccessMessage('Vehicle checked in successfully.');
@@ -649,7 +652,10 @@ export function SecurityGatePage() {
     mutationFn: checkOutParkingEvent,
     onSuccess: async (result) => {
       await invalidateOperationalQueries(queryClient, {
+        bookingId: result.parkingEvent.bookingId,
+        operation: 'check-out',
         parkingLotId: result.parkingEvent.parkingLotId,
+        userId: result.parkingEvent.userId,
       });
       setConfirmOpen(false);
       setResult(null);
