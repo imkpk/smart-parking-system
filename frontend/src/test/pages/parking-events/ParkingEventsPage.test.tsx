@@ -104,6 +104,28 @@ describe('ParkingEventsPage', () => {
     expect(getSlots).not.toHaveBeenCalled();
   });
 
+  it('fetches only active events on the admin active tab', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'ADMIN' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithProviders(<ParkingEventsPage />);
+
+    await waitFor(() => {
+      expect(getActiveParkingEvents).toHaveBeenCalledTimes(1);
+    });
+
+    expect(getParkingEvents).not.toHaveBeenCalled();
+    expect(getParkingEventHistory).not.toHaveBeenCalled();
+    expect(await screen.findByText('BK-001')).toBeInTheDocument();
+  });
+
   it('submits check-in form with booking code', async () => {
     const user = userEvent.setup({ delay: null });
     renderWithProviders(<ParkingEventsPage />);
@@ -170,6 +192,7 @@ describe('ParkingEventsPage', () => {
     expect(screen.getByRole('tab', { name: /active events/i })).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /event history/i })).not.toBeInTheDocument();
     expect(getParkingEvents).not.toHaveBeenCalled();
+    expect(getParkingEventHistory).not.toHaveBeenCalled();
     expect(await screen.findByText('BK-001')).toBeInTheDocument();
   });
 
@@ -212,6 +235,7 @@ describe('ParkingEventsPage', () => {
     expect(screen.queryByText('My Parking History')).not.toBeInTheDocument();
     expect(await screen.findByText('BK-001')).toBeInTheDocument();
     expect(getActiveParkingEvents).not.toHaveBeenCalled();
+    expect(getParkingEvents).not.toHaveBeenCalled();
   });
 
   it('opens parking event details dialog', async () => {
@@ -242,6 +266,7 @@ describe('ParkingEventsPage', () => {
 
     renderWithProviders(<ParkingEventsPage />);
     await screen.findByText('BK-001');
+    expect(getParkingEvents).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('tab', { name: /event history/i }));
 
@@ -264,6 +289,7 @@ describe('ParkingEventsPage', () => {
 
     renderWithProviders(<ParkingEventsPage />);
     await screen.findByText('BK-001');
+    expect(getParkingEvents).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('tab', { name: /event history/i }));
 
@@ -276,5 +302,34 @@ describe('ParkingEventsPage', () => {
       'true',
     );
     expect(await screen.findByText('SES-000011')).toBeInTheDocument();
+    expect(getActiveParkingEvents).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches active events when admin switches back to the active tab', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'ADMIN' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithProviders(<ParkingEventsPage />);
+    await screen.findByText('BK-001');
+
+    await user.click(screen.getByRole('tab', { name: /event history/i }));
+    await screen.findByText('SES-000011');
+    await user.click(screen.getByRole('tab', { name: /active events/i }));
+
+    expect(screen.getByRole('tab', { name: /active events/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(getParkingEvents).toHaveBeenCalledTimes(1);
+    expect(getParkingEventHistory).not.toHaveBeenCalled();
+    expect(await screen.findByText('BK-001')).toBeInTheDocument();
   });
 });
