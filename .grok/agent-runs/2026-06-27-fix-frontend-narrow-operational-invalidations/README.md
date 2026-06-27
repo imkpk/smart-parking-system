@@ -32,7 +32,7 @@ Inline human prompt: CODEX CLI STEP 4 ONLY - NARROW PARKING OPERATION INVALIDATI
 
 | PR | Title | Status |
 |----|-------|--------|
-| TBD | fix(frontend): narrow parking operation query invalidations | ⏳ In Progress |
+| [#153](https://github.com/imkpk/smart-parking-system/pull/153) | fix(frontend): narrow parking operation query invalidations | ✅ Merged |
 
 ## Current status
 
@@ -47,8 +47,8 @@ Inline human prompt: CODEX CLI STEP 4 ONLY - NARROW PARKING OPERATION INVALIDATI
 | 10 Testing | ✅ |
 | 13 Role ⑤ review | ✅ |
 | 14 Report + changelog | ✅ |
-| 15 Push + PR | ⏳ |
+| 15 Push + PR | ✅ |
 
 ## Human actions required
 
-- [ ] Review PR after Role ⑤ APPROVE or APPROVE WITH NOTES and CI is green.
+- [x] PR #153 merged to `develop`.

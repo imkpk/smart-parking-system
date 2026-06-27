@@ -40,7 +40,8 @@ Completion summaries for refactor phases and fixes executed on the Smart Parking
 | [parking-events-outbox-publish.md](./parking-events-outbox-publish.md) | Parking check-in/check-out transactional outbox events | PR #150 ✅ |
 | [outbox-super-admin-monitor-endpoint.md](./outbox-super-admin-monitor-endpoint.md) | SUPER_ADMIN outbox monitor endpoint | PR #151 ✅ |
 | [frontend-parking-events-tab-query-gating.md](./frontend-parking-events-tab-query-gating.md) | ParkingEventsPage tab query gating | PR #152 ✅ |
-| [frontend-narrow-operational-invalidations.md](./frontend-narrow-operational-invalidations.md) | Narrow parking operation query invalidations | PR pending |
+| [frontend-narrow-operational-invalidations.md](./frontend-narrow-operational-invalidations.md) | Narrow parking operation query invalidations | PR #153 ✅ |
+| [parking-finder-booking-entry.md](./parking-finder-booking-entry.md) | Parking Finder booking entry flow | PR pending |
 | [parking-finder-foundation.md](./parking-finder-foundation.md) | Public parking finder foundation | PR #140 ✅ |
 | [single-tenant-branch-preservation.md](./single-tenant-branch-preservation.md) | `single-tenant` branch from `main`, CI triggers, protection checklist | PR #53 ✅ |
 | [e2e-agent-playbook.md](./e2e-agent-playbook.md) | Cypress/E2E agent playbook and prompt pack (LOOP 00) | PR #55 ✅ |

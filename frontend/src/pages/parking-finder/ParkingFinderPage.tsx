@@ -24,6 +24,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { PageHeader } from '../../components/common/PageHeader';
 import { QUERY_META_SUPPRESS_CONSOLE_ERROR } from '../../lib/createAppQueryClient';
 import { formatStatusLabel } from '../../lib/formatters';
+import { useAuth } from '../../providers/AuthProvider';
 import { PublicParkingFinderQuery } from '../../types/publicParkingFinder';
 import { VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
@@ -48,6 +49,7 @@ function formatPrice(result: {
 }
 
 export function ParkingFinderPage() {
+  const { token } = useAuth();
   const [cityInput, setCityInput] = useState('');
   const [debouncedCity, setDebouncedCity] = useState('');
   const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('ANY');
@@ -92,7 +94,7 @@ export function ParkingFinderPage() {
       }}
     >
       <PageHeader
-        description="Search public parking lots with live slot availability. Booking from finder is coming soon."
+        description="Search public parking lots with live slot availability and start an authenticated booking."
         title="Find parking"
       />
 
@@ -149,6 +151,8 @@ export function ParkingFinderPage() {
         <Stack spacing={2}>
           {results.map((result) => {
             const priceLabel = formatPrice(result);
+            const bookingPath = `/bookings/new?parkingLotId=${result.id}`;
+            const loginPath = `/login?${new URLSearchParams({ redirect: bookingPath }).toString()}`;
             return (
               <Card key={result.id} variant="outlined">
                 <CardContent>
@@ -197,9 +201,19 @@ export function ParkingFinderPage() {
                   </Stack>
                 </CardContent>
                 <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Button component={RouterLink} to="/login" variant="contained">
-                    Sign in to book
-                  </Button>
+                  {result.bookable ? (
+                    <Button
+                      component={RouterLink}
+                      to={token ? bookingPath : loginPath}
+                      variant="contained"
+                    >
+                      {token ? 'Book' : 'Sign in to book'}
+                    </Button>
+                  ) : (
+                    <Button disabled variant="contained">
+                      No slots available
+                    </Button>
+                  )}
                 </CardActions>
               </Card>
             );

@@ -232,6 +232,40 @@ describe('BookingsPage', () => {
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-lots'] });
   });
 
+  it('opens the new booking route with parking lot preselected from query param', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'USER', id: 2 }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+    vi.mocked(getParkingLots).mockResolvedValue([
+      {
+        id: 5,
+        name: 'Main Lot',
+        type: 'MALL',
+        address: null,
+        city: null,
+        state: null,
+        pincode: null,
+        isActive: true,
+        createdAt: '2026-06-18T00:00:00.000Z',
+        updatedAt: '2026-06-18T00:00:00.000Z',
+      },
+    ]);
+
+    renderWithProviders(<BookingsPage />, { route: '/bookings/new?parkingLotId=5' });
+
+    const dialog = await screen.findByRole('dialog', { name: userFacingLabels.bookSlot });
+    await waitFor(() => {
+      expect(within(dialog).getByText('Main Lot')).toBeInTheDocument();
+    });
+    expect(getAvailableSlotsForBooking).not.toHaveBeenCalled();
+  });
+
   it('shows access denied alert when admin bookings request is forbidden', async () => {
     const error = new AxiosError('Forbidden');
     error.response = { status: 403 } as AxiosError['response'];

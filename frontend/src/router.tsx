@@ -119,6 +119,10 @@ export const router = createBrowserRouter([
                 path: 'support',
                 element: <UserSupportPage />,
               },
+              {
+                path: 'bookings/new',
+                element: <BookingsPage />,
+              },
             ],
           },
           {
