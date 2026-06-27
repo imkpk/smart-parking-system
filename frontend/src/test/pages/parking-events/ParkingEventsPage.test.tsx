@@ -144,7 +144,7 @@ describe('ParkingEventsPage', () => {
     expect(await screen.findByText(/checked in booking/i)).toBeInTheDocument();
   });
 
-  it('invalidates operational queries after successful check-in', async () => {
+  it('invalidates targeted operational queries after successful check-in', async () => {
     const user = userEvent.setup({ delay: null });
     const { queryClient } = renderWithProviders(<ParkingEventsPage />);
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -154,10 +154,21 @@ describe('ParkingEventsPage', () => {
     await user.click(screen.getByRole('button', { name: /check in/i }));
 
     await waitFor(() => {
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events', 'active'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events', 'all'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'all'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'my'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 1] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5, 'slots'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map', 5] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'operator-metrics'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'recent-activity'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-events'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['bookings'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['slot-map'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-lots'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-events', 'history'] });
     });
   });
 
@@ -180,6 +191,36 @@ describe('ParkingEventsPage', () => {
 
     expect(await screen.findByText('Parking event checked out.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /check-out result/i })).toBeInTheDocument();
+  });
+
+  it('invalidates targeted operational and history queries after checkout', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { queryClient } = renderWithProviders(<ParkingEventsPage />);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    await screen.findByText('BK-001');
+
+    await user.click(screen.getByRole('button', { name: /check out/i }));
+    const confirmDialog = screen.getByRole('dialog', { name: /confirm check-out/i });
+    await user.click(within(confirmDialog).getByRole('button', { name: /check out/i }));
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events', 'active'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events', 'all'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-events', 'history'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'all'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 'my'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bookings', 1] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['parking-lots', 5, 'slots'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['slot-map', 5] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['payments', 'summary'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['payments', 'all'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['payments', 'user', 2] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-events'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['bookings'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['slot-map'] });
+      expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['parking-lots'] });
+    });
   });
 
   it('shows only active events for security without history tab', async () => {

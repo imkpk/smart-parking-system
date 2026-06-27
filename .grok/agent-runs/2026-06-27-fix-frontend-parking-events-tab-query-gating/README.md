@@ -33,7 +33,7 @@ Inline Step 3 prompt from user.
 
 | PR | Title | Status |
 |----|-------|--------|
-| [#152](https://github.com/imkpk/smart-parking-system/pull/152) | fix(frontend): gate parking event queries by active tab | ⏳ In Progress |
+| [#152](https://github.com/imkpk/smart-parking-system/pull/152) | fix(frontend): gate parking event queries by active tab | ✅ Merged |
 
 ## Current status
 
@@ -47,7 +47,7 @@ Inline Step 3 prompt from user.
 | 10 Testing | ✅ |
 | 13 Role ⑤ review | ✅ APPROVE |
 | 14 Report + changelog | ✅ |
-| 15 Push + PR | ⏳ |
+| 15 Push + PR | ✅ |
 
 ## Timeout Finding
 

@@ -36,7 +36,7 @@ Inline overnight loop prompt from user.
 
 | PR | Title | Status |
 |----|-------|--------|
-| [#151](https://github.com/imkpk/smart-parking-system/pull/151) | feat(outbox): add super-admin event monitor endpoint | ⏳ In Progress |
+| [#151](https://github.com/imkpk/smart-parking-system/pull/151) | feat(outbox): add super-admin event monitor endpoint | ✅ Merged |
 
 ## Current status
 
@@ -50,8 +50,8 @@ Inline overnight loop prompt from user.
 | 10 Testing | ✅ |
 | 13 Role ⑤ review | ✅ APPROVE |
 | 14 Report + changelog | ✅ |
-| 15 Push + PR | ⏳ |
+| 15 Push + PR | ✅ |
 
 ## Human actions required
 
-- [ ] Review and merge PR when Role ⑤ APPROVE + CI green
+- [x] PR #151 merged to `develop`.

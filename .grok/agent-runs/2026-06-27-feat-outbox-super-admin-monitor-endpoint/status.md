@@ -10,9 +10,9 @@
 | Phase 10 testing | ✅ Complete | Backend specs added |
 | Phase 13 quality review | ✅ Complete | Verdict: APPROVE |
 | Phase 14 report + changelog | ✅ Complete | Report and indexes updated |
-| Phase 15 push + PR | ⏳ Pending | Awaiting commit/push/PR |
-| Merge to develop | ⏳ Human | Never merged by agent |
+| Phase 15 push + PR | ✅ Complete | PR #151 opened and merged |
+| Merge to develop | ✅ Merged | Merge commit `963296c` |
 
 ## Last updated
 
-2026-06-27 — Backend build and tests passed locally.
+2026-06-27 — PR #151 merged to `develop`.

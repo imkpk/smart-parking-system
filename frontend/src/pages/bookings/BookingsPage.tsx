@@ -158,13 +158,31 @@ export function BookingsPage() {
   const parkingLots = parkingLotsQuery.data ?? [];
   const availableSlots = availableSlotsQuery.data ?? [];
 
+  const invalidateBookingOperationQueries = async (booking: Booking) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'all'] }),
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'my'] }),
+      queryClient.invalidateQueries({ queryKey: ['bookings', booking.id] }),
+      queryClient.invalidateQueries({ queryKey: ['parking-lots', booking.parkingLotId] }),
+      queryClient.invalidateQueries({ queryKey: ['parking-lots', booking.parkingLotId, 'slots'] }),
+      queryClient.invalidateQueries({ queryKey: ['slot-map', booking.parkingLotId] }),
+    ]);
+  };
+
   const createMutation = useMutation({
     mutationFn: createBooking,
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-        queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
-      ]);
+    onSuccess: async (booking) => {
+      await invalidateBookingOperationQueries(booking);
+      if (bookingForm.vehicleType) {
+        await queryClient.invalidateQueries({
+          queryKey: [
+            'parking-lots',
+            booking.parkingLotId,
+            'available-slots',
+            bookingForm.vehicleType,
+          ],
+        });
+      }
       showSuccess('Booking created.');
       setFormOpen(false);
       setBookingForm({ ...emptyBookingForm, startTime: toLocalDateTimeValue() });
@@ -173,17 +191,13 @@ export function BookingsPage() {
   });
   const cancelMutation = useMutation({
     mutationFn: cancelBooking,
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-        queryClient.invalidateQueries({ queryKey: ['parking-lots'] }),
-      ]);
+    onSuccess: async (booking) => {
+      await invalidateBookingOperationQueries(booking);
       showSuccess('Booking cancelled.');
       setCancelTarget(null);
     },
     onError: (error) => showError(getApiErrorMessage(error)),
   });
-
   const bookingRows = useMemo(
     () => filterBookings(bookingsQuery.data ?? [], search),
     [bookingsQuery.data, search],
