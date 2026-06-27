@@ -110,4 +110,48 @@ describe('LoginPage', () => {
       });
     });
   });
+
+  it('redirects to new booking entry after successful login when redirect is safe', async () => {
+    const user = userEvent.setup();
+    loginMock.mockResolvedValueOnce({
+      accessToken: 'test-token',
+      user: createMockUser({ role: 'USER' }),
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/bookings/new" element={<div>Booking Entry</div>} />
+      </Routes>,
+      { route: '/login?redirect=/bookings/new?parkingLotId=5' },
+    );
+
+    await user.type(screen.getByLabelText(/email/i), 'user@example.com');
+    await user.type(screen.getByTestId('login-password'), 'secret123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText('Booking Entry')).toBeInTheDocument();
+  });
+
+  it('falls back to role home when login redirect is unsafe', async () => {
+    const user = userEvent.setup();
+    loginMock.mockResolvedValueOnce({
+      accessToken: 'test-token',
+      user: createMockUser({ role: 'ADMIN' }),
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/dashboard" element={<div>Admin Home</div>} />
+      </Routes>,
+      { route: '/login?redirect=https://example.com/bookings/new' },
+    );
+
+    await user.type(screen.getByLabelText(/email/i), 'admin@example.com');
+    await user.type(screen.getByTestId('login-password'), 'secret123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText('Admin Home')).toBeInTheDocument();
+  });
 });

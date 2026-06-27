@@ -1,6 +1,6 @@
 import { Alert, Button, Link, Stack, TextField } from '@mui/material';
 import { FormEvent, useState } from 'react';
-import { Link as RouterLink, Navigate, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { PasswordField } from '../../components/auth/PasswordField';
 import { useTenantSlugFromRoute } from '../../hooks/useTenantSlugFromRoute';
 import { getRoleHomePath } from '../../lib/routes';
@@ -8,17 +8,40 @@ import { useAuth } from '../../providers/AuthProvider';
 import { authTextFieldProps } from './authFieldProps';
 import { AuthPageShell } from './AuthPageShell';
 
+function getSafeBookingRedirect(searchParams: URLSearchParams) {
+  const redirect = searchParams.get('redirect');
+  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
+    return null;
+  }
+
+  try {
+    const parsedRedirect = new URL(redirect, window.location.origin);
+    if (
+      parsedRedirect.origin !== window.location.origin ||
+      parsedRedirect.pathname !== '/bookings/new'
+    ) {
+      return null;
+    }
+
+    return `${parsedRedirect.pathname}${parsedRedirect.search}${parsedRedirect.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export function LoginPage() {
   useTenantSlugFromRoute();
   const { isAuthenticated, login, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const safeRedirect = getSafeBookingRedirect(searchParams);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isAuthenticated && user) {
-    return <Navigate to={getRoleHomePath(user.role)} replace />;
+    return <Navigate to={safeRedirect ?? getRoleHomePath(user.role)} replace />;
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -28,7 +51,7 @@ export function LoginPage() {
 
     try {
       const response = await login({ email: identifier.trim(), password });
-      navigate(getRoleHomePath(response.user.role), { replace: true });
+      navigate(safeRedirect ?? getRoleHomePath(response.user.role), { replace: true });
     } catch {
       setError('Invalid email, mobile number, or password.');
     } finally {

@@ -20,7 +20,7 @@ import { Add, Cancel } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   cancelBooking,
   createBooking,
@@ -118,8 +118,18 @@ function toLocalDateTimeValue(date = new Date()) {
   return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
 }
 
+function parsePositiveInteger(value: string | null) {
+  if (!value) {
+    return '';
+  }
+
+  const parsedValue = Number(value);
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : '';
+}
+
 export function BookingsPage() {
   const { isAdmin, isUser, canOperateParkingEvents } = useUserRole();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { closeSnackbar, showError, showSuccess, snackbar } = useAppSnackbar();
@@ -157,6 +167,11 @@ export function BookingsPage() {
   const vehicles = vehiclesQuery.data ?? [];
   const parkingLots = parkingLotsQuery.data ?? [];
   const availableSlots = availableSlotsQuery.data ?? [];
+  const parkingLotSelectValue =
+    bookingForm.parkingLotId &&
+    parkingLots.some((parkingLot) => parkingLot.id === bookingForm.parkingLotId)
+      ? bookingForm.parkingLotId
+      : '';
 
   const invalidateBookingOperationQueries = async (booking: Booking) => {
     await Promise.all([
@@ -298,19 +313,24 @@ export function BookingsPage() {
     [canOperateParkingEvents, isUser],
   );
 
-  const openCreateForm = () => {
-    setBookingForm({ ...emptyBookingForm, startTime: toLocalDateTimeValue() });
+  const openCreateForm = (parkingLotId: number | '' = '') => {
+    setBookingForm({ ...emptyBookingForm, parkingLotId, startTime: toLocalDateTimeValue() });
     setFormOpen(true);
   };
 
   useEffect(() => {
-    if (searchParams.get('create') !== '1' || !isUser) {
+    const shouldOpenFromQuery = searchParams.get('create') === '1';
+    const shouldOpenFromRoute = location.pathname === '/bookings/new';
+
+    if ((!shouldOpenFromQuery && !shouldOpenFromRoute) || !isUser || formOpen) {
       return;
     }
 
-    openCreateForm();
-    setSearchParams({}, { replace: true });
-  }, [isUser, searchParams, setSearchParams]);
+    openCreateForm(parsePositiveInteger(searchParams.get('parkingLotId')));
+    if (shouldOpenFromQuery) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [formOpen, isUser, location.pathname, searchParams, setSearchParams]);
 
   const handleVehicleChange = (vehicleId: number) => {
     const selectedVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);
@@ -347,7 +367,7 @@ export function BookingsPage() {
         title={pageTitle}
         action={
           isUser ? (
-            <HeaderActionButton onClick={openCreateForm} startIcon={<Add />}>
+            <HeaderActionButton onClick={() => openCreateForm()} startIcon={<Add />}>
               {bookSlotLabel}
             </HeaderActionButton>
           ) : null
@@ -427,7 +447,7 @@ export function BookingsPage() {
                       slotId: '',
                     }))
                   }
-                  value={bookingForm.parkingLotId}
+                  value={parkingLotSelectValue}
                 >
                   {parkingLots.map((parkingLot) => (
                     <MenuItem key={parkingLot.id} value={parkingLot.id}>

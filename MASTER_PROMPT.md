@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.11
+**Version:** 1.16.12
 **Last updated:** 2026-06-27
-**Current branch:** `fix/frontend-narrow-operational-invalidations`
+**Current branch:** `feat/parking-finder-booking-entry`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -420,8 +420,8 @@ Reports: `.grok/reports/phase-4e-parking-lot-management-ux.md`, `.grok/reports/p
 [x] STEP 1: Parking check-in/check-out publish `PARKING_CHECKED_IN` / `PARKING_CHECKED_OUT` — PR #150 ✅
 [x] STEP 2: SUPER_ADMIN outbox monitor endpoint — PR #151 ✅
 [x] STEP 3: ParkingEventsPage tab query gating — PR #152 ✅
-[ ] STEP 4: Narrow operational invalidations — PR pending
-[ ] STEP 5: Parking Finder booking entry flow
+[x] STEP 4: Narrow operational invalidations — PR #153 ✅
+[ ] STEP 5: Parking Finder booking entry flow — PR pending
 ```
 
 Report: `.grok/reports/parking-events-outbox-publish.md`
@@ -437,7 +437,7 @@ Report: `.grok/reports/parking-events-outbox-publish.md`
 
 Report: `.grok/reports/parking-finder-foundation.md`
 
-**Deferred (post-foundation):** booking from finder, map/geolocation, external providers.
+**Deferred (post-foundation):** map/geolocation, external providers.
 
 **Phase 5B deferred (post-MVP):**
 
@@ -693,7 +693,8 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
-| 2026-06-27 | 1.16.11 | Agent | Step 4 implemented (PR pending): narrowed frontend parking operation invalidations for check-in/check-out and related booking create/cancel from root React Query namespaces to targeted event, booking, lot/slot, slot-map, dashboard metric/activity, available-slot, and checkout payment keys. Targeted ParkingEventsPage test passed in 41.04s; BookingsPage test passed in 32.88s; helper test passed in 3.87s; frontend build passed; full frontend suite passed in 485.36s. Report: `.grok/reports/frontend-narrow-operational-invalidations.md`. |
+| 2026-06-27 | 1.16.12 | Agent | Step 5 implemented (PR pending): Parking Finder book actions now route logged-out users through a safe `/login?redirect=/bookings/new?parkingLotId=<id>` path and logged-in users directly to protected `/bookings/new?parkingLotId=<id>`; the existing booking form opens with the lot preselected and no slot reservation occurs before confirmation. Targeted finder, bookings, login, and router tests passed; frontend build passed; full frontend suite passed in 340.72s. Report: `.grok/reports/parking-finder-booking-entry.md`. |
+| 2026-06-27 | 1.16.11 | Agent | Step 4 implemented and merged (PR #153): narrowed frontend parking operation invalidations for check-in/check-out and related booking create/cancel from root React Query namespaces to targeted event, booking, lot/slot, slot-map, dashboard metric/activity, available-slot, and checkout payment keys. Targeted ParkingEventsPage test passed in 41.04s; BookingsPage test passed in 32.88s; helper test passed in 3.87s; frontend build passed; full frontend suite passed in 485.36s. Report: `.grok/reports/frontend-narrow-operational-invalidations.md`. |
 | 2026-06-27 | 1.16.10 | Agent | Step 3 implemented (PR #152 pending): gated `ParkingEventsPage` React Query calls by active tab so active events fetch only on the active tab and admin history/all fetches only on the history tab, while USER history remains default. Targeted test passed; full frontend suite passed in 322.56s after previous shorter command ceilings timed out. Report: `.grok/reports/frontend-parking-events-tab-query-gating.md`. |
 | 2026-06-27 | 1.16.9 | Agent | Step 2 implemented (PR #151 pending): added protected read-only `GET /events/outbox` and `GET /events/outbox/summary` endpoints for `SUPER_ADMIN`; list supports `status`, `eventType`, `organizationId`, and capped `limit`, excludes `payload`, and summary returns counts by status. Also completed Phase 0 merge sync for PR #150. Report: `.grok/reports/outbox-super-admin-monitor-endpoint.md`. |
 | 2026-06-27 | 1.16.8 | Agent | Step 1 implemented (PR pending): parking check-in/check-out now publish `PARKING_CHECKED_IN` and `PARKING_CHECKED_OUT` through `EventPublisherService.publishEventInTransaction` inside existing Prisma transactions; payloads include `organizationId`, aggregate metadata, IDs, and timestamps only; no broker/payment-service changes. Report: `.grok/reports/parking-events-outbox-publish.md`. |

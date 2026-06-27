@@ -1,8 +1,9 @@
 # Frontend Narrow Operational Invalidations
 
-**Status:** PR pending
+**Status:** PR #153 merged
 **Branch:** `fix/frontend-narrow-operational-invalidations`  
 **PR title:** `fix(frontend): narrow parking operation query invalidations`  
+**PR:** https://github.com/imkpk/smart-parking-system/pull/153
 **Date:** 2026-06-27
 
 ## Summary

@@ -114,6 +114,53 @@ describe('router', () => {
     });
   });
 
+  it('requires authentication for new booking entry route', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    await router.navigate('/bookings/new?parkingLotId=5');
+    renderAppRouter();
+
+    await waitFor(() => {
+      expect(screen.getByText('Login Page')).toBeInTheDocument();
+    });
+  });
+
+  it('resolves new booking entry route for authenticated users', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: createMockUser({ role: 'USER' }),
+      token: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    await router.navigate('/bookings/new?parkingLotId=5');
+    renderAppRouter();
+
+    await waitFor(() => {
+      expect(screen.getByText('Bookings Page')).toBeInTheDocument();
+    });
+  });
+
+  it('does not expose new booking entry route to admin roles', async () => {
+    await router.navigate('/bookings/new?parkingLotId=5');
+    renderAppRouter();
+
+    await waitFor(() => {
+      expect(screen.getByText(/you do not have access to this page/i)).toBeInTheDocument();
+    });
+  });
+
   it('resolves admin parking lot details route', async () => {
     await router.navigate('/parking-lots/1');
     renderAppRouter();

@@ -11,9 +11,9 @@
 | Phase 10 testing | ✅ Done | Focused tests, build, and full suite passed |
 | Phase 13 quality review | ✅ Done | Verdict: APPROVE |
 | Phase 14 report + changelog | ✅ Done | Report and indexes updated |
-| Phase 15 push + PR | ⏳ Pending | |
-| Merge to develop | ⏳ Human | Do not merge in this run |
+| Phase 15 push + PR | ✅ Done | PR #153 opened and merged |
+| Merge to develop | ✅ Done | Merge commit `61ef5db` on `develop` |
 
 ## Last updated
 
-2026-06-27 - Implementation, tests, docs, and quality gate complete; PR pending.
+2026-06-27 - PR #153 merged to `develop`.
