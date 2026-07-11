@@ -1,8 +1,11 @@
+import { resolveIotConfig } from '../iot.config';
 import {
   MqttCommandAckMessage,
   MqttDetectionMessage,
   MqttHeartbeatMessage,
 } from './mqtt.types';
+
+const config = resolveIotConfig();
 
 function assertObject(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -10,20 +13,47 @@ function assertObject(value: unknown, label: string): asserts value is Record<st
   }
 }
 
-function assertString(value: unknown, field: string): asserts value is string {
+function assertString(value: unknown, field: string, maxLength = 500): asserts value is string {
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`${field} must be a non-empty string`);
   }
+
+  if (value.length > maxLength) {
+    throw new Error(`${field} exceeds maximum length`);
+  }
+}
+
+function assertPayloadSize(payload: Buffer): void {
+  if (payload.byteLength > config.maxMqttPayloadBytes) {
+    throw new Error('MQTT payload exceeds maximum allowed size');
+  }
+}
+
+function assertIsoTimestamp(value: string, field: string): Date {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`${field} must be a valid ISO timestamp`);
+  }
+
+  const skew = Math.abs(Date.now() - parsed.getTime());
+  if (skew > config.maxClockSkewMs) {
+    throw new Error(`${field} is outside the allowed clock skew window`);
+  }
+
+  return parsed;
 }
 
 export function parseMqttDetectionMessage(payload: Buffer): MqttDetectionMessage {
+  assertPayloadSize(payload);
+
   const parsed = JSON.parse(payload.toString()) as unknown;
   assertObject(parsed, 'Detection message');
 
-  assertString(parsed.messageId, 'messageId');
-  assertString(parsed.identifierType, 'identifierType');
-  assertString(parsed.identifier, 'identifier');
+  assertString(parsed.messageId, 'messageId', 64);
+  assertString(parsed.identifierType, 'identifierType', 32);
+  assertString(parsed.identifier, 'identifier', config.maxIdentifierLength);
   assertString(parsed.occurredAt, 'occurredAt');
+  assertIsoTimestamp(parsed.occurredAt, 'occurredAt');
 
   if (
     parsed.identifierType !== 'PLATE' &&
@@ -33,23 +63,27 @@ export function parseMqttDetectionMessage(payload: Buffer): MqttDetectionMessage
     throw new Error('identifierType must be PLATE, UHF_RFID, or QR_CODE');
   }
 
-  if (parsed.confidence !== undefined && typeof parsed.confidence !== 'number') {
-    throw new Error('confidence must be a number');
+  if (parsed.confidence !== undefined) {
+    if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) {
+      throw new Error('confidence must be a number between 0 and 1');
+    }
   }
 
-  if (parsed.deviceAuth !== undefined && typeof parsed.deviceAuth !== 'string') {
-    throw new Error('deviceAuth must be a string');
+  if (parsed.deviceAuth === undefined || typeof parsed.deviceAuth !== 'string' || !parsed.deviceAuth.trim()) {
+    throw new Error('deviceAuth is required');
   }
 
   return parsed as MqttDetectionMessage;
 }
 
 export function parseMqttCommandAckMessage(payload: Buffer): MqttCommandAckMessage {
+  assertPayloadSize(payload);
+
   const parsed = JSON.parse(payload.toString()) as unknown;
   assertObject(parsed, 'Command ack message');
 
-  assertString(parsed.commandId, 'commandId');
-  assertString(parsed.status, 'status');
+  assertString(parsed.commandId, 'commandId', 64);
+  assertString(parsed.status, 'status', 32);
 
   if (
     parsed.status !== 'ACKNOWLEDGED' &&
@@ -60,10 +94,16 @@ export function parseMqttCommandAckMessage(payload: Buffer): MqttCommandAckMessa
     throw new Error('status must be ACKNOWLEDGED, RECEIVED, EXECUTED, or FAILED');
   }
 
+  if (parsed.failureMessage !== undefined) {
+    assertString(parsed.failureMessage, 'failureMessage', config.maxFailureMessageLength);
+  }
+
   return parsed as MqttCommandAckMessage;
 }
 
 export function parseMqttHeartbeatMessage(payload: Buffer): MqttHeartbeatMessage {
+  assertPayloadSize(payload);
+
   const parsed = JSON.parse(payload.toString()) as unknown;
   assertObject(parsed, 'Heartbeat message');
 
@@ -75,8 +115,9 @@ export function parseMqttHeartbeatMessage(payload: Buffer): MqttHeartbeatMessage
     throw new Error('status must be ONLINE or DEGRADED');
   }
 
-  if (parsed.occurredAt !== undefined && typeof parsed.occurredAt !== 'string') {
-    throw new Error('occurredAt must be a string');
+  if (parsed.occurredAt !== undefined) {
+    assertString(parsed.occurredAt, 'occurredAt');
+    assertIsoTimestamp(parsed.occurredAt, 'occurredAt');
   }
 
   return parsed as MqttHeartbeatMessage;

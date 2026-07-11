@@ -6,12 +6,20 @@ export type IotConfig = {
   manualOverrideRateLimitPerMinute: number;
   bookingEarlyEntryMinutes: number;
   bookingExitGraceMinutes: number;
+  maxMqttPayloadBytes: number;
+  maxIdentifierLength: number;
+  maxClockSkewMs: number;
+  maxFailureMessageLength: number;
   mqtt: {
     brokerUrl: string;
     username?: string;
     password?: string;
     clientIdPrefix: string;
     topicPrefix: string;
+    caPath?: string;
+    certPath?: string;
+    keyPath?: string;
+    rejectUnauthorized: boolean;
   };
 };
 
@@ -87,12 +95,20 @@ export function resolveIotConfig(env: NodeJS.ProcessEnv = process.env): IotConfi
       env.IOT_BOOKING_EXIT_GRACE_MINUTES,
       30,
     ),
+    maxMqttPayloadBytes: parsePositiveInt(env.IOT_MAX_MQTT_PAYLOAD_BYTES, 8192),
+    maxIdentifierLength: parsePositiveInt(env.IOT_MAX_IDENTIFIER_LENGTH, 128),
+    maxClockSkewMs: parsePositiveInt(env.IOT_MAX_CLOCK_SKEW_MS, 300_000),
+    maxFailureMessageLength: parsePositiveInt(env.IOT_MAX_FAILURE_MESSAGE_LENGTH, 500),
     mqtt: {
       brokerUrl: env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883',
       username: env.MQTT_USERNAME,
       password: env.MQTT_PASSWORD,
       clientIdPrefix: env.MQTT_CLIENT_ID_PREFIX ?? 'smart-parking-backend',
       topicPrefix: env.MQTT_TOPIC_PREFIX ?? 'smart-parking',
+      caPath: env.MQTT_CA_PATH?.trim() || undefined,
+      certPath: env.MQTT_CERT_PATH?.trim() || undefined,
+      keyPath: env.MQTT_KEY_PATH?.trim() || undefined,
+      rejectUnauthorized: parseBoolean(env.MQTT_REJECT_UNAUTHORIZED, true),
     },
   };
 }

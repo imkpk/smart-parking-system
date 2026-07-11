@@ -21,7 +21,7 @@ describe('mqtt-message.validator', () => {
           identifierType: 'PLATE',
           identifier: 'KA05GH1212',
           confidence: 0.95,
-          occurredAt: '2026-06-14T10:00:00.000Z',
+          occurredAt: new Date().toISOString(),
           deviceAuth: 'secret',
         }),
       ),

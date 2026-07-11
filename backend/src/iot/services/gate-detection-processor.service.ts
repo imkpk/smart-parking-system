@@ -144,6 +144,7 @@ export class GateDetectionProcessorService {
             : undefined,
       });
 
+    const receivedAt = new Date();
     const isDuplicate = await this.isDuplicateDetection({
       gateId: gate.id,
       identifierType,
@@ -153,7 +154,7 @@ export class GateDetectionProcessorService {
           ? normalizeVehicleNumber(input.message.identifier)
           : undefined,
       duplicateWindowSeconds: gate.duplicateWindowSeconds,
-      occurredAt: new Date(input.message.occurredAt),
+      receivedAt,
     });
 
     const decision = this.gateAccessDecisionService.evaluate({
@@ -171,7 +172,7 @@ export class GateDetectionProcessorService {
       activeAssignment,
       isDuplicate,
       plateMatchCount,
-      evaluatedAt: new Date(input.message.occurredAt),
+      evaluatedAt: receivedAt,
     });
 
     const detection = await this.prisma.gateDetection.create({
@@ -332,10 +333,10 @@ export class GateDetectionProcessorService {
     identifierHash: string;
     normalizedPlate?: string;
     duplicateWindowSeconds: number;
-    occurredAt: Date;
+    receivedAt: Date;
   }): Promise<boolean> {
     const windowStart = new Date(
-      input.occurredAt.getTime() - input.duplicateWindowSeconds * 1000,
+      input.receivedAt.getTime() - input.duplicateWindowSeconds * 1000,
     );
 
     const dedupHash =
@@ -346,9 +347,9 @@ export class GateDetectionProcessorService {
     const recent = await this.prisma.gateDetection.findFirst({
       where: {
         gateId: input.gateId,
-        occurredAt: {
+        createdAt: {
           gte: windowStart,
-          lt: input.occurredAt,
+          lt: input.receivedAt,
         },
         identifierHash: dedupHash,
       },
