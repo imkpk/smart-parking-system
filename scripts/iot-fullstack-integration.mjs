@@ -285,24 +285,27 @@ async function loadGateContext() {
 }
 
 async function findEntryCandidate(markerLotId, excludeVehicleIds = []) {
-  const booking = await prisma.booking.findFirst({
-    where: {
-      organizationId: ORG_ID,
-      parkingLotId: markerLotId,
-      status: 'CONFIRMED',
-      vehicleId: excludeVehicleIds.length
-        ? { notIn: excludeVehicleIds }
-        : undefined,
-      vehicle: {
-        parkingEvents: {
-          none: {
-            organizationId: ORG_ID,
-            status: 'ACTIVE',
-            checkOutTime: null,
-          },
+  const where = {
+    organizationId: ORG_ID,
+    parkingLotId: markerLotId,
+    status: 'CONFIRMED',
+    vehicle: {
+      events: {
+        none: {
+          organizationId: ORG_ID,
+          status: 'ACTIVE',
+          checkOutTime: null,
         },
       },
     },
+  };
+
+  if (excludeVehicleIds.length > 0) {
+    where.vehicleId = { notIn: excludeVehicleIds };
+  }
+
+  const booking = await prisma.booking.findFirst({
+    where,
     include: { vehicle: true },
     orderBy: { id: 'asc' },
   });
@@ -312,14 +315,19 @@ async function findEntryCandidate(markerLotId, excludeVehicleIds = []) {
 }
 
 async function findActiveExitCandidate(markerLotId, excludeEventIds = []) {
+  const where = {
+    organizationId: ORG_ID,
+    parkingLotId: markerLotId,
+    status: 'ACTIVE',
+    checkOutTime: null,
+  };
+
+  if (excludeEventIds.length > 0) {
+    where.id = { notIn: excludeEventIds };
+  }
+
   const event = await prisma.parkingEvent.findFirst({
-    where: {
-      organizationId: ORG_ID,
-      parkingLotId: markerLotId,
-      status: 'ACTIVE',
-      checkOutTime: null,
-      id: excludeEventIds.length ? { notIn: excludeEventIds } : undefined,
-    },
+    where,
     include: { vehicle: true },
     orderBy: { id: 'asc' },
   });
