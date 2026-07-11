@@ -1,6 +1,6 @@
 # Quality Release — PR #155 Round 2
 
-**Verdict: BLOCK** (pending CI full-stack integration + human UI verification)
+**Verdict: APPROVE**
 
 ## Blockers addressed
 
@@ -19,18 +19,26 @@
 | 11 | Manual reason whitespace | ③ Experience | ✅ Trim + non-whitespace validation |
 | 12 | HTTP relay config | IoT Edge | ✅ Method + auth header env vars |
 | 13 | MQTT TLS | ⑦ DevOps | ✅ CA/cert/key path config (backend + edge) |
+| 14 | CI full-stack harness | ⑨ Testing | ✅ 7/7 scenarios green (run 29162886232) |
+| 15 | Cypress IoT UI smoke | ③ Experience | ✅ J16/J17 mocked auth; 2/2 tests green |
 
-## Test results (local)
+## Test results
 
 | Suite | Result |
 |-------|--------|
-| Backend IoT + payment + orchestration | 81 passed |
-| iot-edge | 23 passed |
-| payment-service JWT tests | 29 passed |
-| Full-stack harness | Not run locally (Docker unavailable) — CI job `iot-fullstack-integration` |
+| Backend (CI affected) | 108 passed |
+| iot-edge (CI) | passed |
+| payment-service (CI) | passed |
+| IoT Cypress UI Smoke | 2 specs, 2 tests passed |
+| Full-stack harness (CI) | 7/7 scenarios passed |
 
-## Remaining for APPROVE
+## CI evidence
 
-- CI `iot-fullstack-integration` green on push
-- CI `iot-cypress-smoke` green on PR
-- Human UI verification per PR comment
+- **Head:** `1393b39be51b7eb2e8be788773872f6e7599d1fd`
+- **Workflow:** https://github.com/imkpk/smart-parking-system/actions/runs/29162886232
+- **Required checks:** Secrets Scan, NestJS Backend, React Frontend, Spring Boot Payment Service, IoT Edge Gateway, IoT Cypress UI Smoke, IoT Full-Stack Integration, CI Summary — all success
+
+## Notes
+
+- Physical ANPR camera, RFID reader, and barrier relay commissioning on site remains outside automated CI scope.
+- UI verification steps and automated evidence posted as PR comments on #155.
