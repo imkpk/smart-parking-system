@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleHomeRedirect } from './components/auth/RoleHomeRedirect';
 import { RoleRoute } from './components/auth/RoleRoute';
@@ -212,6 +212,6 @@ export const appRoutes = [
     path: '*',
     element: <NotFoundPage />,
   },
-] as const;
+] satisfies RouteObject[];
 
 export const router = createBrowserRouter(appRoutes);
