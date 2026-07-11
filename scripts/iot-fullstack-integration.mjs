@@ -17,12 +17,12 @@ import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import mqtt from 'mqtt';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const require = createRequire(path.join(ROOT, 'backend/package.json'));
 const { PrismaClient } = require('@prisma/client');
+const mqtt = require('mqtt');
 
 const ORG_ID = Number(process.env.ORGANIZATION_ID ?? 1);
 const MQTT_URL = process.env.MQTT_BROKER_URL ?? 'mqtt://127.0.0.1:1883';
