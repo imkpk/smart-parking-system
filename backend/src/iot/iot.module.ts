@@ -34,7 +34,7 @@ const simulatorControllers =
     : [];
 
 @Module({
-  imports: [forwardRef(() => EventsModule), ParkingEventsModule, SlotsModule],
+  imports: [forwardRef(() => EventsModule), forwardRef(() => ParkingEventsModule), SlotsModule],
   controllers: [
     GatesController,
     IotDevicesController,
