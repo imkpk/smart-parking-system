@@ -1,0 +1,41 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: smart-parking-mosquitto
+    restart: unless-stopped
+    ports:
+      - '1883:1883'
+      - '9001:9001'
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mosquitto_sub -h 127.0.0.1 -t $$SYS/broker/version -C 1 -W 3 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  iot-edge:
+    profiles: ['edge']
+    build:
+      context: ./iot-edge
+    container_name: smart-parking-iot-edge
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - '3100:3100'
+    environment:
+      EDGE_LOCAL_API_KEY: ${EDGE_LOCAL_API_KEY:-dev-edge-key}
+      EXTERNAL_DEVICE_ID: ${EXTERNAL_DEVICE_ID:-edge-gw-local-001}
+      ORGANIZATION_ID: ${ORGANIZATION_ID:-1}
+      GATE_ID: ${GATE_ID:-1}
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-smart-parking}
+      BARRIER_MODE: ${BARRIER_MODE:-SIMULATED}
+      HTTP_RELAY_URL: ${HTTP_RELAY_URL:-}
+      HTTP_PORT: 3100
+
+volumes:
+  mosquitto-data:

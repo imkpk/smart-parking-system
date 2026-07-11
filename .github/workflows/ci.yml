@@ -33,6 +33,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       payment: ${{ steps.filter.outputs.payment }}
+      iot-edge: ${{ steps.filter.outputs.iot-edge }}
       workflow: ${{ steps.filter.outputs.workflow }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
@@ -52,6 +53,8 @@ jobs:
               - 'frontend/**'
             payment:
               - 'payment-service/**'
+            iot-edge:
+              - 'iot-edge/**'
             workflow:
               - '.github/workflows/**'
             docs:
@@ -154,6 +157,34 @@ jobs:
       - name: Frontend coverage summary
         if: github.event_name == 'push' && steps.coverage.outcome == 'success'
         run: node ../.github/scripts/frontend-coverage-summary.mjs
+
+  iot-edge:
+    name: IoT Edge Gateway
+    needs: changes
+    if: needs.changes.outputs.iot-edge == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: iot-edge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: iot-edge/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
 
   payment-service:
     name: Spring Boot Payment Service
@@ -321,7 +352,7 @@ jobs:
   ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [changes, backend, frontend, payment-service, e2e-smoke]
+    needs: [changes, backend, frontend, payment-service, iot-edge, e2e-smoke]
     if: always()
     steps:
       - name: Verify CI results
@@ -336,6 +367,7 @@ jobs:
           echo "Backend: ${{ needs.backend.result }}"
           echo "Frontend: ${{ needs.frontend.result }}"
           echo "Payment: ${{ needs.payment-service.result }}"
+          echo "IoT Edge: ${{ needs.iot-edge.result }}"
           echo "E2E Smoke (advisory on push only): ${{ needs.e2e-smoke.result }}"
 
           failed=0
@@ -349,6 +381,10 @@ jobs:
           fi
           if [ "${{ needs.payment-service.result }}" = "failure" ] || [ "${{ needs.payment-service.result }}" = "cancelled" ]; then
             echo "Payment service job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.iot-edge.result }}" = "failure" ] || [ "${{ needs.iot-edge.result }}" = "cancelled" ]; then
+            echo "IoT edge job failed or was cancelled"
             failed=1
           fi
 
