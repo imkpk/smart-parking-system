@@ -248,6 +248,7 @@ jobs:
       DB_PASSWORD: password
       JWT_SECRET_PAYMENT: smart_parking_dev_jwt_secret_32_chars_minimum
       IOT_ENABLED: 'true'
+      IOT_SIMULATOR_ENABLED: 'true'
       IOT_IDENTIFIER_PEPPER: demo_iot_pepper_dev_only_not_production
       IOT_DEVICE_CREDENTIAL_PEPPER: demo_iot_pepper_dev_only_not_production
       MQTT_BROKER_URL: mqtt://127.0.0.1:1883

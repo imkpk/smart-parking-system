@@ -43,8 +43,21 @@ const EXIT_CREDENTIAL =
 const MOSQUITTO_CONTAINER =
   process.env.MOSQUITTO_CONTAINER ?? 'smart-parking-mosquitto';
 
+const PAYMENT_DB = process.env.PAYMENT_DB_NAME ?? 'parking_payment_db';
+const DEMO_ADMIN_EMAIL = process.env.DEMO_ADMIN_EMAIL ?? 'demo-admin@smartparking.demo';
+const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? 'password123';
+
 const prisma = new PrismaClient();
 const results = [];
+
+/** Monotonic lower bounds so queries cannot match records from earlier scenarios. */
+const correlation = {
+  minAttemptId: 0,
+  minDetectionId: 0,
+  minCommandRowId: 0,
+};
+
+let cachedAdminToken = null;
 
 function assert(condition, message) {
   if (!condition) {
@@ -160,6 +173,121 @@ function publishDetection(deviceId, credential, message) {
   });
 }
 
+function filterAcksForCommand(acks, commandId) {
+  return acks.filter(
+    (ack) => typeof ack === 'object' && ack !== null && ack.commandId === commandId,
+  );
+}
+
+async function getDemoAdminToken() {
+  if (cachedAdminToken) {
+    return cachedAdminToken;
+  }
+
+  const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: DEMO_ADMIN_EMAIL,
+      password: DEMO_ADMIN_PASSWORD,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Admin login failed (${response.status}): ${body}`);
+  }
+
+  const payload = await response.json();
+  cachedAdminToken = payload.accessToken;
+  assert(cachedAdminToken, 'Admin login did not return accessToken');
+  return cachedAdminToken;
+}
+
+async function simulateDetectionViaBackend(token, input) {
+  const response = await fetch(`${BACKEND_URL}/api/iot/simulator/detections`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      externalDeviceId: input.externalDeviceId,
+      messageId: input.messageId,
+      identifierType: 'PLATE',
+      identifier: input.plate,
+      confidence: input.confidence ?? 0.95,
+      occurredAt: input.occurredAt ?? new Date().toISOString(),
+      deviceAuth: input.deviceAuth,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Simulator detection failed (${response.status}): ${body}`);
+  }
+
+  return response.json();
+}
+
+function countPaymentsForParkingEvent(parkingEventId) {
+  try {
+    const output = execSync(
+      `PGPASSWORD=${process.env.DB_PASSWORD ?? 'password'} psql -h 127.0.0.1 -U ${process.env.DB_USERNAME ?? 'postgres'} -d ${PAYMENT_DB} -t -A -c "SELECT COUNT(*) FROM payments WHERE parking_event_id = ${parkingEventId};"`,
+      { stdio: 'pipe' },
+    )
+      .toString()
+      .trim();
+    return Number(output);
+  } catch {
+    return 0;
+  }
+}
+
+async function assertMqttBrokerUnavailable() {
+  await new Promise((resolve, reject) => {
+    const client = mqtt.connect(MQTT_URL, { reconnectPeriod: 0, connectTimeout: 2_000 });
+    const timer = setTimeout(() => {
+      client.end(true);
+      resolve();
+    }, 2_500);
+
+    client.on('connect', () => {
+      clearTimeout(timer);
+      client.end(true);
+      reject(new Error('MQTT broker should be unavailable while Mosquitto is stopped'));
+    });
+
+    client.on('error', () => {
+      clearTimeout(timer);
+      client.end(true);
+      resolve();
+    });
+  });
+}
+
+async function waitForMqttBroker() {
+  await new Promise((resolve, reject) => {
+    const client = mqtt.connect(MQTT_URL, { reconnectPeriod: 0, connectTimeout: 5_000 });
+    const timer = setTimeout(() => {
+      client.end(true);
+      reject(new Error('Timed out waiting for MQTT broker'));
+    }, 6_000);
+
+    client.on('connect', () => {
+      clearTimeout(timer);
+      client.end(true);
+      resolve();
+    });
+
+    client.on('error', (error) => {
+      clearTimeout(timer);
+      client.end(true);
+      reject(error);
+    });
+  });
+}
+
 function collectMqttMessages(topic, { timeoutMs = 25_000, minCount = 1 } = {}) {
   return new Promise((resolve, reject) => {
     const messages = [];
@@ -206,13 +334,39 @@ function collectMqttMessages(topic, { timeoutMs = 25_000, minCount = 1 } = {}) {
   });
 }
 
-async function waitForAccessAttempt(where, { timeoutMs = 25_000 } = {}) {
+async function waitForDetection(where, { timeoutMs = 25_000 } = {}) {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
+    const detection = await prisma.gateDetection.findFirst({
+      where: {
+        ...where,
+        id: { gt: correlation.minDetectionId },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    if (detection) {
+      return detection;
+    }
+
+    await sleep(500);
+  }
+
+  throw new Error(`Timed out waiting for gate detection: ${JSON.stringify(where)}`);
+}
+
+async function waitForAccessAttempt(where, { timeoutMs = 25_000, minId } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  const attemptMinId = minId ?? correlation.minAttemptId;
+
+  while (Date.now() < deadline) {
     const attempt = await prisma.gateAccessAttempt.findFirst({
-      where,
-      orderBy: { id: 'desc' },
+      where: {
+        ...where,
+        id: { gt: attemptMinId },
+      },
+      orderBy: { id: 'asc' },
     });
 
     if (attempt) {
@@ -225,13 +379,21 @@ async function waitForAccessAttempt(where, { timeoutMs = 25_000 } = {}) {
   throw new Error(`Timed out waiting for gate access attempt: ${JSON.stringify(where)}`);
 }
 
+async function waitForAccessAttemptForDetection(detectionId, where = {}, options = {}) {
+  return waitForAccessAttempt({ ...where, detectionId }, options);
+}
+
 async function waitForGateCommand(where, status, { timeoutMs = 25_000 } = {}) {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
     const command = await prisma.gateCommand.findFirst({
-      where: { ...where, status },
-      orderBy: { id: 'desc' },
+      where: {
+        ...where,
+        status,
+        id: { gt: correlation.minCommandRowId },
+      },
+      orderBy: { id: 'asc' },
     });
 
     if (command) {
@@ -242,6 +404,15 @@ async function waitForGateCommand(where, status, { timeoutMs = 25_000 } = {}) {
   }
 
   throw new Error(`Timed out waiting for gate command status ${status}`);
+}
+
+async function countGateCommands(where) {
+  return prisma.gateCommand.count({
+    where: {
+      ...where,
+      id: { gt: correlation.minCommandRowId },
+    },
+  });
 }
 
 async function waitForOutboxAttempts(aggregateId, minAttempts, { timeoutMs = 35_000 } = {}) {
@@ -336,8 +507,8 @@ async function findActiveExitCandidate(markerLotId, excludeEventIds = []) {
   return event;
 }
 
-async function scenarioAnprEntryGrant(ctx) {
-  const booking = await findEntryCandidate(ctx.markerLot.id);
+async function scenarioAnprEntryGrant(ctx, excludeVehicleIds = []) {
+  const booking = await findEntryCandidate(ctx.markerLot.id, excludeVehicleIds);
   const messageId = `fs-entry-${Date.now()}`;
   const plate = booking.vehicle.vehicleNumber;
 
@@ -365,7 +536,7 @@ async function scenarioAnprEntryGrant(ctx) {
     { timeoutMs: 35_000 },
   );
 
-  const acks = await ackCollector;
+  const acks = filterAcksForCommand(await ackCollector, attempt.commandId);
   const statuses = acks.map((ack) => ack.status);
   assert(statuses.includes('RECEIVED'), 'Expected RECEIVED ack from edge gateway');
   assert(statuses.includes('EXECUTED'), 'Expected EXECUTED ack from edge gateway');
@@ -382,11 +553,16 @@ async function scenarioAnprEntryGrant(ctx) {
   return { attempt, command, parkingEvent, plate, vehicleId: booking.vehicle.id };
 }
 
-async function scenarioDuplicateDetection(ctx) {
-  const booking = await findEntryCandidate(ctx.markerLot.id);
+async function scenarioDuplicateDetection(ctx, bookingOverride) {
+  const booking = bookingOverride ?? (await findEntryCandidate(ctx.markerLot.id));
   const plate = booking.vehicle.vehicleNumber;
   const firstMessageId = `fs-dup-a-${Date.now()}`;
   const secondMessageId = `fs-dup-b-${Date.now()}`;
+
+  const commandsBefore = await countGateCommands({
+    gateId: ctx.entryGate.id,
+    accessAttempt: { vehicleId: booking.vehicle.id },
+  });
 
   await publishDetection(EDGE_ENTRY, ENTRY_CREDENTIAL, {
     messageId: firstMessageId,
@@ -394,11 +570,26 @@ async function scenarioDuplicateDetection(ctx) {
     confidence: 0.95,
   });
 
-  await waitForAccessAttempt({
+  const firstDetection = await waitForDetection({
+    gateId: ctx.entryGate.id,
+    messageId: firstMessageId,
+  });
+
+  const grantedAttempt = await waitForAccessAttemptForDetection(firstDetection.id, {
     gateId: ctx.entryGate.id,
     vehicleId: booking.vehicle.id,
     decision: 'GRANTED',
   });
+  assert(grantedAttempt.commandId, 'First detection should open the gate once');
+
+  const commandsAfterFirst = await countGateCommands({
+    gateId: ctx.entryGate.id,
+    accessAttempt: { vehicleId: booking.vehicle.id },
+  });
+  assert(
+    commandsAfterFirst === commandsBefore + 1,
+    'Duplicate scenario should create exactly one gate command on first detection',
+  );
 
   await publishDetection(EDGE_ENTRY, ENTRY_CREDENTIAL, {
     messageId: secondMessageId,
@@ -406,12 +597,27 @@ async function scenarioDuplicateDetection(ctx) {
     confidence: 0.95,
   });
 
-  const duplicateAttempt = await waitForAccessAttempt({
+  const secondDetection = await waitForDetection({
+    gateId: ctx.entryGate.id,
+    messageId: secondMessageId,
+  });
+
+  const duplicateAttempt = await waitForAccessAttemptForDetection(secondDetection.id, {
     gateId: ctx.entryGate.id,
     reasonCode: 'DUPLICATE_DETECTION',
   });
 
   assert(duplicateAttempt.decision === 'DENIED', 'Duplicate detection must be denied');
+  assert(!duplicateAttempt.commandId, 'Duplicate detection must not create a gate command');
+
+  const commandsAfterDuplicate = await countGateCommands({
+    gateId: ctx.entryGate.id,
+    accessAttempt: { vehicleId: booking.vehicle.id },
+  });
+  assert(
+    commandsAfterDuplicate === commandsAfterFirst,
+    'Duplicate detection must not pulse the barrier twice',
+  );
 
   const detectionCount = await prisma.gateDetection.count({
     where: {
@@ -432,7 +638,12 @@ async function scenarioDeniedDetection(ctx) {
     confidence: 0.92,
   });
 
-  const attempt = await waitForAccessAttempt({
+  const detection = await waitForDetection({
+    gateId: ctx.entryGate.id,
+    messageId,
+  });
+
+  const attempt = await waitForAccessAttemptForDetection(detection.id, {
     gateId: ctx.entryGate.id,
     decision: 'DENIED',
     reasonCode: 'VEHICLE_NOT_FOUND',
@@ -443,7 +654,9 @@ async function scenarioDeniedDetection(ctx) {
 
 async function scenarioAutomaticExitWithPayment(ctx, consumedEventIds) {
   const activeEvent = await findActiveExitCandidate(ctx.markerLot.id, consumedEventIds);
+  assert(activeEvent.status === 'ACTIVE', 'Exit scenario requires an active parking session');
   const messageId = `fs-exit-pay-${Date.now()}`;
+  const paymentsBefore = countPaymentsForParkingEvent(activeEvent.id);
 
   const ackCollector = collectMqttMessages(
     `${MQTT_PREFIX}/${ORG_ID}/${EDGE_EXIT}/acks`,
@@ -456,11 +669,17 @@ async function scenarioAutomaticExitWithPayment(ctx, consumedEventIds) {
     confidence: 0.96,
   });
 
-  const attempt = await waitForAccessAttempt({
+  const detection = await waitForDetection({
+    gateId: ctx.exitGate.id,
+    messageId,
+  });
+
+  const attempt = await waitForAccessAttemptForDetection(detection.id, {
     gateId: ctx.exitGate.id,
     decision: 'GRANTED',
     vehicleId: activeEvent.vehicle.id,
   });
+  assert(attempt.commandId, 'Successful exit must create a gate command after payment');
 
   await waitForGateCommand(
     { gateId: ctx.exitGate.id, commandId: attempt.commandId },
@@ -474,7 +693,13 @@ async function scenarioAutomaticExitWithPayment(ctx, consumedEventIds) {
   assert(completedEvent?.status === 'COMPLETED', 'Exit should complete parking session');
   assert(Number(completedEvent.feeAmount ?? 0) >= 0.01, 'Exit fee should be calculated');
 
-  const acks = await ackCollector;
+  const paymentsAfter = countPaymentsForParkingEvent(activeEvent.id);
+  assert(
+    paymentsAfter > paymentsBefore,
+    'Spring payment service should persist a payment row for IoT checkout',
+  );
+
+  const acks = filterAcksForCommand(await ackCollector, attempt.commandId);
   assert(acks.some((ack) => ack.status === 'EXECUTED'), 'Exit gate command should execute');
 
   return activeEvent.id;
@@ -517,13 +742,23 @@ async function scenarioPaymentFailureBlocksGate(ctx, consumedEventIds) {
   );
   assert(!paymentDown, 'Payment service must be stopped for this scenario');
 
+  const commandCollector = collectMqttMessages(
+    `${MQTT_PREFIX}/${ORG_ID}/${EDGE_EXIT}/commands`,
+    { timeoutMs: 8_000, minCount: 99 },
+  ).catch(() => []);
+
   await publishDetection(EDGE_EXIT, EXIT_CREDENTIAL, {
     messageId,
     plate: activeEvent.vehicle.vehicleNumber,
     confidence: 0.94,
   });
 
-  const attempt = await waitForAccessAttempt({
+  const detection = await waitForDetection({
+    gateId: ctx.exitGate.id,
+    messageId,
+  });
+
+  const attempt = await waitForAccessAttemptForDetection(detection.id, {
     gateId: ctx.exitGate.id,
     vehicleId: activeEvent.vehicle.id,
     decision: 'ERROR',
@@ -531,6 +766,12 @@ async function scenarioPaymentFailureBlocksGate(ctx, consumedEventIds) {
   });
 
   assert(!attempt.commandId, 'Payment failure must not open exit gate');
+
+  const publishedCommands = await commandCollector;
+  assert(
+    publishedCommands.length === 0,
+    'Payment failure must not publish an MQTT gate command',
+  );
 
   const completedEvent = await prisma.parkingEvent.findUnique({
     where: { id: activeEvent.id },
@@ -544,19 +785,31 @@ async function scenarioPaymentFailureBlocksGate(ctx, consumedEventIds) {
 async function scenarioMqttRetry(ctx, excludeVehicleIds) {
   const stopped = await stopMosquitto();
   assert(stopped, 'Mosquitto container must be stoppable for MQTT retry scenario');
+  await assertMqttBrokerUnavailable();
 
   const booking = await findEntryCandidate(ctx.markerLot.id, excludeVehicleIds);
   const messageId = `fs-retry-${Date.now()}`;
   const plate = booking.vehicle.vehicleNumber;
+  const token = await getDemoAdminToken();
 
-  await postEdgeAnpr({
+  const ackCollector = collectMqttMessages(
+    `${MQTT_PREFIX}/${ORG_ID}/${EDGE_ENTRY}/acks`,
+    { timeoutMs: 45_000, minCount: 2 },
+  );
+
+  await simulateDetectionViaBackend(token, {
+    externalDeviceId: EDGE_ENTRY,
+    messageId,
     plate,
-    confidence: 0.95,
-    capturedAt: new Date().toISOString(),
+    deviceAuth: ENTRY_CREDENTIAL,
+  });
+
+  const detection = await waitForDetection({
+    gateId: ctx.entryGate.id,
     messageId,
   });
 
-  const attempt = await waitForAccessAttempt({
+  const attempt = await waitForAccessAttemptForDetection(detection.id, {
     gateId: ctx.entryGate.id,
     vehicleId: booking.vehicle.id,
     decision: 'GRANTED',
@@ -565,12 +818,25 @@ async function scenarioMqttRetry(ctx, excludeVehicleIds) {
 
   await waitForOutboxAttempts(attempt.commandId, 1, { timeoutMs: 40_000 });
 
-  await startMosquitto();
-  await sleep(2500);
-
-  await waitForGateCommand({ commandId: attempt.commandId }, 'PUBLISHED', {
-    timeoutMs: 40_000,
+  const pendingPublish = await prisma.gateCommand.findFirst({
+    where: { commandId: attempt.commandId },
   });
+  assert(
+    pendingPublish &&
+      !['PUBLISHED', 'ACKNOWLEDGED', 'EXECUTED'].includes(pendingPublish.status),
+    'MQTT retry scenario requires the command to remain unpublished while the broker is down',
+  );
+
+  await startMosquitto();
+  await sleep(2_500);
+  await waitForMqttBroker();
+
+  await waitForGateCommand({ commandId: attempt.commandId }, 'EXECUTED', {
+    timeoutMs: 45_000,
+  });
+
+  const acks = filterAcksForCommand(await ackCollector, attempt.commandId);
+  assert(acks.some((ack) => ack.status === 'EXECUTED'), 'MQTT retry should execute the gate command');
 }
 
 async function scenarioFastAckRace(ctx, excludeVehicleIds) {
@@ -596,7 +862,7 @@ async function scenarioFastAckRace(ctx, excludeVehicleIds) {
     decision: 'GRANTED',
   });
 
-  const acks = await ackCollector;
+  const acks = filterAcksForCommand(await ackCollector, attempt.commandId);
   const receivedIndex = acks.findIndex((ack) => ack.status === 'RECEIVED');
   const executedIndex = acks.findIndex((ack) => ack.status === 'EXECUTED');
   assert(receivedIndex >= 0, 'Fast ack race should emit RECEIVED');
@@ -640,6 +906,15 @@ async function main() {
   await waitForHttp(`${EDGE_URL}/health`);
   await waitForHttp(`${PAYMENT_URL}/actuator/health`);
 
+  const [maxAttempt, maxDetection, maxCommand] = await Promise.all([
+    prisma.gateAccessAttempt.aggregate({ _max: { id: true } }),
+    prisma.gateDetection.aggregate({ _max: { id: true } }),
+    prisma.gateCommand.aggregate({ _max: { id: true } }),
+  ]);
+  correlation.minAttemptId = maxAttempt._max.id ?? 0;
+  correlation.minDetectionId = maxDetection._max.id ?? 0;
+  correlation.minCommandRowId = maxCommand._max.id ?? 0;
+
   const gateContext = await loadGateContext();
   const usedVehicleIds = [];
   const consumedExitEventIds = [];
@@ -649,23 +924,13 @@ async function main() {
   });
 
   await runScenario('duplicate detection', async () => {
-    await scenarioDuplicateDetection(gateContext);
-    const booking = await prisma.booking.findFirst({
-      where: {
-        organizationId: ORG_ID,
-        parkingLotId: gateContext.markerLot.id,
-        status: 'CONFIRMED',
-      },
-      orderBy: { id: 'asc' },
-      select: { vehicleId: true },
-    });
-    if (booking?.vehicleId) {
-      usedVehicleIds.push(booking.vehicleId);
-    }
+    const booking = await findEntryCandidate(gateContext.markerLot.id);
+    await scenarioDuplicateDetection(gateContext, booking);
+    usedVehicleIds.push(booking.vehicle.id);
   });
 
   await runScenario('ANPR entry grant', async () => {
-    const outcome = await scenarioAnprEntryGrant(gateContext);
+    const outcome = await scenarioAnprEntryGrant(gateContext, usedVehicleIds);
     usedVehicleIds.push(outcome.vehicleId);
   });
 
