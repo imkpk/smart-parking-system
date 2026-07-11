@@ -299,6 +299,195 @@ export class ParkingEventsService {
     return presentParkingEvents(events);
   }
 
+  async checkInForSystem(input: { organizationId: number; bookingId: number }) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const booking = await tx.booking.findFirst({
+          where: {
+            id: input.bookingId,
+            organizationId: input.organizationId,
+          },
+          include: {
+            slot: true,
+          },
+        });
+
+        if (!booking) {
+          throw new NotFoundException('Booking not found');
+        }
+
+        const existingEvent = await tx.parkingEvent.findUnique({
+          where: { bookingId: booking.id },
+        });
+        const isReturnVisit = existingEvent?.status === ParkingEventStatus.COMPLETED;
+
+        if (!isReturnVisit && booking.status !== BookingStatus.CONFIRMED) {
+          throw new BadRequestException('Only CONFIRMED bookings can be checked in');
+        }
+
+        if (
+          isReturnVisit &&
+          booking.status !== BookingStatus.CONFIRMED &&
+          booking.status !== BookingStatus.COMPLETED
+        ) {
+          throw new BadRequestException('This booking cannot be checked in again');
+        }
+
+        const activeEvent = await tx.parkingEvent.findFirst({
+          where: {
+            bookingId: booking.id,
+            status: ParkingEventStatus.ACTIVE,
+          },
+        });
+
+        if (activeEvent) {
+          throw new ConflictException('Booking is already checked in');
+        }
+
+        if (isReturnVisit && existingEvent) {
+          await this.ensureSlotReadyForReturnCheckIn(
+            booking.slotId,
+            booking.organizationId,
+            tx,
+          );
+
+          if (booking.status === BookingStatus.COMPLETED) {
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: {
+                status: BookingStatus.CONFIRMED,
+                endTime: null,
+              },
+            });
+          }
+
+          const reactivatedEvent = await tx.parkingEvent.update({
+            where: { id: existingEvent.id },
+            data: {
+              status: ParkingEventStatus.ACTIVE,
+              checkInTime: new Date(),
+              checkOutTime: null,
+              durationMinutes: null,
+              feeAmount: null,
+            },
+            include: parkingEventListInclude,
+          });
+
+          await this.publishCheckedInEvent(tx, reactivatedEvent);
+
+          return reactivatedEvent;
+        }
+
+        if (existingEvent) {
+          throw new ConflictException('Parking event already exists for this booking');
+        }
+
+        await this.slotLifecycleService.validateSlotReserved(booking.slotId, tx);
+        await this.slotLifecycleService.occupySlot(booking.slotId, tx);
+
+        const createdEvent = await tx.parkingEvent.create({
+          data: {
+            organizationId: booking.organizationId,
+            bookingId: booking.id,
+            userId: booking.userId,
+            vehicleId: booking.vehicleId,
+            slotId: booking.slotId,
+            parkingLotId: booking.parkingLotId,
+            checkInTime: new Date(),
+            status: ParkingEventStatus.ACTIVE,
+          },
+          include: parkingEventListInclude,
+        });
+
+        await this.publishCheckedInEvent(tx, createdEvent);
+
+        return createdEvent;
+      });
+    } catch (error) {
+      handlePrismaUniqueConstraint(
+        error,
+        PARKING_EVENT_UNIQUE_MESSAGES,
+        'Parking event already exists for this booking',
+      );
+    }
+  }
+
+  async checkOutForSystem(input: { organizationId: number; parkingEventId: number }) {
+    const parkingEvent = await this.prisma.$transaction(async (tx) => {
+      const existingEvent = await tx.parkingEvent.findFirst({
+        where: {
+          id: input.parkingEventId,
+          organizationId: input.organizationId,
+        },
+      });
+
+      if (!existingEvent) {
+        throw new NotFoundException('Parking event not found');
+      }
+
+      if (
+        existingEvent.status !== ParkingEventStatus.ACTIVE ||
+        existingEvent.checkOutTime !== null
+      ) {
+        throw new ConflictException('This session is already checked out.');
+      }
+
+      const checkOutTime = new Date();
+      const durationMinutes = Math.max(
+        0,
+        Math.ceil(
+          (checkOutTime.getTime() - existingEvent.checkInTime.getTime()) / 60000,
+        ),
+      );
+      const feeAmount = this.calculateFee(durationMinutes);
+
+      const updateResult = await tx.parkingEvent.updateMany({
+        where: {
+          id: existingEvent.id,
+          organizationId: input.organizationId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
+        data: {
+          status: ParkingEventStatus.COMPLETED,
+          checkOutTime,
+          durationMinutes,
+          feeAmount,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('This session is already checked out.');
+      }
+
+      const completedEvent = await tx.parkingEvent.findFirst({
+        where: { id: existingEvent.id },
+        include: parkingEventListInclude,
+      });
+
+      if (!completedEvent) {
+        throw new NotFoundException('Parking event not found');
+      }
+
+      await tx.booking.update({
+        where: { id: existingEvent.bookingId },
+        data: {
+          status: BookingStatus.CONFIRMED,
+          endTime: null,
+        },
+      });
+
+      await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
+      await this.publishCheckedOutEvent(tx, completedEvent, checkOutTime);
+
+      return completedEvent;
+    });
+
+    return {
+      parkingEvent,
+    };
+  }
+
   async findOne(id: number, currentUser: SafeUser) {
     const parkingEvent = await this.prisma.parkingEvent.findFirst({
       where: {

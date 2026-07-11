@@ -17,6 +17,7 @@ import { ParkingEventsModule } from './parking-events/parking-events.module';
 import { ParkingLotsModule } from './parking-lots/parking-lots.module';
 import { PublicParkingFinderModule } from './public-parking-finder/public-parking-finder.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { IotModule } from './iot/iot.module';
 import { SecurityModule } from './security/security.module';
 import { SlotsModule } from './slots/slots.module';
 import { UsersModule } from './users/users.module';
@@ -49,6 +50,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     ParkingEventsModule,
     DashboardModule,
     EventsModule,
+    IotModule,
     SecurityModule,
   ],
   controllers: [AppController],

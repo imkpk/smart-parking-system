@@ -9,5 +9,6 @@ import { ParkingEventsService } from './parking-events.service';
   imports: [PaymentClientModule, SlotsModule, EventsModule],
   controllers: [ParkingEventsController],
   providers: [ParkingEventsService],
+  exports: [ParkingEventsService],
 })
 export class ParkingEventsModule {}

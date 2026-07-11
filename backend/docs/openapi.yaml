@@ -16,6 +16,9 @@ tags:
   - name: Bookings
   - name: Parking Events
   - name: Dashboard
+  - name: IoT Gates
+  - name: IoT Devices
+  - name: Vehicle Access Credentials
 paths:
   /health:
     get:
@@ -704,6 +707,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SlotStatusSummary"
+
+  /parking-lots/{parkingLotId}/gates:
+    get:
+      tags: [IoT Gates]
+      summary: List gates for a parking lot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: parkingLotId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Gate list }
+    post:
+      tags: [IoT Gates]
+      summary: Create gate
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: parkingLotId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "201": { description: Gate created }
+
+  /gates/{gateId}/open:
+    post:
+      tags: [IoT Gates]
+      summary: Manual gate open (audited override)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: gateId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 8 }
+      responses:
+        "200": { description: Gate open command queued }
+
+  /gates/{gateId}/monitoring/health:
+    get:
+      tags: [IoT Gates]
+      summary: Gate and device health snapshot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: gateId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Health snapshot }
+
+  /iot/devices/{deviceId}/rotate-credential:
+    post:
+      tags: [IoT Devices]
+      summary: Rotate device MQTT credential (one-time plaintext in response)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: New credential issued once }
+
+  /vehicle-access-credentials:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Create RFID or QR credential for a vehicle
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Credential created; QR raw value returned once }
 
 components:
   securitySchemes:
