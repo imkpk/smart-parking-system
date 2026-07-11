@@ -90,7 +90,77 @@ enum OutboxEventType {
   BOOKING_CANCELLED
   PAYMENT_VERIFIED
   NOTIFICATION_REQUESTED
+  GATE_OPEN_REQUESTED
+  GATE_COMMAND_PUBLISHED
+  GATE_COMMAND_EXECUTED
+  GATE_COMMAND_FAILED
+  IOT_DEVICE_STATUS_CHANGED
   GENERIC
+}
+
+enum GateDirection {
+  ENTRY
+  EXIT
+  BIDIRECTIONAL
+}
+
+enum IotDeviceType {
+  EDGE_GATEWAY
+  ANPR_CAMERA
+  RFID_READER
+  QR_READER
+  BARRIER_CONTROLLER
+}
+
+enum IotDeviceStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  DISABLED
+}
+
+enum VehicleCredentialType {
+  UHF_RFID
+  QR_CODE
+}
+
+enum VehicleCredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum GateIdentifierType {
+  PLATE
+  UHF_RFID
+  QR_CODE
+}
+
+enum GateAccessSource {
+  ANPR
+  RFID
+  QR
+  MANUAL_OVERRIDE
+}
+
+enum GateAccessDecision {
+  GRANTED
+  DENIED
+  REVIEW_REQUIRED
+  ERROR
+}
+
+enum GateCommandAction {
+  OPEN
+}
+
+enum GateCommandStatus {
+  PENDING
+  PUBLISHED
+  ACKNOWLEDGED
+  EXECUTED
+  FAILED
+  EXPIRED
 }
 
 enum ConversationType {
@@ -126,6 +196,12 @@ model Organization {
   assignments          SlotAssignment[]
   conversations        Conversation[]
   conversationMessages ConversationMessage[]
+  gates                Gate[]
+  iotDevices           IotDevice[]
+  gateDetections       GateDetection[]
+  gateAccessAttempts   GateAccessAttempt[]
+  gateCommands         GateCommand[]
+  vehicleCredentials   VehicleAccessCredential[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -181,6 +257,7 @@ model ParkingLot {
   bookings       Booking[]
   parkingEvents  ParkingEvent[]
   conversations  Conversation[]
+  gates          Gate[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -240,6 +317,9 @@ model Vehicle {
   assignments    SlotAssignment[]
   events         ParkingEvent[]
   bookings       Booking[]
+  credentials    VehicleAccessCredential[]
+  gateDetections GateDetection[]
+  gateAttempts   GateAccessAttempt[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -406,4 +486,162 @@ model OutboxEvent {
   @@index([eventType])
   @@index([aggregateType, aggregateId])
   @@map("outbox_events")
+}
+
+model Gate {
+  id                       Int            @id @default(autoincrement())
+  organizationId           Int
+  parkingLotId             Int
+  externalId               String
+  name                     String
+  direction                GateDirection  @default(ENTRY)
+  isActive                 Boolean        @default(true)
+  autoOpenEnabled          Boolean        @default(true)
+  anprConfidenceThreshold  Float          @default(0.85)
+  duplicateWindowSeconds   Int            @default(30)
+  commandTtlSeconds        Int            @default(15)
+  organization             Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  parkingLot               ParkingLot     @relation(fields: [parkingLotId], references: [id], onDelete: Cascade)
+  devices                  IotDevice[]
+  detections               GateDetection[]
+  accessAttempts           GateAccessAttempt[]
+  commands                 GateCommand[]
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  @@unique([organizationId, externalId])
+  @@index([organizationId])
+  @@index([parkingLotId])
+  @@map("gates")
+}
+
+model IotDevice {
+  id                 Int             @id @default(autoincrement())
+  organizationId     Int
+  gateId             Int
+  externalDeviceId   String
+  name               String
+  deviceType         IotDeviceType
+  status             IotDeviceStatus @default(OFFLINE)
+  isEnabled          Boolean         @default(true)
+  credentialHash     String?
+  lastSeenAt         DateTime?
+  firmwareVersion    String?
+  metadata           Json?
+  organization       Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  gate               Gate            @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  detections         GateDetection[]
+  commands           GateCommand[]   @relation("ControllerDevice")
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@unique([organizationId, externalDeviceId])
+  @@index([organizationId])
+  @@index([gateId])
+  @@index([status])
+  @@map("iot_devices")
+}
+
+model VehicleAccessCredential {
+  id              Int                     @id @default(autoincrement())
+  organizationId  Int
+  vehicleId       Int
+  credentialType  VehicleCredentialType
+  credentialHash  String
+  displaySuffix   String
+  status          VehicleCredentialStatus @default(ACTIVE)
+  validFrom       DateTime                @default(now())
+  validUntil      DateTime?
+  createdByUserId Int?
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  vehicle         Vehicle                 @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@unique([organizationId, credentialHash])
+  @@index([organizationId, vehicleId])
+  @@index([status])
+  @@map("vehicle_access_credentials")
+}
+
+model GateDetection {
+  id                Int                @id @default(autoincrement())
+  organizationId    Int
+  gateId            Int
+  deviceId          Int
+  messageId         String
+  identifierType    GateIdentifierType
+  identifierHash    String?
+  identifierDisplay String?
+  confidence        Float?
+  occurredAt        DateTime
+  receivedAt        DateTime           @default(now())
+  matchedVehicleId  Int?
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  gate              Gate               @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  device            IotDevice          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  matchedVehicle    Vehicle?           @relation(fields: [matchedVehicleId], references: [id], onDelete: SetNull)
+  accessAttempts    GateAccessAttempt[]
+  createdAt         DateTime           @default(now())
+
+  @@unique([deviceId, messageId])
+  @@index([organizationId, gateId, occurredAt])
+  @@index([gateId, occurredAt])
+  @@map("gate_detections")
+}
+
+model GateAccessAttempt {
+  id              Int                @id @default(autoincrement())
+  attemptId       String             @unique @default(uuid())
+  organizationId  Int
+  gateId          Int
+  detectionId     Int?
+  source          GateAccessSource
+  decision        GateAccessDecision
+  reasonCode      String
+  reasonDetail    String?
+  vehicleId       Int?
+  bookingId       Int?
+  parkingEventId  Int?
+  commandId       String?
+  actorUserId     Int?
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  gate            Gate               @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  detection       GateDetection?     @relation(fields: [detectionId], references: [id], onDelete: SetNull)
+  vehicle         Vehicle?           @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  commands        GateCommand[]
+  createdAt       DateTime           @default(now())
+
+  @@index([organizationId, gateId, createdAt])
+  @@index([gateId, createdAt])
+  @@map("gate_access_attempts")
+}
+
+model GateCommand {
+  id                  Int               @id @default(autoincrement())
+  commandId           String            @unique @default(uuid())
+  organizationId      Int
+  gateId              Int
+  controllerDeviceId  Int
+  accessAttemptId     Int
+  action              GateCommandAction @default(OPEN)
+  status              GateCommandStatus @default(PENDING)
+  requestedAt         DateTime          @default(now())
+  publishedAt         DateTime?
+  acknowledgedAt      DateTime?
+  executedAt          DateTime?
+  expiresAt           DateTime
+  failureCode         String?
+  failureMessage      String?
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  gate                Gate              @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  controllerDevice    IotDevice         @relation("ControllerDevice", fields: [controllerDeviceId], references: [id], onDelete: Cascade)
+  accessAttempt       GateAccessAttempt @relation(fields: [accessAttemptId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([organizationId, gateId, status])
+  @@index([gateId, status, expiresAt])
+  @@index([controllerDeviceId, status])
+  @@map("gate_commands")
 }

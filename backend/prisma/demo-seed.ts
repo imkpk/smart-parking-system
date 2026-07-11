@@ -1,5 +1,8 @@
 import {
   BookingStatus,
+  GateDirection,
+  IotDeviceStatus,
+  IotDeviceType,
   OrganizationPlan,
   ParkingEventStatus,
   ParkingLotType,
@@ -7,10 +10,23 @@ import {
   Role,
   SlotStatus,
   SlotType,
+  VehicleCredentialStatus,
+  VehicleCredentialType,
   VehicleType,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { createHmac } from 'crypto';
 import { syncPostgresSequences } from './sync-postgres-sequences';
+
+const DEMO_IOT_PEPPER = 'demo_iot_pepper_dev_only_not_production';
+
+function demoHashIdentifier(rawValue: string): string {
+  return createHmac('sha256', DEMO_IOT_PEPPER).update(rawValue.trim()).digest('hex');
+}
+
+function demoHashDeviceCredential(rawCredential: string): string {
+  return createHmac('sha256', DEMO_IOT_PEPPER).update(`device:${rawCredential}`).digest('hex');
+}
 
 const prisma = new PrismaClient();
 
@@ -525,8 +541,179 @@ async function main() {
   }
 
   await seedDemoParkingStructure(organization.id, adminUser.id);
+  await seedDemoIotGates(organization.id);
   await syncPostgresSequences(prisma);
   printDemoCredentials();
+}
+
+async function seedDemoIotGates(organizationId: number) {
+  const markerLot = await prisma.parkingLot.findFirst({
+    where: { organizationId, name: DEMO_MARKER_LOT },
+  });
+
+  if (!markerLot) {
+    return;
+  }
+
+  const demoVehicle = await prisma.vehicle.findFirst({
+    where: { organizationId, vehicleNumber: 'TS09EA1234' },
+  });
+
+  const entryGate = await prisma.gate.upsert({
+    where: {
+      organizationId_externalId: {
+        organizationId,
+        externalId: 'ENTRY-01',
+      },
+    },
+    update: { isActive: true, autoOpenEnabled: true },
+    create: {
+      organizationId,
+      parkingLotId: markerLot.id,
+      externalId: 'ENTRY-01',
+      name: 'Main Entry Gate',
+      direction: GateDirection.ENTRY,
+      isActive: true,
+      autoOpenEnabled: true,
+      anprConfidenceThreshold: 0.85,
+      duplicateWindowSeconds: 30,
+      commandTtlSeconds: 15,
+    },
+  });
+
+  const exitGate = await prisma.gate.upsert({
+    where: {
+      organizationId_externalId: {
+        organizationId,
+        externalId: 'EXIT-01',
+      },
+    },
+    update: { isActive: true, autoOpenEnabled: true },
+    create: {
+      organizationId,
+      parkingLotId: markerLot.id,
+      externalId: 'EXIT-01',
+      name: 'Main Exit Gate',
+      direction: GateDirection.EXIT,
+      isActive: true,
+      autoOpenEnabled: true,
+      anprConfidenceThreshold: 0.85,
+      duplicateWindowSeconds: 30,
+      commandTtlSeconds: 15,
+    },
+  });
+
+  const edgeDeviceId = 'edge-gw-demo-001';
+  const demoDevicePassword = 'demo-device-credential-not-a-real-secret';
+
+  await prisma.iotDevice.upsert({
+    where: {
+      organizationId_externalDeviceId: {
+        organizationId,
+        externalDeviceId: edgeDeviceId,
+      },
+    },
+    update: {
+      isEnabled: true,
+      status: IotDeviceStatus.ONLINE,
+      gateId: entryGate.id,
+    },
+    create: {
+      organizationId,
+      gateId: entryGate.id,
+      externalDeviceId: edgeDeviceId,
+      name: 'Demo Edge Gateway',
+      deviceType: IotDeviceType.EDGE_GATEWAY,
+      status: IotDeviceStatus.ONLINE,
+      isEnabled: true,
+      credentialHash: demoHashDeviceCredential(demoDevicePassword),
+      firmwareVersion: '1.0.0-demo',
+      metadata: { barrierAdapter: 'SIMULATED', organizationId },
+    },
+  });
+
+  await prisma.iotDevice.upsert({
+    where: {
+      organizationId_externalDeviceId: {
+        organizationId,
+        externalDeviceId: 'barrier-demo-entry',
+      },
+    },
+    update: { gateId: entryGate.id, isEnabled: true },
+    create: {
+      organizationId,
+      gateId: entryGate.id,
+      externalDeviceId: 'barrier-demo-entry',
+      name: 'Entry Barrier Controller',
+      deviceType: IotDeviceType.BARRIER_CONTROLLER,
+      status: IotDeviceStatus.ONLINE,
+      isEnabled: true,
+    },
+  });
+
+  await prisma.iotDevice.upsert({
+    where: {
+      organizationId_externalDeviceId: {
+        organizationId,
+        externalDeviceId: 'anpr-demo-entry',
+      },
+    },
+    update: { gateId: entryGate.id, isEnabled: true },
+    create: {
+      organizationId,
+      gateId: entryGate.id,
+      externalDeviceId: 'anpr-demo-entry',
+      name: 'Entry ANPR Camera',
+      deviceType: IotDeviceType.ANPR_CAMERA,
+      status: IotDeviceStatus.ONLINE,
+      isEnabled: true,
+    },
+  });
+
+  await prisma.iotDevice.upsert({
+    where: {
+      organizationId_externalDeviceId: {
+        organizationId,
+        externalDeviceId: 'edge-gw-demo-exit',
+      },
+    },
+    update: { gateId: exitGate.id, isEnabled: true },
+    create: {
+      organizationId,
+      gateId: exitGate.id,
+      externalDeviceId: 'edge-gw-demo-exit',
+      name: 'Demo Exit Edge Gateway',
+      deviceType: IotDeviceType.EDGE_GATEWAY,
+      status: IotDeviceStatus.ONLINE,
+      isEnabled: true,
+      credentialHash: demoHashDeviceCredential('demo-exit-device-credential'),
+      firmwareVersion: '1.0.0-demo',
+      metadata: { barrierAdapter: 'SIMULATED', organizationId },
+    },
+  });
+
+  if (demoVehicle) {
+    const rfidRaw = 'DEMO-RFID-STICKER-0001';
+    await prisma.vehicleAccessCredential.upsert({
+      where: {
+        organizationId_credentialHash: {
+          organizationId,
+          credentialHash: demoHashIdentifier(rfidRaw),
+        },
+      },
+      update: { status: VehicleCredentialStatus.ACTIVE },
+      create: {
+        organizationId,
+        vehicleId: demoVehicle.id,
+        credentialType: VehicleCredentialType.UHF_RFID,
+        credentialHash: demoHashIdentifier(rfidRaw),
+        displaySuffix: '0001',
+        status: VehicleCredentialStatus.ACTIVE,
+      },
+    });
+  }
+
+  console.log('Demo IoT gates seeded (ENTRY-01, EXIT-01, edge-gw-demo-001)');
 }
 
 main()
