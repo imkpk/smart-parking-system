@@ -346,6 +346,17 @@ jobs:
           SIMULATED_BARRIER_DELAY_MS=50 \
           npm run start > ../iot-edge.log 2>&1 &
           echo $! > ../iot-edge.pid
+          HTTP_PORT=3101 \
+          EDGE_DEVICE_CREDENTIAL=demo-exit-device-credential \
+          EXTERNAL_DEVICE_ID=edge-gw-demo-exit \
+          EDGE_LOCAL_API_KEY="${EDGE_LOCAL_API_KEY}" \
+          ORGANIZATION_ID="${ORGANIZATION_ID}" \
+          MQTT_BROKER_URL="${MQTT_BROKER_URL}" \
+          MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX}" \
+          BARRIER_MODE=SIMULATED \
+          SIMULATED_BARRIER_DELAY_MS=50 \
+          npm run start > ../iot-edge-exit.log 2>&1 &
+          echo $! > ../iot-edge-exit.pid
 
       - name: Wait for backend, payment service, edge, and Mosquitto
         run: |
@@ -362,6 +373,7 @@ jobs:
           echo "Backend log:" && tail -n 80 backend-iot.log || true
           echo "Payment log:" && tail -n 80 payment-iot.log || true
           echo "IoT edge log:" && tail -n 80 iot-edge.log || true
+          echo "IoT exit edge log:" && tail -n 80 iot-edge-exit.log || true
           exit 1
 
       - name: Run IoT full-stack integration harness
@@ -377,6 +389,8 @@ jobs:
           tail -n 150 payment-iot.log || true
           echo "=== iot-edge.log ==="
           tail -n 150 iot-edge.log || true
+          echo "=== iot-edge-exit.log ==="
+          tail -n 150 iot-edge-exit.log || true
           docker compose -f docker-compose.iot.yml ps || true
           docker compose -f docker-compose.iot.yml logs --tail=150 mosquitto || true
           PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d smart_parking_db -c "\dt" || true

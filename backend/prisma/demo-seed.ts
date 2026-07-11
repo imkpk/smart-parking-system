@@ -713,7 +713,180 @@ async function seedDemoIotGates(organizationId: number) {
     });
   }
 
+  await seedDemoIotHarnessBookings(organizationId, markerLot.id, entryGate.id, exitGate.id);
+
   console.log('Demo IoT gates seeded (ENTRY-01, EXIT-01, edge-gw-demo-001)');
+}
+
+async function seedDemoIotHarnessBookings(
+  organizationId: number,
+  markerLotId: number,
+  _entryGateId: number,
+  _exitGateId: number,
+) {
+  const bookingUser =
+    (await prisma.user.findFirst({
+      where: { organizationId, email: DEMO_USERS[3].email },
+    })) ??
+    (await prisma.user.findFirst({
+      where: { organizationId, email: DEMO_USERS[0].email },
+    }));
+
+  if (!bookingUser) {
+    return;
+  }
+
+  const entrySlots = await prisma.slot.findMany({
+    where: {
+      status: SlotStatus.RESERVED,
+      floor: { parkingLotId: markerLotId },
+    },
+    take: 4,
+    orderBy: { id: 'asc' },
+  });
+
+  const entryPlates = ['TS09IOT001', 'TS09IOT002', 'TS09IOT003', 'TS09IOT004'] as const;
+
+  for (let index = 0; index < entrySlots.length && index < entryPlates.length; index += 1) {
+    const slot = entrySlots[index];
+    const plate = entryPlates[index];
+
+    const vehicle = await prisma.vehicle.upsert({
+      where: {
+        organizationId_vehicleNumber: { organizationId, vehicleNumber: plate },
+      },
+      update: { userId: bookingUser.id },
+      create: {
+        organizationId,
+        userId: bookingUser.id,
+        vehicleNumber: plate,
+        vehicleType: VehicleType.CAR,
+        brand: 'Tata',
+        model: 'Nexon',
+        color: 'Blue',
+      },
+    });
+
+    const bookingCode = `BK-IOT-ENTRY-${String(index + 1).padStart(2, '0')}`;
+
+    await prisma.booking.upsert({
+      where: { bookingCode },
+      update: {
+        organizationId,
+        userId: bookingUser.id,
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        status: BookingStatus.CONFIRMED,
+        startTime: hoursAgo(0.5),
+        endTime: null,
+      },
+      create: {
+        organizationId,
+        userId: bookingUser.id,
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        status: BookingStatus.CONFIRMED,
+        startTime: hoursAgo(0.5),
+        bookingCode,
+      },
+    });
+
+    await prisma.parkingEvent.updateMany({
+      where: {
+        vehicleId: vehicle.id,
+        status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
+      },
+      data: {
+        status: ParkingEventStatus.COMPLETED,
+        checkOutTime: minutesAgo(30),
+        durationMinutes: 30,
+        feeAmount: 50,
+      },
+    });
+  }
+
+  const exitSlots = await prisma.slot.findMany({
+    where: {
+      status: SlotStatus.OCCUPIED,
+      floor: { parkingLotId: markerLotId },
+    },
+    take: 2,
+    orderBy: { id: 'asc' },
+  });
+
+  const exitPlates = ['TS09IOT101', 'TS09IOT102'] as const;
+
+  for (let index = 0; index < exitSlots.length && index < exitPlates.length; index += 1) {
+    const slot = exitSlots[index];
+    const plate = exitPlates[index];
+    const checkInTime = minutesAgo(40 + index * 10);
+
+    const vehicle = await prisma.vehicle.upsert({
+      where: {
+        organizationId_vehicleNumber: { organizationId, vehicleNumber: plate },
+      },
+      update: { userId: bookingUser.id },
+      create: {
+        organizationId,
+        userId: bookingUser.id,
+        vehicleNumber: plate,
+        vehicleType: VehicleType.CAR,
+      },
+    });
+
+    const bookingCode = `BK-IOT-EXIT-${String(index + 1).padStart(2, '0')}`;
+
+    const booking = await prisma.booking.upsert({
+      where: { bookingCode },
+      update: {
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        status: BookingStatus.CONFIRMED,
+        startTime: checkInTime,
+      },
+      create: {
+        organizationId,
+        userId: bookingUser.id,
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        status: BookingStatus.CONFIRMED,
+        startTime: checkInTime,
+        bookingCode,
+      },
+    });
+
+    await prisma.parkingEvent.upsert({
+      where: { bookingId: booking.id },
+      update: {
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        checkInTime,
+        status: ParkingEventStatus.ACTIVE,
+        checkOutTime: null,
+        feeAmount: null,
+      },
+      create: {
+        organizationId,
+        bookingId: booking.id,
+        userId: bookingUser.id,
+        vehicleId: vehicle.id,
+        slotId: slot.id,
+        parkingLotId: markerLotId,
+        checkInTime,
+        status: ParkingEventStatus.ACTIVE,
+      },
+    });
+  }
+
+  console.log(
+    `Demo IoT harness bookings seeded at ${DEMO_MARKER_LOT} (entry=${Math.min(entrySlots.length, entryPlates.length)}, exit=${Math.min(exitSlots.length, exitPlates.length)})`,
+  );
 }
 
 main()
