@@ -16,7 +16,7 @@ import { GateDetectionProcessorService } from '../src/iot/services/gate-detectio
 import { IotDevicesService } from '../src/iot/services/iot-devices.service';
 import { IotParkingOrchestrationService } from '../src/iot/services/iot-parking-orchestration.service';
 
-describe('IoT gate lifecycle integration', () => {
+describe('IoT gate lifecycle orchestration (mocked services)', () => {
   const gate = {
     id: 2,
     organizationId: 1,
@@ -43,8 +43,8 @@ describe('IoT gate lifecycle integration', () => {
     id: 7,
     organizationId: 1,
     gateId: gate.id,
-    externalDeviceId: 'barrier-entry-1',
-    deviceType: IotDeviceType.BARRIER_CONTROLLER,
+    externalDeviceId: 'edge-gw-demo-001',
+    deviceType: IotDeviceType.EDGE_GATEWAY,
     isEnabled: true,
   };
 
@@ -197,11 +197,13 @@ describe('IoT gate lifecycle integration', () => {
     prisma.iotDevice.findFirst.mockResolvedValue(controller);
     prisma.$transaction.mockImplementation(async (callback) =>
       callback({
+        $executeRaw: jest.fn(),
         gateAccessAttempt: {
           create: jest.fn().mockResolvedValue({ id: 10 }),
           update: jest.fn(),
         },
         gateCommand: {
+          findFirst: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue({
             id: 1,
             commandId: 'cmd-entry-1',
