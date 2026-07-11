@@ -1,28 +1,36 @@
-# Quality Release — PR #155 Review Fixes
+# Quality Release — PR #155 Round 2
 
-**Verdict: APPROVE** (after blocker remediation)
+**Verdict: BLOCK** (pending CI full-stack integration + human UI verification)
 
-## Blockers fixed
+## Blockers addressed
 
 | # | Finding | Owner | Status |
 |---|---------|-------|--------|
-| 1 | IoT checkout bypassed payment | ② Core API | ✅ Shared checkout + PaymentAuthContext |
-| 2 | Outbox marked PUBLISHED before MQTT | ⑫ Events | ✅ Publish-first, mark after success |
-| 3 | Simulator unauthenticated | ⑧ Security | ✅ JWT + roles + tenant + 404 in prod |
-| 4 | Credential API mismatch | ③ Experience | ✅ Nested `/vehicles/:id/access-credentials` |
-| 5 | Weak IoT secrets / optional device auth | ⑧ Security | ✅ Fail-closed startup + mandatory deviceAuth |
-| 6 | MQTT device lookup not tenant-safe | ⑧ Security | ✅ Topic orgId + composite lookup |
-| 7 | Booking window + ANPR review | ② Core API | ✅ Time windows + REVIEW_REQUIRED |
-| 8 | Edge duplicate ack silent | IoT Edge | ✅ Replay final ack without re-pulse |
-| 9 | HTTP relay URL safety | IoT Edge | ✅ Private-only default + validation |
-| 10 | Cypress overstated as E2E | ⑨ Testing | ✅ UI smoke label + integration spec |
+| 1 | Service payment auth | Payment Agent | ✅ JWT service token NestJS + Spring |
+| 2 | Edge device credential | IoT Edge | ✅ EDGE_DEVICE_CREDENTIAL required |
+| 3 | Gateway topic mismatch | IoT Edge | ✅ Commands target EDGE_GATEWAY |
+| 4 | Mocked integration smoke | ⑨ Testing | ✅ Renamed orchestration; full-stack harness added |
+| 5 | MQTT publish/ack race | ⑫ Events | ✅ PUBLISHING state + claim/release |
+| 6 | Parking + gate reliability | ② Core API | ✅ Payment failure blocks gate; advisory lock |
+| 7 | MQTT validation | ⑧ Security | ✅ Payload/clock skew/identifier limits |
+| 8 | Replay/dedupe | ⑧ Security | ✅ receivedAt-based dedupe window |
+| 9 | Concurrent commands | ② Core API | ✅ pg_advisory_xact_lock |
+| 10 | Pre-publish revalidation | ⑧ Security | ✅ Gate/lot/org/device checks |
+| 11 | Manual reason whitespace | ③ Experience | ✅ Trim + non-whitespace validation |
+| 12 | HTTP relay config | IoT Edge | ✅ Method + auth header env vars |
+| 13 | MQTT TLS | ⑦ DevOps | ✅ CA/cert/key path config (backend + edge) |
 
-## Verification
+## Test results (local)
 
-- Backend: `npm run build` pass; 63 tests (iot + parking-events + gate-open + integration)
-- iot-edge: 20 tests pass
-- Frontend IoT: 9 tests pass
+| Suite | Result |
+|-------|--------|
+| Backend IoT + payment + orchestration | 81 passed |
+| iot-edge | 23 passed |
+| payment-service JWT tests | 29 passed |
+| Full-stack harness | Not run locally (Docker unavailable) — CI job `iot-fullstack-integration` |
 
-## Report
+## Remaining for APPROVE
 
-`.grok/reports/iot-automatic-gate-access.md` (updated on push)
+- CI `iot-fullstack-integration` green on push
+- CI `iot-cypress-smoke` green on PR
+- Human UI verification per PR comment
