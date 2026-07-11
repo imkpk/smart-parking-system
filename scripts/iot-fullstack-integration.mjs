@@ -326,10 +326,8 @@ function collectMqttMessages(topic, { timeoutMs = 25_000, minCount = 1 } = {}) {
       }
     });
 
-    client.on('error', (error) => {
-      clearTimeout(timer);
-      client.end(true);
-      reject(error);
+    client.on('error', () => {
+      // Keep waiting until timeout when the broker is temporarily unavailable.
     });
   });
 }
@@ -792,11 +790,6 @@ async function scenarioMqttRetry(ctx, excludeVehicleIds) {
   const plate = booking.vehicle.vehicleNumber;
   const token = await getDemoAdminToken();
 
-  const ackCollector = collectMqttMessages(
-    `${MQTT_PREFIX}/${ORG_ID}/${EDGE_ENTRY}/acks`,
-    { timeoutMs: 45_000, minCount: 2 },
-  );
-
   await simulateDetectionViaBackend(token, {
     externalDeviceId: EDGE_ENTRY,
     messageId,
@@ -830,6 +823,11 @@ async function scenarioMqttRetry(ctx, excludeVehicleIds) {
   await startMosquitto();
   await sleep(2_500);
   await waitForMqttBroker();
+
+  const ackCollector = collectMqttMessages(
+    `${MQTT_PREFIX}/${ORG_ID}/${EDGE_ENTRY}/acks`,
+    { timeoutMs: 45_000, minCount: 2 },
+  );
 
   await waitForGateCommand({ commandId: attempt.commandId }, 'EXECUTED', {
     timeoutMs: 45_000,
