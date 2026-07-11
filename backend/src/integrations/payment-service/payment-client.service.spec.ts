@@ -113,13 +113,57 @@ describe('PaymentClientService', () => {
         currency: 'INR',
         paymentMethod: 'MOCK',
       },
-      'Bearer token',
+      { type: 'user', authorizationHeader: 'Bearer token' },
     );
 
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'http://payment-service/api/payments/initiate',
       expect.any(Object),
       { headers: { Authorization: 'Bearer token' }, timeout: PAYMENT_CLIENT_TIMEOUT_MS },
+    );
+  });
+
+  it('uses explicit system payment headers without forging a user JWT', async () => {
+    mockedAxios.post.mockResolvedValue({
+      data: { data: fullPaymentResponse },
+    });
+
+    const service = new PaymentClientService({
+      get: jest.fn((key: string) => {
+        if (key === 'PAYMENT_SERVICE_URL') {
+          return 'http://payment-service';
+        }
+        if (key === 'PAYMENT_SERVICE_SYSTEM_TOKEN') {
+          return 'configured-system-token';
+        }
+        return undefined;
+      }),
+    } as never);
+
+    await service.initiatePayment(
+      {
+        parkingEventId: 1,
+        bookingId: 1,
+        userId: 1,
+        amount: 80,
+        currency: 'INR',
+        paymentMethod: 'MOCK',
+      },
+      { type: 'system', organizationId: 42, trigger: 'iot-checkout' },
+    );
+
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      'http://payment-service/api/payments/initiate',
+      expect.any(Object),
+      {
+        headers: {
+          Authorization: 'Bearer configured-system-token',
+          'X-Payment-Context': 'system',
+          'X-Organization-Id': '42',
+          'X-Payment-Trigger': 'iot-checkout',
+        },
+        timeout: PAYMENT_CLIENT_TIMEOUT_MS,
+      },
     );
   });
 

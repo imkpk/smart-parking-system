@@ -545,7 +545,7 @@ describe('ParkingEventsService', () => {
         currency: 'INR',
         paymentMethod: 'MOCK',
       },
-      undefined,
+      { type: 'user' },
     );
     expect(result).toEqual({
       parkingEvent: expect.objectContaining({ feeAmount: 110 }),
@@ -740,8 +740,56 @@ describe('ParkingEventsService', () => {
 
     expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 50 }),
-      'Bearer security-token',
+      { type: 'user', authorizationHeader: 'Bearer security-token' },
     );
+  });
+
+  it('initiates payment with explicit system context during IoT checkout', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-14T10:30:00.000Z'));
+    const activeEvent = {
+      id: 100,
+      organizationId: booking.organizationId,
+      bookingId: booking.id,
+      userId: booking.userId,
+      vehicleId: booking.vehicleId,
+      slotId: booking.slotId,
+      parkingLotId: booking.parkingLotId,
+      checkInTime: new Date('2026-06-14T10:00:00.000Z'),
+      checkOutTime: null,
+      status: ParkingEventStatus.ACTIVE,
+    };
+    prisma.parkingEvent.findFirst
+      .mockResolvedValueOnce(activeEvent)
+      .mockResolvedValueOnce(
+        buildEnrichedParkingEvent({
+          ...activeEvent,
+          status: ParkingEventStatus.COMPLETED,
+          durationMinutes: 30,
+          feeAmount: 50,
+        }),
+      );
+    prisma.parkingEvent.updateMany.mockResolvedValue({ count: 1 });
+    prisma.slot.updateMany.mockResolvedValue({ count: 1 });
+
+    const organizationId = booking.organizationId ?? DEFAULT_ORGANIZATION_ID;
+    const result = await service.checkOutForSystem({
+      organizationId,
+      parkingEventId: activeEvent.id,
+    });
+
+    expect(paymentClientService.initiatePayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 50 }),
+      {
+        type: 'system',
+        organizationId,
+        trigger: 'iot-checkout',
+      },
+    );
+    expect(result).toEqual({
+      parkingEvent: expect.objectContaining({ feeAmount: 50 }),
+      paymentInitiated: true,
+      payment: { id: 1, status: 'INITIATED' },
+    });
   });
 
   it('throws when checkout parking event is missing', async () => {

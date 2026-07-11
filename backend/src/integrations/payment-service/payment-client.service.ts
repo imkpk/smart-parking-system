@@ -7,6 +7,7 @@ import {
 } from './constants/payment-client.constants';
 import { InitiatePaymentRequestDto } from './dto/initiate-payment-request.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
+import { PaymentAuthContext } from './types/payment-auth-context.type';
 import { PaymentClientResult } from './types/payment-client-result.type';
 
 @Injectable()
@@ -21,7 +22,7 @@ export class PaymentClientService {
 
   async initiatePayment(
     payload: InitiatePaymentRequestDto,
-    authorizationHeader?: string,
+    authContext?: PaymentAuthContext,
   ): Promise<PaymentClientResult> {
     if (payload.amount < 0.01) {
       return {
@@ -35,9 +36,7 @@ export class PaymentClientService {
         `${this.paymentServiceUrl}/api/payments/initiate`,
         payload,
         {
-          headers: authorizationHeader
-            ? { Authorization: authorizationHeader }
-            : undefined,
+          headers: this.buildPaymentHeaders(authContext),
           timeout: PAYMENT_CLIENT_TIMEOUT_MS,
         },
       );
@@ -52,6 +51,29 @@ export class PaymentClientService {
         paymentError: this.toPaymentError(error),
       };
     }
+  }
+
+  private buildPaymentHeaders(authContext?: PaymentAuthContext) {
+    if (!authContext || authContext.type === 'user') {
+      const authorizationHeader = authContext?.authorizationHeader;
+
+      return authorizationHeader
+        ? { Authorization: authorizationHeader }
+        : undefined;
+    }
+
+    const systemToken = this.configService.get<string>('PAYMENT_SERVICE_SYSTEM_TOKEN');
+    const headers: Record<string, string> = {
+      'X-Payment-Context': 'system',
+      'X-Organization-Id': String(authContext.organizationId),
+      'X-Payment-Trigger': authContext.trigger,
+    };
+
+    if (systemToken) {
+      headers.Authorization = `Bearer ${systemToken}`;
+    }
+
+    return headers;
   }
 
   private unwrapPaymentResponse(data: unknown): PaymentResponseDto {

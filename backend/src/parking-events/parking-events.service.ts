@@ -14,6 +14,8 @@ import {
 import { AccessPolicyService } from '../common/access-policy.service';
 import { EventPublisherService } from '../events/event-publisher.service';
 import { PaymentClientService } from '../integrations/payment-service/payment-client.service';
+import { PaymentAuthContext } from '../integrations/payment-service/types/payment-auth-context.type';
+import { PaymentClientResult } from '../integrations/payment-service/types/payment-client-result.type';
 import { handlePrismaUniqueConstraint } from '../prisma/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotLifecycleService } from '../slots/slot-lifecycle.service';
@@ -168,95 +170,17 @@ export class ParkingEventsService {
   ) {
     const organizationId = this.accessPolicy.getRequiredOrganizationId(currentUser);
 
-    const parkingEvent = await this.prisma.$transaction(async (tx) => {
-      const existingEvent = await tx.parkingEvent.findFirst({
-        where: {
-          id: checkOutDto.parkingEventId,
-          organizationId,
-        },
-      });
-
-      if (!existingEvent) {
-        throw new NotFoundException('Parking event not found');
-      }
-
-      if (
-        existingEvent.status !== ParkingEventStatus.ACTIVE ||
-        existingEvent.checkOutTime !== null
-      ) {
-        throw new ConflictException('This session is already checked out.');
-      }
-
-      const checkOutTime = new Date();
-      const durationMinutes = Math.max(
-        0,
-        Math.ceil(
-          (checkOutTime.getTime() - existingEvent.checkInTime.getTime()) / 60000,
-        ),
-      );
-      const feeAmount = this.calculateFee(durationMinutes);
-
-      const updateResult = await tx.parkingEvent.updateMany({
-        where: {
-          id: existingEvent.id,
-          organizationId,
-          status: ParkingEventStatus.ACTIVE,
-          checkOutTime: null,
-        },
-        data: {
-          status: ParkingEventStatus.COMPLETED,
-          checkOutTime,
-          durationMinutes,
-          feeAmount,
-        },
-      });
-
-      if (updateResult.count === 0) {
-        throw new ConflictException('This session is already checked out.');
-      }
-
-      const completedEvent = await tx.parkingEvent.findFirst({
-        where: { id: existingEvent.id },
-        include: parkingEventListInclude,
-      });
-
-      if (!completedEvent) {
-        throw new NotFoundException('Parking event not found');
-      }
-
-      await tx.booking.update({
-        where: { id: existingEvent.bookingId },
-        data: {
-          status: BookingStatus.CONFIRMED,
-          endTime: null,
-        },
-      });
-
-      await this.slotLifecycleService.releaseOccupiedSlot(existingEvent.slotId, tx);
-
-      await this.publishCheckedOutEvent(tx, completedEvent, checkOutTime);
-
-      return completedEvent;
+    const parkingEvent = await this.executeCheckOutTransaction({
+      organizationId,
+      parkingEventId: checkOutDto.parkingEventId,
     });
 
-    const feeAmount = Number(parkingEvent.feeAmount ?? 0);
-    const paymentResult =
-      feeAmount < 0.01
-        ? {
-            paymentInitiated: false as const,
-            paymentError: 'Payment not required for zero fee',
-          }
-        : await this.paymentClientService.initiatePayment(
-            {
-              parkingEventId: parkingEvent.id,
-              bookingId: parkingEvent.bookingId,
-              userId: parkingEvent.userId,
-              amount: feeAmount,
-              currency: 'INR',
-              paymentMethod: 'MOCK',
-            },
-            authorizationHeader,
-          );
+    const paymentResult = await this.initiateCheckoutPayment(
+      parkingEvent,
+      authorizationHeader
+        ? { type: 'user', authorizationHeader }
+        : { type: 'user' },
+    );
 
     return {
       parkingEvent: presentParkingEvent(parkingEvent),
@@ -413,7 +337,91 @@ export class ParkingEventsService {
   }
 
   async checkOutForSystem(input: { organizationId: number; parkingEventId: number }) {
-    const parkingEvent = await this.prisma.$transaction(async (tx) => {
+    const parkingEvent = await this.executeCheckOutTransaction({
+      organizationId: input.organizationId,
+      parkingEventId: input.parkingEventId,
+    });
+
+    const paymentResult = await this.initiateCheckoutPayment(parkingEvent, {
+      type: 'system',
+      organizationId: input.organizationId,
+      trigger: 'iot-checkout',
+    });
+
+    return {
+      parkingEvent,
+      ...paymentResult,
+    };
+  }
+
+  async findOne(id: number, currentUser: SafeUser) {
+    const parkingEvent = await this.prisma.parkingEvent.findFirst({
+      where: {
+        id,
+        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+      },
+      include: parkingEventListInclude,
+    });
+
+    if (!parkingEvent) {
+      throw new NotFoundException('Parking event not found');
+    }
+
+    this.accessPolicy.assertCanViewUserOwnedRecord(
+      currentUser,
+      parkingEvent.userId,
+      'You can only view your own parking history',
+    );
+
+    return presentParkingEvent(parkingEvent);
+  }
+
+  private async ensureSlotReadyForReturnCheckIn(
+    slotId: number,
+    organizationId: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+    });
+
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    if (slot.status === SlotStatus.AVAILABLE) {
+      await this.slotLifecycleService.occupyAvailableSlot(slotId, tx);
+      return;
+    }
+
+    if (slot.status === SlotStatus.RESERVED) {
+      await this.slotLifecycleService.occupySlot(slotId, tx);
+      return;
+    }
+
+    if (slot.status === SlotStatus.OCCUPIED) {
+      const activeEventOnSlot = await tx.parkingEvent.findFirst({
+        where: {
+          organizationId,
+          slotId,
+          status: ParkingEventStatus.ACTIVE,
+          checkOutTime: null,
+        },
+      });
+
+      if (!activeEventOnSlot) {
+        return;
+      }
+    }
+
+    throw new ConflictException('Slot is not available');
+  }
+
+  private async executeCheckOutTransaction(input: {
+    organizationId: number;
+    parkingEventId: number;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
       const existingEvent = await tx.parkingEvent.findFirst({
         where: {
           id: input.parkingEventId,
@@ -482,73 +490,37 @@ export class ParkingEventsService {
 
       return completedEvent;
     });
-
-    return {
-      parkingEvent,
-    };
   }
 
-  async findOne(id: number, currentUser: SafeUser) {
-    const parkingEvent = await this.prisma.parkingEvent.findFirst({
-      where: {
-        id,
-        ...this.accessPolicy.buildOrganizationWhere(currentUser),
+  private async initiateCheckoutPayment(
+    parkingEvent: {
+      id: number;
+      bookingId: number;
+      userId: number;
+      feeAmount: Prisma.Decimal | number | null;
+    },
+    authContext: PaymentAuthContext,
+  ): Promise<PaymentClientResult> {
+    const feeAmount = Number(parkingEvent.feeAmount ?? 0);
+
+    if (feeAmount < 0.01) {
+      return {
+        paymentInitiated: false,
+        paymentError: 'Payment not required for zero fee',
+      };
+    }
+
+    return this.paymentClientService.initiatePayment(
+      {
+        parkingEventId: parkingEvent.id,
+        bookingId: parkingEvent.bookingId,
+        userId: parkingEvent.userId,
+        amount: feeAmount,
+        currency: 'INR',
+        paymentMethod: 'MOCK',
       },
-      include: parkingEventListInclude,
-    });
-
-    if (!parkingEvent) {
-      throw new NotFoundException('Parking event not found');
-    }
-
-    this.accessPolicy.assertCanViewUserOwnedRecord(
-      currentUser,
-      parkingEvent.userId,
-      'You can only view your own parking history',
+      authContext,
     );
-
-    return presentParkingEvent(parkingEvent);
-  }
-
-  private async ensureSlotReadyForReturnCheckIn(
-    slotId: number,
-    organizationId: number,
-    tx: Prisma.TransactionClient,
-  ) {
-    const slot = await tx.slot.findUnique({
-      where: { id: slotId },
-    });
-
-    if (!slot) {
-      throw new NotFoundException('Slot not found');
-    }
-
-    if (slot.status === SlotStatus.AVAILABLE) {
-      await this.slotLifecycleService.occupyAvailableSlot(slotId, tx);
-      return;
-    }
-
-    if (slot.status === SlotStatus.RESERVED) {
-      await this.slotLifecycleService.occupySlot(slotId, tx);
-      return;
-    }
-
-    if (slot.status === SlotStatus.OCCUPIED) {
-      const activeEventOnSlot = await tx.parkingEvent.findFirst({
-        where: {
-          organizationId,
-          slotId,
-          status: ParkingEventStatus.ACTIVE,
-          checkOutTime: null,
-        },
-      });
-
-      if (!activeEventOnSlot) {
-        return;
-      }
-    }
-
-    throw new ConflictException('Slot is not available');
   }
 
   private calculateFee(durationMinutes: number) {
