@@ -780,13 +780,76 @@ paths:
       responses:
         "200": { description: New credential issued once }
 
-  /vehicle-access-credentials:
+  /vehicles/{vehicleId}/access-credentials:
+    get:
+      tags: [Vehicle Access Credentials]
+      summary: List access credentials for a vehicle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Credential list }
+    post:
+      deprecated: true
+      tags: [Vehicle Access Credentials]
+      summary: Deprecated legacy credential route
+
+  /vehicles/{vehicleId}/access-credentials/rfid:
     post:
       tags: [Vehicle Access Credentials]
-      summary: Create RFID or QR credential for a vehicle
+      summary: Create RFID access credential for a vehicle
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rfidTag]
+              properties:
+                rfidTag: { type: string, minLength: 4 }
+                validUntil: { type: string, format: date-time }
       responses:
-        "201": { description: Credential created; QR raw value returned once }
+        "201": { description: RFID credential created }
+
+  /vehicles/{vehicleId}/access-credentials/qr:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Generate QR access credential for a vehicle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "201":
+          description: QR credential created; one-time qrPayload returned
+
+  /vehicles/{vehicleId}/access-credentials/{credentialId}/revoke:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Revoke a vehicle access credential
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: credentialId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Credential revoked }
 
 components:
   securitySchemes:
