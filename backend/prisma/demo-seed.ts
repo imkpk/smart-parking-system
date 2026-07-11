@@ -144,7 +144,7 @@ async function upsertDemoOrganization() {
 }
 
 async function upsertDemoUsers(organizationId: number, passwordHash: string) {
-  const users: Array<{ id: number; email: string; role: Role; name: string }> = [];
+  const users: Array<{ id: number; email: string | null; role: Role; name: string }> = [];
 
   for (const demoUser of DEMO_USERS) {
     const user = await prisma.user.upsert({

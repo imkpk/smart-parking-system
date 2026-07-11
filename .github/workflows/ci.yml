@@ -290,14 +290,25 @@ jobs:
           PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE smart_parking_shadow_db;"
           PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE parking_payment_db;"
 
-      - name: Install and migrate backend
+      - name: Install backend dependencies
         working-directory: backend
-        run: |
-          npm ci
-          npx prisma generate
-          npx prisma migrate deploy
-          DEMO_RESEED=1 npm run prisma:demo-seed
-          npm run build
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Apply backend database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+
+      - name: Seed IoT integration data
+        working-directory: backend
+        run: DEMO_RESEED=1 npm run prisma:demo-seed
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
 
       - name: Run mocked IoT orchestration tests
         working-directory: backend
@@ -356,6 +367,19 @@ jobs:
       - name: Run IoT full-stack integration harness
         working-directory: backend
         run: npm run test:iot-fullstack
+
+      - name: Print IoT integration diagnostics
+        if: failure()
+        run: |
+          echo "=== backend-iot.log ==="
+          tail -n 150 backend-iot.log || true
+          echo "=== payment-iot.log ==="
+          tail -n 150 payment-iot.log || true
+          echo "=== iot-edge.log ==="
+          tail -n 150 iot-edge.log || true
+          docker compose -f docker-compose.iot.yml ps || true
+          docker compose -f docker-compose.iot.yml logs --tail=150 mosquitto || true
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d smart_parking_db -c "\dt" || true
 
   payment-service:
     name: Spring Boot Payment Service
@@ -544,14 +568,34 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend and run IoT Cypress smoke (J16/J17)
-        env:
-          CYPRESS_SCREENSHOT_ON_RUN_FAILURE: 'false'
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Verify Cypress
+        run: npx cypress verify
+
+      - name: Start frontend dev server
         run: |
-          npm ci
-          npx cypress verify
-          npx start-server-and-test dev http://localhost:5173 \
-            "cypress run --spec cypress/e2e/smoke/j16-iot-gate-entry.cy.ts,cypress/e2e/smoke/j17-iot-gate-denial.cy.ts"
+          npm run dev > ../iot-cypress-frontend.log 2>&1 &
+          echo $! > ../iot-cypress-frontend.pid
+
+      - name: Wait for frontend
+        run: npx wait-on http://127.0.0.1:5173
+
+      - name: Run IoT Cypress UI smoke
+        run: >
+          npx cypress run
+          --spec
+          "cypress/e2e/smoke/j16-iot-gate-entry.cy.ts,cypress/e2e/smoke/j17-iot-gate-denial.cy.ts"
+
+      - name: Print IoT Cypress diagnostics
+        if: failure()
+        run: |
+          echo "=== iot-cypress-frontend.log ==="
+          tail -n 150 ../iot-cypress-frontend.log || true
+          echo "=== Cypress screenshots ==="
+          find cypress/screenshots -type f 2>/dev/null | head -20 || true
+          ls -la cypress/screenshots 2>/dev/null || true
 
   ci-summary:
     name: CI Summary
