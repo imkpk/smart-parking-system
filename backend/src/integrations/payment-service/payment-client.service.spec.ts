@@ -1,10 +1,21 @@
 import axios, { AxiosError } from 'axios';
 import { PAYMENT_CLIENT_TIMEOUT_MS } from './constants/payment-client.constants';
 import { PaymentClientService } from './payment-client.service';
+import { PaymentServiceJwtService } from './payment-service-jwt.service';
 
 jest.mock('axios');
 
 const mockedAxios = jest.mocked(axios, { shallow: false });
+
+function createPaymentClientService(
+  configGet: jest.Mock,
+  signInitiateToken: jest.Mock = jest.fn().mockReturnValue('signed-service-token'),
+) {
+  return new PaymentClientService(
+    { get: configGet } as never,
+    { signInitiateToken } as unknown as PaymentServiceJwtService,
+  );
+}
 
 const fullPaymentResponse = {
   id: 1,
@@ -37,9 +48,9 @@ describe('PaymentClientService', () => {
       },
     });
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     const result = await service.initiatePayment({
       parkingEventId: 1,
@@ -73,9 +84,9 @@ describe('PaymentClientService', () => {
       data: fullPaymentResponse,
     });
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue(undefined),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue(undefined),
+    );
 
     await expect(
       service.initiatePayment({
@@ -100,9 +111,9 @@ describe('PaymentClientService', () => {
       data: { data: fullPaymentResponse },
     });
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await service.initiatePayment(
       {
@@ -123,22 +134,21 @@ describe('PaymentClientService', () => {
     );
   });
 
-  it('uses explicit system payment headers without forging a user JWT', async () => {
+  it('uses a signed service JWT for IoT checkout without forging a user JWT', async () => {
     mockedAxios.post.mockResolvedValue({
       data: { data: fullPaymentResponse },
     });
 
-    const service = new PaymentClientService({
-      get: jest.fn((key: string) => {
+    const signInitiateToken = jest.fn().mockReturnValue('signed-service-token');
+    const service = createPaymentClientService(
+      jest.fn((key: string) => {
         if (key === 'PAYMENT_SERVICE_URL') {
           return 'http://payment-service';
         }
-        if (key === 'PAYMENT_SERVICE_SYSTEM_TOKEN') {
-          return 'configured-system-token';
-        }
         return undefined;
       }),
-    } as never);
+      signInitiateToken,
+    );
 
     await service.initiatePayment(
       {
@@ -152,15 +162,16 @@ describe('PaymentClientService', () => {
       { type: 'system', organizationId: 42, trigger: 'iot-checkout' },
     );
 
+    expect(signInitiateToken).toHaveBeenCalledWith({
+      organizationId: 42,
+      trigger: 'iot-checkout',
+    });
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'http://payment-service/api/payments/initiate',
       expect.any(Object),
       {
         headers: {
-          Authorization: 'Bearer configured-system-token',
-          'X-Payment-Context': 'system',
-          'X-Organization-Id': '42',
-          'X-Payment-Trigger': 'iot-checkout',
+          Authorization: 'Bearer signed-service-token',
         },
         timeout: PAYMENT_CLIENT_TIMEOUT_MS,
       },
@@ -168,9 +179,9 @@ describe('PaymentClientService', () => {
   });
 
   it('skips payment initiation when amount is below minimum', async () => {
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await expect(
       service.initiatePayment({
@@ -192,9 +203,9 @@ describe('PaymentClientService', () => {
     mockedAxios.isAxiosError.mockReturnValue(true);
     mockedAxios.post.mockRejectedValue({ response: undefined });
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await expect(
       service.initiatePayment({
@@ -218,9 +229,9 @@ describe('PaymentClientService', () => {
       response: undefined,
     } as AxiosError);
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await expect(
       service.initiatePayment({
@@ -241,9 +252,9 @@ describe('PaymentClientService', () => {
     mockedAxios.isAxiosError.mockReturnValue(true);
     mockedAxios.post.mockRejectedValue({ response: { status: 403 } });
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await expect(
       service.initiatePayment({
@@ -264,9 +275,9 @@ describe('PaymentClientService', () => {
     mockedAxios.isAxiosError.mockReturnValueOnce(false);
     mockedAxios.post.mockRejectedValueOnce(new Error('boom'));
 
-    const service = new PaymentClientService({
-      get: jest.fn().mockReturnValue('http://payment-service'),
-    } as never);
+    const service = createPaymentClientService(
+      jest.fn().mockReturnValue('http://payment-service'),
+    );
 
     await expect(
       service.initiatePayment({

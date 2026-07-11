@@ -44,6 +44,23 @@ class AuthUtilsTest {
         assertThat(AuthUtils.isAdminOrSecurity(jwtWithRole("USER"))).isFalse();
     }
 
+    @Test
+    void serviceTokenHelpersReadServiceClaims() {
+        Jwt serviceJwt = Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .claim("sub", "smart-parking-backend")
+                .claim("token_type", "service")
+                .claim("scope", java.util.List.of("payment:initiate"))
+                .claim("organizationId", 42)
+                .claim("trigger", "iot-checkout")
+                .build();
+
+        assertThat(AuthUtils.isServiceToken(serviceJwt)).isTrue();
+        assertThat(AuthUtils.hasPaymentInitiateScope(serviceJwt)).isTrue();
+        assertThat(AuthUtils.organizationId(serviceJwt)).isEqualTo(42L);
+        assertThat(AuthUtils.trigger(serviceJwt)).isEqualTo("iot-checkout");
+    }
+
     private Jwt jwtWithRole(String role) {
         return Jwt.withTokenValue("token")
                 .header("alg", "none")

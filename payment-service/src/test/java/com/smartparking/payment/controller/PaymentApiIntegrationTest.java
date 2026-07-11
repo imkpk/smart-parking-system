@@ -23,6 +23,7 @@ import com.smartparking.payment.model.PaymentProviderType;
 import com.smartparking.payment.model.PaymentStatus;
 import com.smartparking.payment.repository.PaymentRepository;
 import com.smartparking.payment.support.RazorpayWebhookTestSupport;
+import com.smartparking.payment.support.ServiceJwtTestSupport;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,41 @@ class PaymentApiIntegrationTest {
                 .andExpect(jsonPath("$.data.userId").value(1))
                 .andExpect(jsonPath("$.data.currency").value("INR"))
                 .andExpect(jsonPath("$.data.provider").value("MOCK"));
+    }
+
+    @Test
+    void serviceJwtCanInitiatePaymentForIoTCheckout() throws Exception {
+        mockMvc.perform(post("/api/payments/initiate")
+                        .header("Authorization", "Bearer " + ServiceJwtTestSupport.initiateToken(42L, "iot-checkout"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiatePayload(7L)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("INITIATED"))
+                .andExpect(jsonPath("$.data.userId").value(7));
+    }
+
+    @Test
+    void serviceJwtRejectsMissingPaymentInitiateScope() throws Exception {
+        mockMvc.perform(post("/api/payments/initiate")
+                        .header(
+                                "Authorization",
+                                "Bearer " + ServiceJwtTestSupport.initiateToken(42L, "iot-checkout", java.util.List.of("payment:read"))
+                        )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiatePayload(1L)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void systemHeadersRequireValidServiceJwt() throws Exception {
+        mockMvc.perform(post("/api/payments/initiate")
+                        .header("X-Payment-Context", "system")
+                        .header("X-Organization-Id", "42")
+                        .header("X-Payment-Trigger", "iot-checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiatePayload(1L)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

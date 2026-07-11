@@ -7,6 +7,7 @@ import {
 } from './constants/payment-client.constants';
 import { InitiatePaymentRequestDto } from './dto/initiate-payment-request.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
+import { PaymentServiceJwtService } from './payment-service-jwt.service';
 import { PaymentAuthContext } from './types/payment-auth-context.type';
 import { PaymentClientResult } from './types/payment-client-result.type';
 
@@ -14,7 +15,10 @@ import { PaymentClientResult } from './types/payment-client-result.type';
 export class PaymentClientService {
   private readonly paymentServiceUrl: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly paymentServiceJwtService: PaymentServiceJwtService,
+  ) {
     this.paymentServiceUrl =
       this.configService.get<string>('PAYMENT_SERVICE_URL') ??
       'http://localhost:8081';
@@ -62,18 +66,14 @@ export class PaymentClientService {
         : undefined;
     }
 
-    const systemToken = this.configService.get<string>('PAYMENT_SERVICE_SYSTEM_TOKEN');
-    const headers: Record<string, string> = {
-      'X-Payment-Context': 'system',
-      'X-Organization-Id': String(authContext.organizationId),
-      'X-Payment-Trigger': authContext.trigger,
+    const serviceToken = this.paymentServiceJwtService.signInitiateToken({
+      organizationId: authContext.organizationId,
+      trigger: authContext.trigger,
+    });
+
+    return {
+      Authorization: `Bearer ${serviceToken}`,
     };
-
-    if (systemToken) {
-      headers.Authorization = `Bearer ${systemToken}`;
-    }
-
-    return headers;
   }
 
   private unwrapPaymentResponse(data: unknown): PaymentResponseDto {

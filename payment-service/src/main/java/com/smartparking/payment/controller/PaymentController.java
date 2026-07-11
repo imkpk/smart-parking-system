@@ -58,12 +58,23 @@ public class PaymentController {
 
     @PostMapping("/initiate")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SECURITY')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SECURITY') or hasAuthority('SCOPE_payment:initiate')")
     @InitiatePaymentDocs
     public com.smartparking.payment.dto.ApiResponse<PaymentResponse> initiate(
             @Valid @RequestBody InitiatePaymentRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
+        if (AuthUtils.isServiceToken(jwt)) {
+            return com.smartparking.payment.dto.ApiResponse.success(
+                    "Payment initiated",
+                    paymentService.initiateForService(
+                            request,
+                            AuthUtils.organizationId(jwt),
+                            AuthUtils.trigger(jwt)
+                    )
+            );
+        }
+
         return com.smartparking.payment.dto.ApiResponse.success(
                 "Payment initiated",
                 paymentService.initiate(request, AuthUtils.userId(jwt), AuthUtils.isAdminOrSecurity(jwt))

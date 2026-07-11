@@ -58,9 +58,30 @@ public class PaymentService {
     }
 
     @Transactional
+    public PaymentResponse initiateForService(
+            InitiatePaymentRequest request,
+            Long organizationId,
+            String trigger
+    ) {
+        if (organizationId == null || organizationId < 1) {
+            throw new AccessDeniedException("Invalid organization in service JWT");
+        }
+
+        if (!"iot-checkout".equals(trigger)) {
+            throw new AccessDeniedException("Unsupported service payment trigger");
+        }
+
+        return createInitiatedPayment(request);
+    }
+
+    @Transactional
     public PaymentResponse initiate(InitiatePaymentRequest request, Long currentUserId, boolean admin) {
         ensureUserAccess(request.userId(), currentUserId, admin);
 
+        return createInitiatedPayment(request);
+    }
+
+    private PaymentResponse createInitiatedPayment(InitiatePaymentRequest request) {
         Payment payment = new Payment();
         payment.setParkingEventId(request.parkingEventId());
         payment.setBookingId(request.bookingId());
