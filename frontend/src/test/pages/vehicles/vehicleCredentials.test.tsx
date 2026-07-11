@@ -112,7 +112,7 @@ describe('VehicleCredentialsPanel', () => {
     await user.click(within(dialog).getByRole('button', { name: /^revoke$/i }));
 
     await waitFor(() => {
-      expect(revokeVehicleCredential.mock.calls[0]?.[0]).toBe(1);
+      expect(revokeVehicleCredential).toHaveBeenCalledWith(7, 1);
     });
   });
 });

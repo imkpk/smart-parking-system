@@ -70,7 +70,7 @@ export function VehicleCredentialsPanel({ vehicleId }: { vehicleId: number }) {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: revokeVehicleCredential,
+    mutationFn: (credentialId: number) => revokeVehicleCredential(vehicleId, credentialId),
     onSuccess: async () => {
       await invalidateCredentials();
       setRevokeTarget(null);

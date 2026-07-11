@@ -393,7 +393,7 @@
 
 ---
 
-## J16 — IoT gate entry (granted)
+## J16 — IoT gate monitor UI smoke (granted row)
 
 | Field | Value |
 |-------|-------|
@@ -403,9 +403,9 @@
 | **Spec** | `j16-iot-gate-entry.cy.ts` |
 | **Status** | `implemented` |
 
-**User story:** As security staff, I monitor IoT gate activity and see a granted RFID/QR access attempt with vehicle details.
+**User story:** As security staff, I can open the IoT gate monitor and see a granted access attempt row rendered with readable vehicle details.
 
-**Preconditions:** SECURITY logged in; parking lot with active gate; mocked or seeded IoT live/detections/attempts APIs.
+**Preconditions:** SECURITY logged in; IoT live/detections/attempts APIs stubbed or seeded with a GRANTED attempt.
 
 **Happy path:**
 1. Login as SECURITY
@@ -415,13 +415,13 @@
 
 **Assertions:** Decision chip shows Granted; vehicle plate visible; no raw gate/device IDs in primary columns.
 
-**Deferred:** Real MQTT/edge hardware — iot-edge integration tests.
+**Deferred:** Real MQTT/edge command lifecycle, barrier execution, and parking orchestration — `backend/test/iot-gate-lifecycle.integration.spec.ts` and `scripts/simulate-iot-gate.sh`.
 
-**Classification:** Monorepo smoke (API stubbed when backend IoT endpoints unavailable).
+**Classification:** UI smoke only (API stubbed). Not a substitute for backend/edge integration coverage.
 
 ---
 
-## J17 — IoT gate denial
+## J17 — IoT gate monitor UI smoke (denied row)
 
 | Field | Value |
 |-------|-------|
@@ -431,9 +431,9 @@
 | **Spec** | `j17-iot-gate-denial.cy.ts` |
 | **Status** | `implemented` |
 
-**User story:** As security staff, I see denied gate access attempts with a readable reason when no booking matches.
+**User story:** As security staff, I can open the IoT gate monitor and see a denied access attempt row with a readable reason code.
 
-**Preconditions:** SECURITY logged in; mocked denied access attempt (e.g. `NO_ACTIVE_BOOKING`).
+**Preconditions:** SECURITY logged in; denied access attempt stubbed (e.g. `NO_ACTIVE_BOOKING`).
 
 **Happy path:**
 1. Login as SECURITY
@@ -442,9 +442,9 @@
 
 **Assertions:** Decision chip shows Denied; reason code visible; manual search flow unaffected.
 
-**Deferred:** Review-required and error decisions — Vitest panel tests.
+**Deferred:** Review-required/error decisions and real denial pipeline — Vitest panel tests plus backend IoT integration smoke.
 
-**Classification:** Monorepo smoke (API stubbed).
+**Classification:** UI smoke only (API stubbed). Not a substitute for backend/edge integration coverage.
 
 ---
 
