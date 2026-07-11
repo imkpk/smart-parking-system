@@ -29,7 +29,7 @@ import {
 import { UserSupportPage } from './pages/support/UserSupportPage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
-export const router = createBrowserRouter([
+export const appRoutes = [
   {
     path: '/login',
     element: <LoginPage />,
@@ -212,4 +212,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFoundPage />,
   },
-]);
+] as const;
+
+export const router = createBrowserRouter(appRoutes);
