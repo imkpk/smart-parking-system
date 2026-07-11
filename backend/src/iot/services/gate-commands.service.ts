@@ -83,6 +83,44 @@ export class GateCommandsService {
       throw new NotFoundException('Gate not found');
     }
 
+    const pendingCommand = await this.prisma.gateCommand.findFirst({
+      where: {
+        organizationId: input.organizationId,
+        gateId: input.gateId,
+        status: {
+          in: [
+            GateCommandStatus.PENDING,
+            GateCommandStatus.PUBLISHED,
+            GateCommandStatus.ACKNOWLEDGED,
+          ],
+        },
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    if (pendingCommand) {
+      return this.prisma.gateAccessAttempt.create({
+        data: {
+          organizationId: input.organizationId,
+          gateId: input.gateId,
+          detectionId: input.detectionId,
+          source: input.source,
+          decision: GateAccessDecision.DENIED,
+          reasonCode: GateAccessReasonCode.COMMAND_ALREADY_PENDING,
+          reasonDetail: `Gate command ${pendingCommand.commandId} is already pending`,
+          vehicleId: input.vehicleId,
+          bookingId: input.bookingId,
+          parkingEventId: input.parkingEventId,
+          actorUserId: input.actorUserId,
+        },
+      });
+    }
+
     const expiresAt = new Date(Date.now() + gate.commandTtlSeconds * 1000);
 
     return this.prisma.$transaction(async (tx) => {
@@ -146,7 +184,7 @@ export class GateCommandsService {
     organizationId: number;
     gateId: number;
     actorUserId: number;
-    reasonDetail?: string;
+    reason: string;
   }) {
     await this.assertManualOverrideRateLimit(input.gateId, input.actorUserId);
 
@@ -173,16 +211,18 @@ export class GateCommandsService {
       source: GateAccessSource.MANUAL_OVERRIDE,
       actorUserId: input.actorUserId,
       reasonCode: decision.reasonCode,
-      reasonDetail: input.reasonDetail ?? 'Manual gate override',
+      reasonDetail: input.reason,
     });
   }
 
   async handleAck(input: {
+    organizationId: number;
     externalDeviceId: string;
     ack: MqttCommandAckMessage;
   }) {
     const device = await this.prisma.iotDevice.findFirst({
       where: {
+        organizationId: input.organizationId,
         externalDeviceId: input.externalDeviceId,
       },
     });
@@ -261,7 +301,7 @@ export class GateCommandsService {
     });
   }
 
-  async publishPendingCommand(commandId: string) {
+  async getPublishableCommand(commandId: string) {
     const command = await this.prisma.gateCommand.findFirst({
       where: {
         commandId,
@@ -286,15 +326,46 @@ export class GateCommandsService {
       throw new BadRequestException('Gate command has expired');
     }
 
-    await this.prisma.gateCommand.update({
+    return command;
+  }
+
+  async markCommandPublished(commandId: string) {
+    const command = await this.prisma.gateCommand.findFirst({
+      where: {
+        commandId,
+        status: GateCommandStatus.PENDING,
+      },
+    });
+
+    if (!command) {
+      throw new NotFoundException('Pending gate command not found');
+    }
+
+    if (command.expiresAt <= new Date()) {
+      await this.prisma.gateCommand.update({
+        where: { id: command.id },
+        data: {
+          status: GateCommandStatus.EXPIRED,
+        },
+      });
+      throw new BadRequestException('Gate command has expired');
+    }
+
+    return this.prisma.gateCommand.update({
       where: { id: command.id },
       data: {
         status: GateCommandStatus.PUBLISHED,
         publishedAt: new Date(),
       },
+      include: {
+        controllerDevice: true,
+      },
     });
+  }
 
-    return command;
+  async publishPendingCommand(commandId: string) {
+    await this.getPublishableCommand(commandId);
+    return this.markCommandPublished(commandId);
   }
 
   private async assertManualOverrideRateLimit(gateId: number, actorUserId: number) {

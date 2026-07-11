@@ -32,7 +32,7 @@ export class GateOpenRequestedHandler implements OnModuleInit {
         throw new Error('GATE_OPEN_REQUESTED payload is missing command details');
       }
 
-      await this.gateCommandsService.publishPendingCommand(payload.commandId);
+      await this.gateCommandsService.getPublishableCommand(payload.commandId);
 
       await this.mqttBridgeService.publishOpenCommand({
         organizationId: payload.organizationId,
@@ -43,6 +43,8 @@ export class GateOpenRequestedHandler implements OnModuleInit {
           expiresAt: payload.expiresAt,
         },
       });
+
+      await this.gateCommandsService.markCommandPublished(payload.commandId);
 
       this.logger.debug(
         `Published gate open command ${payload.commandId} for gate ${payload.gateId}`,
