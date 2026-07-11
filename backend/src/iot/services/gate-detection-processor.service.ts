@@ -36,20 +36,34 @@ export class GateDetectionProcessorService {
   ) {}
 
   async processDetection(input: {
+    organizationId: number;
     externalDeviceId: string;
     message: MqttDetectionMessage;
   }) {
-    const device = await this.iotDevicesService.findByExternalDeviceId(input.externalDeviceId);
+    const device = await this.iotDevicesService.findByExternalDeviceId(
+      input.organizationId,
+      input.externalDeviceId,
+    );
 
     if (!device) {
-      this.logger.warn(`Ignoring detection from unknown device ${input.externalDeviceId}`);
+      this.logger.warn(
+        `Ignoring detection from unknown device ${input.externalDeviceId} in organization ${input.organizationId}`,
+      );
       return null;
     }
 
-    if (
-      input.message.deviceAuth &&
-      !this.iotDevicesService.verifyDeviceCredential(device, input.message.deviceAuth)
-    ) {
+    if (!input.message.deviceAuth) {
+      return this.recordAttempt({
+        organizationId: device.organizationId,
+        gateId: device.gateId,
+        source: this.mapSource(input.message.identifierType),
+        decision: GateAccessDecision.DENIED,
+        reasonCode: GateAccessReasonCode.DEVICE_NOT_AUTHENTICATED,
+        reasonDetail: 'Device authentication is required',
+      });
+    }
+
+    if (!this.iotDevicesService.verifyDeviceCredential(device, input.message.deviceAuth)) {
       return this.recordAttempt({
         organizationId: device.organizationId,
         gateId: device.gateId,
@@ -68,6 +82,29 @@ export class GateDetectionProcessorService {
     });
 
     if (!gate) {
+      return null;
+    }
+
+    const organization = await this.prisma.organization.findFirst({
+      where: {
+        id: device.organizationId,
+      },
+      select: {
+        isActive: true,
+      },
+    });
+
+    const parkingLot = await this.prisma.parkingLot.findFirst({
+      where: {
+        id: gate.parkingLotId,
+        organizationId: device.organizationId,
+      },
+      select: {
+        isActive: true,
+      },
+    });
+
+    if (!organization || !parkingLot) {
       return null;
     }
 
@@ -120,6 +157,8 @@ export class GateDetectionProcessorService {
     });
 
     const decision = this.gateAccessDecisionService.evaluate({
+      organization,
+      parkingLot,
       gate,
       device,
       source: this.mapSource(identifierType),
@@ -132,6 +171,7 @@ export class GateDetectionProcessorService {
       activeAssignment,
       isDuplicate,
       plateMatchCount,
+      evaluatedAt: new Date(input.message.occurredAt),
     });
 
     const detection = await this.prisma.gateDetection.create({
@@ -228,6 +268,10 @@ export class GateDetectionProcessorService {
         })
       : null;
 
+    const now = new Date();
+    const earlyEntryMs = this.config.bookingEarlyEntryMinutes * 60_000;
+    const exitGraceMs = this.config.bookingExitGraceMinutes * 60_000;
+
     const activeBooking = vehicle
       ? await this.prisma.booking.findFirst({
           where: {
@@ -235,6 +279,17 @@ export class GateDetectionProcessorService {
             vehicleId: vehicle.id,
             parkingLotId: input.parkingLotId,
             status: BookingStatus.CONFIRMED,
+            startTime: {
+              lte: new Date(now.getTime() + earlyEntryMs),
+            },
+            OR: [
+              { endTime: null },
+              {
+                endTime: {
+                  gte: new Date(now.getTime() - exitGraceMs),
+                },
+              },
+            ],
           },
           orderBy: {
             id: 'desc',

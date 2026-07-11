@@ -1,8 +1,8 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class ManualGateOpenDto {
-  @IsOptional()
   @IsString()
+  @MinLength(8)
   @MaxLength(500)
-  reasonDetail?: string;
+  reason!: string;
 }

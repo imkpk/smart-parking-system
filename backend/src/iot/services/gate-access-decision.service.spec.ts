@@ -58,21 +58,31 @@ describe('GateAccessDecisionService', () => {
     updatedAt: new Date(),
   };
 
+  const baseContext = {
+    organization: { isActive: true },
+    parkingLot: { isActive: true },
+    gate: baseGate,
+    device: baseDevice,
+    source: GateAccessSource.ANPR,
+    identifierType: GateIdentifierType.PLATE,
+    confidence: 0.95,
+    vehicle,
+    credential: null,
+    activeBooking: {
+      id: 100,
+      status: BookingStatus.CONFIRMED,
+      startTime: new Date('2026-06-14T09:00:00.000Z'),
+      endTime: new Date('2026-06-14T18:00:00.000Z'),
+    },
+    activeParkingEvent: null,
+    activeAssignment: null,
+    isDuplicate: false,
+    plateMatchCount: 1,
+    evaluatedAt: new Date('2026-06-14T10:00:00.000Z'),
+  };
+
   it('grants entry for a confirmed booking', () => {
-    const result = service.evaluate({
-      gate: baseGate,
-      device: baseDevice,
-      source: GateAccessSource.ANPR,
-      identifierType: GateIdentifierType.PLATE,
-      confidence: 0.95,
-      vehicle,
-      credential: null,
-      activeBooking: { id: 100, status: BookingStatus.CONFIRMED },
-      activeParkingEvent: null,
-      activeAssignment: null,
-      isDuplicate: false,
-      plateMatchCount: 1,
-    });
+    const result = service.evaluate(baseContext);
 
     expect(result.decision).toBe('GRANTED');
     expect(result.reasonCode).toBe(GateAccessReasonCode.ENTRY_BOOKING_CONFIRMED);
@@ -81,34 +91,59 @@ describe('GateAccessDecisionService', () => {
 
   it('denies duplicate detections', () => {
     const result = service.evaluate({
-      gate: baseGate,
-      device: baseDevice,
-      source: GateAccessSource.ANPR,
-      identifierType: GateIdentifierType.PLATE,
-      confidence: 0.95,
-      vehicle,
-      credential: null,
-      activeBooking: { id: 100, status: BookingStatus.CONFIRMED },
-      activeParkingEvent: null,
-      activeAssignment: null,
+      ...baseContext,
       isDuplicate: true,
-      plateMatchCount: 1,
     });
 
     expect(result.decision).toBe('DENIED');
     expect(result.reasonCode).toBe(GateAccessReasonCode.DUPLICATE_DETECTION);
   });
 
+  it('requires review for low-confidence ANPR reads', () => {
+    const result = service.evaluate({
+      ...baseContext,
+      confidence: 0.5,
+    });
+
+    expect(result.decision).toBe('REVIEW_REQUIRED');
+    expect(result.reasonCode).toBe(GateAccessReasonCode.ANPR_LOW_CONFIDENCE);
+  });
+
+  it('denies entry when booking is too early', () => {
+    const result = service.evaluate({
+      ...baseContext,
+      activeBooking: {
+        id: 100,
+        status: BookingStatus.CONFIRMED,
+        startTime: new Date('2026-06-14T12:00:00.000Z'),
+        endTime: null,
+      },
+      evaluatedAt: new Date('2026-06-14T10:00:00.000Z'),
+    });
+
+    expect(result.decision).toBe('DENIED');
+    expect(result.reasonCode).toBe(GateAccessReasonCode.BOOKING_TOO_EARLY);
+  });
+
+  it('denies entry when organization is inactive', () => {
+    const result = service.evaluate({
+      ...baseContext,
+      organization: { isActive: false },
+    });
+
+    expect(result.decision).toBe('DENIED');
+    expect(result.reasonCode).toBe(GateAccessReasonCode.ORGANIZATION_INACTIVE);
+  });
+
   it('grants exit when an active session exists on exit gate', () => {
     const result = service.evaluate({
+      ...baseContext,
       gate: {
         ...baseGate,
         direction: GateDirection.EXIT,
       },
-      device: baseDevice,
       source: GateAccessSource.RFID,
       identifierType: GateIdentifierType.UHF_RFID,
-      vehicle,
       credential: {
         id: 1,
         organizationId: 1,

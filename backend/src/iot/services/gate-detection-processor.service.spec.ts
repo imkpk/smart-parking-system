@@ -8,6 +8,8 @@ import { IotDevicesService } from './iot-devices.service';
 describe('GateDetectionProcessorService', () => {
   const prisma = {
     gate: { findFirst: jest.fn() },
+    organization: { findFirst: jest.fn() },
+    parkingLot: { findFirst: jest.fn() },
     gateDetection: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
@@ -49,6 +51,7 @@ describe('GateDetectionProcessorService', () => {
     (iotDevicesService.findByExternalDeviceId as jest.Mock).mockResolvedValue(null);
 
     const result = await service.processDetection({
+      organizationId: 1,
       externalDeviceId: 'unknown-device',
       message: {
         messageId: 'msg-1',
@@ -56,10 +59,48 @@ describe('GateDetectionProcessorService', () => {
         identifier: 'KA05GH1212',
         confidence: 0.95,
         occurredAt: new Date().toISOString(),
+        deviceAuth: 'credential',
       },
     });
 
     expect(result).toBeNull();
+    expect(iotDevicesService.findByExternalDeviceId).toHaveBeenCalledWith(1, 'unknown-device');
+  });
+
+  it('denies detections without device authentication', async () => {
+    const device = {
+      id: 1,
+      organizationId: 1,
+      gateId: 2,
+      externalDeviceId: 'cam-1',
+      isEnabled: true,
+      status: 'ONLINE',
+      gate: { id: 2 },
+    };
+
+    (iotDevicesService.findByExternalDeviceId as jest.Mock).mockResolvedValue(device);
+    (prisma.gateAccessAttempt.create as jest.Mock).mockResolvedValue({ id: 1 });
+
+    await service.processDetection({
+      organizationId: 1,
+      externalDeviceId: 'cam-1',
+      message: {
+        messageId: 'msg-auth',
+        identifierType: 'PLATE',
+        identifier: 'KA05GH1212',
+        confidence: 0.95,
+        occurredAt: new Date().toISOString(),
+      },
+    });
+
+    expect(prisma.gateAccessAttempt.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          decision: GateAccessDecision.DENIED,
+          reasonCode: GateAccessReasonCode.DEVICE_NOT_AUTHENTICATED,
+        }),
+      }),
+    );
   });
 
   it('records denied attempts without orchestration', async () => {
@@ -84,7 +125,10 @@ describe('GateDetectionProcessorService', () => {
     };
 
     (iotDevicesService.findByExternalDeviceId as jest.Mock).mockResolvedValue(device);
+    (iotDevicesService.verifyDeviceCredential as jest.Mock).mockReturnValue(true);
     (prisma.gate.findFirst as jest.Mock).mockResolvedValue(gate);
+    (prisma.organization.findFirst as jest.Mock).mockResolvedValue({ isActive: true });
+    (prisma.parkingLot.findFirst as jest.Mock).mockResolvedValue({ isActive: true });
     (prisma.gateDetection.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.gateDetection.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.vehicle.findMany as jest.Mock).mockResolvedValue([]);
@@ -100,6 +144,7 @@ describe('GateDetectionProcessorService', () => {
     (prisma.gateAccessAttempt.create as jest.Mock).mockResolvedValue({ id: 1 });
 
     await service.processDetection({
+      organizationId: 1,
       externalDeviceId: 'cam-1',
       message: {
         messageId: 'msg-2',
@@ -107,6 +152,7 @@ describe('GateDetectionProcessorService', () => {
         identifier: 'KA05GH1212',
         confidence: 0.95,
         occurredAt: new Date().toISOString(),
+        deviceAuth: 'credential',
       },
     });
 

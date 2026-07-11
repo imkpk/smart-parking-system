@@ -11,7 +11,8 @@ import { GateManualController } from './controllers/gate-manual.controller';
 import { GatesController } from './controllers/gates.controller';
 import { IotDevicesController } from './controllers/iot-devices.controller';
 import { IotSimulatorController } from './controllers/iot-simulator.controller';
-import { VehicleAccessCredentialsController } from './controllers/vehicle-access-credentials.controller';
+import { VehicleAccessCredentialsNestedController } from './controllers/vehicle-access-credentials-nested.controller';
+import { IotConfigValidator } from './iot-config.validator';
 import { resolveIotConfig } from './iot.config';
 import { InMemoryMqttTransport } from './mqtt/in-memory-mqtt.transport';
 import { MqttBridgeService } from './mqtt/mqtt-bridge.service';
@@ -37,7 +38,7 @@ const simulatorControllers =
   controllers: [
     GatesController,
     IotDevicesController,
-    VehicleAccessCredentialsController,
+    VehicleAccessCredentialsNestedController,
     GateMonitoringController,
     GateActivityMonitoringController,
     GateManualController,
@@ -59,6 +60,7 @@ const simulatorControllers =
         });
       },
     },
+    IotConfigValidator,
     GateAccessDecisionService,
     GateDetectionProcessorService,
     IotParkingOrchestrationService,

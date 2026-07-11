@@ -16,11 +16,14 @@ import {
   MqttTransport,
 } from './mqtt-transport.interface';
 import {
-  MqttCommandAckMessage,
   MqttCommandMessage,
-  MqttDetectionMessage,
-  MqttHeartbeatMessage,
 } from './mqtt.types';
+import {
+  parseMqttCommandAckMessage,
+  parseMqttDetectionMessage,
+  parseMqttHeartbeatMessage,
+  parseMqttTopic,
+} from './mqtt-message.validator';
 
 @Injectable()
 export class MqttBridgeService implements OnModuleInit, OnModuleDestroy {
@@ -80,10 +83,11 @@ export class MqttBridgeService implements OnModuleInit, OnModuleDestroy {
 
   private async handleDetectionMessage(topic: string, payload: Buffer): Promise<void> {
     try {
-      const externalDeviceId = this.extractExternalDeviceId(topic);
-      const message = JSON.parse(payload.toString()) as MqttDetectionMessage;
+      const { organizationId, externalDeviceId } = this.parseTopic(topic);
+      const message = parseMqttDetectionMessage(payload);
 
       await this.detectionProcessor.processDetection({
+        organizationId,
         externalDeviceId,
         message,
       });
@@ -97,10 +101,11 @@ export class MqttBridgeService implements OnModuleInit, OnModuleDestroy {
 
   private async handleAckMessage(topic: string, payload: Buffer): Promise<void> {
     try {
-      const externalDeviceId = this.extractExternalDeviceId(topic);
-      const message = JSON.parse(payload.toString()) as MqttCommandAckMessage;
+      const { organizationId, externalDeviceId } = this.parseTopic(topic);
+      const message = parseMqttCommandAckMessage(payload);
 
       await this.gateCommandsService.handleAck({
+        organizationId,
         externalDeviceId,
         ack: message,
       });
@@ -114,10 +119,11 @@ export class MqttBridgeService implements OnModuleInit, OnModuleDestroy {
 
   private async handleHeartbeatMessage(topic: string, payload: Buffer): Promise<void> {
     try {
-      const externalDeviceId = this.extractExternalDeviceId(topic);
-      const message = JSON.parse(payload.toString()) as MqttHeartbeatMessage;
+      const { organizationId, externalDeviceId } = this.parseTopic(topic);
+      const message = parseMqttHeartbeatMessage(payload);
 
       await this.iotDevicesService.recordHeartbeat({
+        organizationId,
         externalDeviceId,
         firmwareVersion: message.firmwareVersion,
         status:
@@ -141,13 +147,8 @@ export class MqttBridgeService implements OnModuleInit, OnModuleDestroy {
     return `${this.config.mqtt.topicPrefix}/${organizationId}/${externalDeviceId}/${channel}`;
   }
 
-  private extractExternalDeviceId(topic: string): string {
-    const parts = topic.split('/');
-    if (parts.length < 4) {
-      throw new Error(`Invalid MQTT topic: ${topic}`);
-    }
-
-    return parts[2];
+  private parseTopic(topic: string) {
+    return parseMqttTopic(topic, this.config.mqtt.topicPrefix);
   }
 
   createClientId(): string {

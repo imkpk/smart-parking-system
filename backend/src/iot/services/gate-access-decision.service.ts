@@ -14,8 +14,15 @@ import {
   VehicleCredentialStatus,
 } from '@prisma/client';
 import { GateAccessReasonCode } from '../gate-access-reason-codes';
+import { IotConfig, resolveIotConfig } from '../iot.config';
 
 export type GateAccessContext = {
+  organization: {
+    isActive: boolean;
+  };
+  parkingLot: {
+    isActive: boolean;
+  };
   gate: Gate;
   device: IotDevice | null;
   source: GateAccessSource;
@@ -26,6 +33,8 @@ export type GateAccessContext = {
   activeBooking: {
     id: number;
     status: BookingStatus;
+    startTime: Date;
+    endTime: Date | null;
   } | null | undefined;
   activeParkingEvent: {
     id: number;
@@ -38,6 +47,7 @@ export type GateAccessContext = {
   } | null;
   isDuplicate: boolean;
   plateMatchCount?: number;
+  evaluatedAt?: Date;
 };
 
 export type GateAccessDecisionResult = {
@@ -51,7 +61,23 @@ export type GateAccessDecisionResult = {
 
 @Injectable()
 export class GateAccessDecisionService {
+  private readonly config: IotConfig = resolveIotConfig();
+
   evaluate(context: GateAccessContext): GateAccessDecisionResult {
+    if (!context.organization.isActive) {
+      return this.denied(
+        GateAccessReasonCode.ORGANIZATION_INACTIVE,
+        'Organization is inactive',
+      );
+    }
+
+    if (!context.parkingLot.isActive) {
+      return this.denied(
+        GateAccessReasonCode.PARKING_LOT_INACTIVE,
+        'Parking lot is inactive',
+      );
+    }
+
     if (!context.gate.isActive) {
       return this.denied(GateAccessReasonCode.GATE_INACTIVE, 'Gate is inactive');
     }
@@ -81,7 +107,7 @@ export class GateAccessDecisionService {
     if (context.identifierType === GateIdentifierType.PLATE) {
       const confidence = context.confidence ?? 0;
       if (confidence < context.gate.anprConfidenceThreshold) {
-        return this.denied(
+        return this.review(
           GateAccessReasonCode.ANPR_LOW_CONFIDENCE,
           `Confidence ${confidence} below threshold ${context.gate.anprConfidenceThreshold}`,
         );
@@ -166,6 +192,11 @@ export class GateAccessDecisionService {
     const booking = context.activeBooking;
 
     if (booking?.status === BookingStatus.CONFIRMED) {
+      const bookingWindowResult = this.validateBookingWindow(booking, context.evaluatedAt ?? new Date());
+      if (bookingWindowResult) {
+        return bookingWindowResult;
+      }
+
       return {
         decision: GateAccessDecision.GRANTED,
         reasonCode: GateAccessReasonCode.ENTRY_BOOKING_CONFIRMED,
@@ -201,6 +232,37 @@ export class GateAccessDecisionService {
       reasonCode: GateAccessReasonCode.MANUAL_OVERRIDE,
       flow: 'ENTRY',
     };
+  }
+
+  private validateBookingWindow(
+    booking: {
+      startTime: Date;
+      endTime: Date | null;
+    },
+    evaluatedAt: Date,
+  ): GateAccessDecisionResult | null {
+    const earlyEntryMs = this.config.bookingEarlyEntryMinutes * 60_000;
+    const exitGraceMs = this.config.bookingExitGraceMinutes * 60_000;
+    const earliestEntry = booking.startTime.getTime() - earlyEntryMs;
+
+    if (evaluatedAt.getTime() < earliestEntry) {
+      return this.denied(
+        GateAccessReasonCode.BOOKING_TOO_EARLY,
+        'Booking entry window has not opened yet',
+      );
+    }
+
+    if (booking.endTime) {
+      const latestEntry = booking.endTime.getTime() + exitGraceMs;
+      if (evaluatedAt.getTime() > latestEntry) {
+        return this.denied(
+          GateAccessReasonCode.BOOKING_OUTSIDE_WINDOW,
+          'Booking is outside the allowed entry window',
+        );
+      }
+    }
+
+    return null;
   }
 
   private resolveFlow(context: GateAccessContext): 'ENTRY' | 'EXIT' | 'NONE' {

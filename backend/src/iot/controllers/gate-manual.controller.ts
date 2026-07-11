@@ -38,7 +38,7 @@ export class GateManualController {
       organizationId,
       gateId,
       actorUserId: currentUser.id,
-      reasonDetail: dto.reasonDetail,
+      reason: dto.reason,
     });
   }
 }

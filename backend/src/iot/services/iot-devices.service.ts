@@ -120,9 +120,10 @@ export class IotDevicesService {
     };
   }
 
-  async findByExternalDeviceId(externalDeviceId: string) {
+  async findByExternalDeviceId(organizationId: number, externalDeviceId: string) {
     return this.prisma.iotDevice.findFirst({
       where: {
+        organizationId,
         externalDeviceId,
       },
       include: {
@@ -145,11 +146,15 @@ export class IotDevicesService {
   }
 
   async recordHeartbeat(input: {
+    organizationId: number;
     externalDeviceId: string;
     firmwareVersion?: string;
     status?: IotDeviceStatus;
   }) {
-    const device = await this.findByExternalDeviceId(input.externalDeviceId);
+    const device = await this.findByExternalDeviceId(
+      input.organizationId,
+      input.externalDeviceId,
+    );
 
     if (!device || !device.isEnabled) {
       return null;
