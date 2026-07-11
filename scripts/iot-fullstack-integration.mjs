@@ -527,7 +527,7 @@ async function scenarioPaymentFailureBlocksGate(ctx, consumedEventIds) {
     gateId: ctx.exitGate.id,
     vehicleId: activeEvent.vehicle.id,
     decision: 'ERROR',
-    reasonCode: 'ORCHESTRATION_FAILED',
+    reasonCode: 'PAYMENT_INITIATION_FAILED',
   });
 
   assert(!attempt.commandId, 'Payment failure must not open exit gate');
@@ -542,6 +542,9 @@ async function scenarioPaymentFailureBlocksGate(ctx, consumedEventIds) {
 }
 
 async function scenarioMqttRetry(ctx, excludeVehicleIds) {
+  const stopped = await stopMosquitto();
+  assert(stopped, 'Mosquitto container must be stoppable for MQTT retry scenario');
+
   const booking = await findEntryCandidate(ctx.markerLot.id, excludeVehicleIds);
   const messageId = `fs-retry-${Date.now()}`;
   const plate = booking.vehicle.vehicleNumber;
@@ -559,9 +562,6 @@ async function scenarioMqttRetry(ctx, excludeVehicleIds) {
     decision: 'GRANTED',
   });
   assert(attempt.commandId, 'Gate command should be created before MQTT retry test');
-
-  const stopped = await stopMosquitto();
-  assert(stopped, 'Mosquitto container must be stoppable for MQTT retry scenario');
 
   await waitForOutboxAttempts(attempt.commandId, 1, { timeoutMs: 40_000 });
 
@@ -600,7 +600,7 @@ async function scenarioFastAckRace(ctx, excludeVehicleIds) {
   const receivedIndex = acks.findIndex((ack) => ack.status === 'RECEIVED');
   const executedIndex = acks.findIndex((ack) => ack.status === 'EXECUTED');
   assert(receivedIndex >= 0, 'Fast ack race should emit RECEIVED');
-  assert(executIndex >= 0, 'Fast ack race should emit EXECUTED');
+  assert(executedIndex >= 0, 'Fast ack race should emit EXECUTED');
   assert(
     receivedIndex < executedIndex,
     'RECEIVED ack must arrive before EXECUTED ack',
