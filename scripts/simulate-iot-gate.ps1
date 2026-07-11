@@ -22,7 +22,7 @@ $EdgeUrl = if ($env:EDGE_URL) { $env:EDGE_URL } else { 'http://127.0.0.1:3100' }
 $ApiKey = if ($env:EDGE_LOCAL_API_KEY) { $env:EDGE_LOCAL_API_KEY } else { 'dev-edge-key' }
 $OrgId = if ($env:ORGANIZATION_ID) { [int]$env:ORGANIZATION_ID } else { 1 }
 $GateId = if ($env:GATE_ID) { [int]$env:GATE_ID } else { 1 }
-$DeviceId = if ($env:EXTERNAL_DEVICE_ID) { $env:EXTERNAL_DEVICE_ID } else { 'edge-gw-local-001' }
+$DeviceId = if ($env:EXTERNAL_DEVICE_ID) { $env:EXTERNAL_DEVICE_ID } else { 'edge-gw-demo-001' }
 $TopicPrefix = if ($env:MQTT_TOPIC_PREFIX) { $env:MQTT_TOPIC_PREFIX } else { 'smart-parking' }
 $TopicBase = "$TopicPrefix/$OrgId/$DeviceId"
 

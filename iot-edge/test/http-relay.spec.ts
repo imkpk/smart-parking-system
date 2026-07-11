@@ -42,8 +42,13 @@ describe('HttpRelayBarrierAdapter', () => {
   });
 
   it('returns success when relay responds with 200', async () => {
-    const adapter = new HttpRelayBarrierAdapter('http://relay/open', 1000, async () =>
-      new Response(null, { status: 200 }),
+    const adapter = new HttpRelayBarrierAdapter(
+      'http://relay/open',
+      1000,
+      'POST',
+      undefined,
+      undefined,
+      async () => new Response(null, { status: 200 }),
     );
 
     const result = await adapter.open('cmd-abc');
@@ -52,8 +57,13 @@ describe('HttpRelayBarrierAdapter', () => {
   });
 
   it('returns relay HTTP error for non-2xx responses', async () => {
-    const adapter = new HttpRelayBarrierAdapter('http://relay/open', 1000, async () =>
-      new Response('relay down', { status: 503 }),
+    const adapter = new HttpRelayBarrierAdapter(
+      'http://relay/open',
+      1000,
+      'POST',
+      undefined,
+      undefined,
+      async () => new Response('relay down', { status: 503 }),
     );
 
     const result = await adapter.open('cmd-abc');
@@ -62,9 +72,16 @@ describe('HttpRelayBarrierAdapter', () => {
   });
 
   it('returns unreachable when fetch throws', async () => {
-    const adapter = new HttpRelayBarrierAdapter('http://relay/open', 1000, async () => {
-      throw new Error('connection refused');
-    });
+    const adapter = new HttpRelayBarrierAdapter(
+      'http://relay/open',
+      1000,
+      'POST',
+      undefined,
+      undefined,
+      async () => {
+        throw new Error('connection refused');
+      },
+    );
 
     const result = await adapter.open('cmd-abc');
     expect(result.ok).toBe(false);
@@ -73,7 +90,13 @@ describe('HttpRelayBarrierAdapter', () => {
   });
 
   it('returns timeout message when relay request aborts', async () => {
-    const adapter = new HttpRelayBarrierAdapter('http://127.0.0.1/open', 25, async (_url, init) => {
+    const adapter = new HttpRelayBarrierAdapter(
+      'http://127.0.0.1/open',
+      25,
+      'POST',
+      undefined,
+      undefined,
+      async (_url, init) => {
       const signal = init?.signal;
       await new Promise<void>((resolve, reject) => {
         if (!signal) {
@@ -95,7 +118,8 @@ describe('HttpRelayBarrierAdapter', () => {
         });
       });
       return new Response(null, { status: 200 });
-    });
+      },
+    );
 
     const result = await adapter.open('cmd-timeout');
     expect(result.ok).toBe(false);
@@ -104,9 +128,16 @@ describe('HttpRelayBarrierAdapter', () => {
   });
 
   it('does not echo embedded credentials in failure messages', async () => {
-    const adapter = new HttpRelayBarrierAdapter('http://127.0.0.1/open', 1000, async () => {
-      throw new Error('401 Unauthorized for http://user:secret@127.0.0.1/open');
-    });
+    const adapter = new HttpRelayBarrierAdapter(
+      'http://127.0.0.1/open',
+      1000,
+      'POST',
+      undefined,
+      undefined,
+      async () => {
+        throw new Error('401 Unauthorized for http://user:secret@127.0.0.1/open');
+      },
+    );
 
     const result = await adapter.open('cmd-abc');
     expect(result.failureMessage).not.toContain('secret');

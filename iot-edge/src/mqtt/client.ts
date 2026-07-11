@@ -23,6 +23,7 @@ export class EdgeMqttClient {
   constructor(
     private readonly config: Config,
     private readonly ctx: EdgeContext,
+    private readonly deviceCredential: string,
   ) {}
 
   isConnected(): boolean {
@@ -88,7 +89,11 @@ export class EdgeMqttClient {
   }
 
   async publishDetection(message: DetectionMessage): Promise<void> {
-    await this.publish(detectionsTopic(this.ctx), message);
+    const payload: DetectionMessage = {
+      ...message,
+      deviceAuth: message.deviceAuth ?? this.deviceCredential,
+    };
+    await this.publish(detectionsTopic(this.ctx), payload);
   }
 
   async publishCommandAck(message: CommandAckMessage): Promise<void> {

@@ -4,7 +4,6 @@ import {
   SCHEMA_VERSION,
   type DetectionMessage,
   type DetectionSource,
-  type EdgeContext,
   type IdentifierType,
 } from '../contracts/messages.js';
 
@@ -29,6 +28,10 @@ export interface VendorQrPayload {
 
 export type VendorPayload = VendorAnprPayload | VendorRfidPayload | VendorQrPayload;
 
+export interface DetectionBuildContext {
+  deviceAuth: string;
+}
+
 export interface NormalizeOptions {
   messageId?: string;
   occurredAt?: string;
@@ -46,7 +49,7 @@ function normalizeTimestamp(value: string | undefined): string {
 }
 
 function buildDetection(
-  ctx: EdgeContext,
+  ctx: DetectionBuildContext,
   source: DetectionSource,
   identifierType: IdentifierType,
   identifier: string,
@@ -68,12 +71,13 @@ function buildDetection(
     confidence,
     occurredAt: normalizeTimestamp(occurredAt ?? options.occurredAt),
     source,
+    deviceAuth: ctx.deviceAuth,
     metadata,
   };
 }
 
 export function normalizeAnprDetection(
-  ctx: EdgeContext,
+  ctx: DetectionBuildContext,
   payload: VendorAnprPayload,
   options: NormalizeOptions = {},
 ): DetectionMessage {
@@ -90,7 +94,7 @@ export function normalizeAnprDetection(
 }
 
 export function normalizeRfidDetection(
-  ctx: EdgeContext,
+  ctx: DetectionBuildContext,
   payload: VendorRfidPayload,
   options: NormalizeOptions = {},
 ): DetectionMessage {
@@ -107,7 +111,7 @@ export function normalizeRfidDetection(
 }
 
 export function normalizeQrDetection(
-  ctx: EdgeContext,
+  ctx: DetectionBuildContext,
   payload: VendorQrPayload,
   options: NormalizeOptions = {},
 ): DetectionMessage {

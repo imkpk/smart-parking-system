@@ -10,16 +10,24 @@ export interface Config {
     clientId: string;
     reconnectMinMs: number;
     reconnectMaxMs: number;
+    caPath?: string;
+    certPath?: string;
+    keyPath?: string;
+    rejectUnauthorized: boolean;
   };
   edge: {
     organizationId: number;
     gateId: number;
     externalDeviceId: string;
+    deviceCredential: string;
     firmwareVersion: string;
   };
   barrier: {
     mode: BarrierMode;
     httpRelayUrl?: string;
+    httpMethod: 'POST' | 'PUT';
+    httpAuthHeaderName?: string;
+    httpAuthHeaderValue?: string;
     httpRelayTimeoutMs: number;
     simulatedDelayMs: number;
     allowPublicRelay: boolean;
@@ -178,19 +186,26 @@ export function validateHttpRelayUrl(rawUrl: string, allowPublic: boolean): stri
 export function loadConfig(): Config {
   const barrierMode = readBarrierMode();
   const allowPublicRelay = readBoolean('EDGE_BARRIER_ALLOW_PUBLIC', false);
-  const rawHttpRelayUrl = process.env.HTTP_RELAY_URL?.trim();
-  const httpRelayUrl =
+  const rawHttpRelayUrl =
+    process.env.EDGE_BARRIER_HTTP_URL?.trim() ?? process.env.HTTP_RELAY_URL?.trim();
+
+  if (barrierMode === 'HTTP_RELAY' && !rawHttpRelayUrl) {
+    throw new Error('EDGE_BARRIER_HTTP_URL or HTTP_RELAY_URL is required when BARRIER_MODE=HTTP_RELAY');
+  }
+
+  const httpRelayTimeoutMs = readNumber('EDGE_BARRIER_TIMEOUT_MS', readNumber('HTTP_RELAY_TIMEOUT_MS', 5000));
+  if (httpRelayTimeoutMs <= 0 || httpRelayTimeoutMs > 30_000) {
+    throw new Error('EDGE_BARRIER_TIMEOUT_MS must be between 1 and 30000');
+  }
+
+  const httpRelayUrlResolved =
     barrierMode === 'HTTP_RELAY'
       ? validateHttpRelayUrl(rawHttpRelayUrl ?? '', allowPublicRelay)
       : rawHttpRelayUrl;
 
-  if (barrierMode === 'HTTP_RELAY' && !rawHttpRelayUrl) {
-    throw new Error('HTTP_RELAY_URL is required when BARRIER_MODE=HTTP_RELAY');
-  }
-
-  const httpRelayTimeoutMs = readNumber('HTTP_RELAY_TIMEOUT_MS', 5000);
-  if (httpRelayTimeoutMs <= 0 || httpRelayTimeoutMs > 30_000) {
-    throw new Error('HTTP_RELAY_TIMEOUT_MS must be between 1 and 30000');
+  const httpMethodRaw = (process.env.EDGE_BARRIER_HTTP_METHOD ?? 'POST').trim().toUpperCase();
+  if (httpMethodRaw !== 'POST' && httpMethodRaw !== 'PUT') {
+    throw new Error('EDGE_BARRIER_HTTP_METHOD must be POST or PUT');
   }
 
   return {
@@ -205,16 +220,24 @@ export function loadConfig(): Config {
         `iot-edge-${process.env.EXTERNAL_DEVICE_ID?.trim() ?? 'local'}`,
       reconnectMinMs: readNumber('MQTT_RECONNECT_MIN_MS', 1000),
       reconnectMaxMs: readNumber('MQTT_RECONNECT_MAX_MS', 30000),
+      caPath: process.env.MQTT_CA_PATH?.trim() || undefined,
+      certPath: process.env.MQTT_CERT_PATH?.trim() || undefined,
+      keyPath: process.env.MQTT_KEY_PATH?.trim() || undefined,
+      rejectUnauthorized: readBoolean('MQTT_REJECT_UNAUTHORIZED', true),
     },
     edge: {
       organizationId: readNumber('ORGANIZATION_ID', 1),
       gateId: readNumber('GATE_ID', 1),
       externalDeviceId: requireEnv('EXTERNAL_DEVICE_ID'),
+      deviceCredential: requireEnv('EDGE_DEVICE_CREDENTIAL'),
       firmwareVersion: process.env.FIRMWARE_VERSION?.trim() ?? '0.1.0',
     },
     barrier: {
       mode: barrierMode,
-      httpRelayUrl,
+      httpRelayUrl: httpRelayUrlResolved,
+      httpMethod: httpMethodRaw as 'POST' | 'PUT',
+      httpAuthHeaderName: process.env.EDGE_BARRIER_HTTP_AUTH_HEADER_NAME?.trim() || undefined,
+      httpAuthHeaderValue: process.env.EDGE_BARRIER_HTTP_AUTH_HEADER_VALUE?.trim() || undefined,
       httpRelayTimeoutMs,
       simulatedDelayMs: readNumber('SIMULATED_BARRIER_DELAY_MS', 250),
       allowPublicRelay,

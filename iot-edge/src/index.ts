@@ -19,6 +19,9 @@ function createBarrierAdapter(config: ReturnType<typeof loadConfig>): BarrierAda
     return new HttpRelayBarrierAdapter(
       config.barrier.httpRelayUrl!,
       config.barrier.httpRelayTimeoutMs,
+      config.barrier.httpMethod,
+      config.barrier.httpAuthHeaderName,
+      config.barrier.httpAuthHeaderValue,
     );
   }
 
@@ -36,7 +39,7 @@ async function main(): Promise<void> {
 
   const commandState = new CommandState(config.commandDedupeTtlMs);
   const barrier = createBarrierAdapter(config);
-  const mqttClient = new EdgeMqttClient(config, ctx);
+  const mqttClient = new EdgeMqttClient(config, ctx, config.edge.deviceCredential);
 
   let degraded = false;
 
@@ -132,6 +135,9 @@ async function main(): Promise<void> {
   const httpServer = createHttpServer({
     config,
     ctx,
+    detectionCtx: {
+      deviceAuth: config.edge.deviceCredential,
+    },
     publishDetection: (message) => mqttClient.publishDetection(message),
     getHealth: () => ({
       status: 'ok',

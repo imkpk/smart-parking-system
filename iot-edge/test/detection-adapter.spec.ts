@@ -8,9 +8,7 @@ import {
 import { SCHEMA_VERSION } from '../src/contracts/messages.js';
 
 const ctx = {
-  organizationId: 1,
-  gateId: 10,
-  externalDeviceId: 'edge-gw-001',
+  deviceAuth: 'test-device-credential',
 };
 
 describe('detection-adapter', () => {
@@ -28,6 +26,7 @@ describe('detection-adapter', () => {
       identifier: 'KA01AB1234',
       confidence: 0.93,
       source: 'ANPR',
+      deviceAuth: 'test-device-credential',
       metadata: { lane: 'entry-1' },
     });
     expect(message.messageId).toBeTruthy();
@@ -43,6 +42,7 @@ describe('detection-adapter', () => {
     expect(message.identifierType).toBe('UHF_RFID');
     expect(message.source).toBe('RFID');
     expect(message.identifier).toBe('E20034120123456789012');
+    expect(message.deviceAuth).toBe('test-device-credential');
   });
 
   it('normalizes QR vendor payload', () => {
@@ -53,6 +53,7 @@ describe('detection-adapter', () => {
     expect(message.identifierType).toBe('QR_CODE');
     expect(message.source).toBe('QR');
     expect(message.identifier).toBe('qr-token-abc');
+    expect(message.deviceAuth).toBe('test-device-credential');
     expect(message.occurredAt).toBeTruthy();
   });
 

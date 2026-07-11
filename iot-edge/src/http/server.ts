@@ -4,6 +4,7 @@ import {
   normalizeAnprDetection,
   normalizeQrDetection,
   normalizeRfidDetection,
+  type DetectionBuildContext,
   type VendorAnprPayload,
   type VendorQrPayload,
   type VendorRfidPayload,
@@ -15,6 +16,7 @@ import { isAuthorized, sendUnauthorized } from '../security/api-key.guard.js';
 export interface HttpServerDeps {
   config: Config;
   ctx: EdgeContext;
+  detectionCtx: DetectionBuildContext;
   publishDetection: (message: DetectionMessage) => Promise<void>;
   getHealth: () => Record<string, unknown>;
 }
@@ -66,19 +68,19 @@ export function createHttpServer(deps: HttpServerDeps): Server {
       switch (url.pathname) {
         case '/vendor/anpr':
           detection = normalizeAnprDetection(
-            deps.ctx,
+            deps.detectionCtx,
             await readJsonBody<VendorAnprPayload>(req),
           );
           break;
         case '/vendor/rfid':
           detection = normalizeRfidDetection(
-            deps.ctx,
+            deps.detectionCtx,
             await readJsonBody<VendorRfidPayload>(req),
           );
           break;
         case '/vendor/qr':
           detection = normalizeQrDetection(
-            deps.ctx,
+            deps.detectionCtx,
             await readJsonBody<VendorQrPayload>(req),
           );
           break;

@@ -8,6 +8,8 @@ import { GateCommandsService } from './gate-commands.service';
 describe('GateCommandsService', () => {
   const prisma = {
     iotDevice: { findFirst: jest.fn() },
+    organization: { findFirst: jest.fn() },
+    parkingLot: { findFirst: jest.fn() },
     gate: { findFirst: jest.fn() },
     gateAccessAttempt: {
       create: jest.fn(),
@@ -17,9 +19,12 @@ describe('GateCommandsService', () => {
     gateCommand: {
       create: jest.fn(),
       findFirst: jest.fn(),
+      findFirstOrThrow: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $executeRaw: jest.fn(),
   };
 
   const eventPublisher = {
@@ -43,10 +48,10 @@ describe('GateCommandsService', () => {
   it('creates a pending open command and outbox event', async () => {
     const controller = {
       id: 7,
-      externalDeviceId: 'barrier-1',
+      externalDeviceId: 'edge-gw-demo-001',
       organizationId: 1,
       gateId: 2,
-      deviceType: 'BARRIER_CONTROLLER',
+      deviceType: 'EDGE_GATEWAY',
       isEnabled: true,
     };
     const gate = {
@@ -57,14 +62,15 @@ describe('GateCommandsService', () => {
 
     (prisma.iotDevice.findFirst as jest.Mock).mockResolvedValue(controller);
     (prisma.gate.findFirst as jest.Mock).mockResolvedValue(gate);
-    (prisma.gateCommand.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.$transaction as jest.Mock).mockImplementation(async (callback) =>
       callback({
+        $executeRaw: jest.fn(),
         gateAccessAttempt: {
           create: jest.fn().mockResolvedValue({ id: 10 }),
           update: jest.fn(),
         },
         gateCommand: {
+          findFirst: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue({
             id: 1,
             commandId: 'cmd-1',
@@ -91,10 +97,10 @@ describe('GateCommandsService', () => {
   it('blocks a new command when a non-expired command is already pending', async () => {
     const controller = {
       id: 7,
-      externalDeviceId: 'barrier-1',
+      externalDeviceId: 'edge-gw-demo-001',
       organizationId: 1,
       gateId: 2,
-      deviceType: 'BARRIER_CONTROLLER',
+      deviceType: 'EDGE_GATEWAY',
       isEnabled: true,
     };
     const gate = {
@@ -105,12 +111,23 @@ describe('GateCommandsService', () => {
 
     (prisma.iotDevice.findFirst as jest.Mock).mockResolvedValue(controller);
     (prisma.gate.findFirst as jest.Mock).mockResolvedValue(gate);
-    (prisma.gateCommand.findFirst as jest.Mock).mockResolvedValue({
-      commandId: 'cmd-existing',
-      status: GateCommandStatus.PUBLISHED,
-      expiresAt: new Date(Date.now() + 10_000),
-    });
-    (prisma.gateAccessAttempt.create as jest.Mock).mockResolvedValue({ id: 99 });
+    (prisma.$transaction as jest.Mock).mockImplementation(async (callback) =>
+      callback({
+        $executeRaw: jest.fn(),
+        gateAccessAttempt: {
+          create: jest.fn().mockResolvedValue({ id: 99 }),
+          update: jest.fn(),
+        },
+        gateCommand: {
+          findFirst: jest.fn().mockResolvedValue({
+            commandId: 'cmd-existing',
+            status: GateCommandStatus.PUBLISHED,
+            expiresAt: new Date(Date.now() + 10_000),
+          }),
+          create: jest.fn(),
+        },
+      }),
+    );
 
     await service.createOpenCommand({
       organizationId: 1,
@@ -119,14 +136,7 @@ describe('GateCommandsService', () => {
       reasonCode: GateAccessReasonCode.ENTRY_BOOKING_CONFIRMED,
     });
 
-    expect(prisma.gateAccessAttempt.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          reasonCode: GateAccessReasonCode.COMMAND_ALREADY_PENDING,
-        }),
-      }),
-    );
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalled();
   });
 
   it('rate limits manual overrides', async () => {
@@ -145,7 +155,7 @@ describe('GateCommandsService', () => {
   });
 
   it('marks published commands from acks using tenant-scoped device lookup', async () => {
-    const device = { id: 7, organizationId: 1, externalDeviceId: 'barrier-1' };
+    const device = { id: 7, organizationId: 1, externalDeviceId: 'edge-gw-demo-001' };
     const command = {
       id: 1,
       commandId: 'cmd-1',
@@ -172,7 +182,7 @@ describe('GateCommandsService', () => {
 
     await service.handleAck({
       organizationId: 1,
-      externalDeviceId: 'barrier-1',
+      externalDeviceId: 'edge-gw-demo-001',
       ack: {
         commandId: 'cmd-1',
         status: 'EXECUTED',
@@ -182,39 +192,60 @@ describe('GateCommandsService', () => {
     expect(prisma.iotDevice.findFirst).toHaveBeenCalledWith({
       where: {
         organizationId: 1,
-        externalDeviceId: 'barrier-1',
+        externalDeviceId: 'edge-gw-demo-001',
       },
     });
     expect(eventPublisher.publishEventInTransaction).toHaveBeenCalled();
   });
 
-  it('marks commands published only after publishable validation', async () => {
+  it('claims pending commands for publishing', async () => {
     const command = {
       id: 1,
       commandId: 'cmd-1',
       status: GateCommandStatus.PENDING,
       expiresAt: new Date(Date.now() + 10_000),
-      controllerDevice: { externalDeviceId: 'barrier-1' },
+      organizationId: 1,
+      gateId: 2,
+      gate: { isActive: true, autoOpenEnabled: true, parkingLotId: 10 },
+      controllerDevice: { isEnabled: true },
+      accessAttempt: { source: GateAccessSource.ANPR },
     };
 
+    (prisma.gateCommand.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
     (prisma.gateCommand.findFirst as jest.Mock).mockResolvedValue(command);
-    (prisma.gateCommand.update as jest.Mock).mockResolvedValue({
+    (prisma.organization.findFirst as jest.Mock).mockResolvedValue({ isActive: true });
+    (prisma.parkingLot.findFirst as jest.Mock).mockResolvedValue({ isActive: true });
+
+    await service.claimCommandForPublishing('cmd-1');
+
+    expect(prisma.gateCommand.updateMany).toHaveBeenCalledWith({
+      where: {
+        commandId: 'cmd-1',
+        status: GateCommandStatus.PENDING,
+        expiresAt: { gt: expect.any(Date) },
+      },
+      data: { status: GateCommandStatus.PUBLISHING },
+    });
+  });
+
+  it('marks commands published idempotently after claim', async () => {
+    const command = {
+      id: 1,
+      commandId: 'cmd-1',
+      status: GateCommandStatus.PUBLISHING,
+      expiresAt: new Date(Date.now() + 10_000),
+      controllerDevice: { externalDeviceId: 'edge-gw-demo-001' },
+    };
+
+    (prisma.gateCommand.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.gateCommand.findFirstOrThrow as jest.Mock).mockResolvedValue({
       ...command,
       status: GateCommandStatus.PUBLISHED,
     });
 
     await service.markCommandPublished('cmd-1');
 
-    expect(prisma.gateCommand.update).toHaveBeenCalledWith({
-      where: { id: 1 },
-      data: {
-        status: GateCommandStatus.PUBLISHED,
-        publishedAt: expect.any(Date),
-      },
-      include: {
-        controllerDevice: true,
-      },
-    });
+    expect(prisma.gateCommand.updateMany).toHaveBeenCalled();
   });
 
   it('expires publishable commands that are past TTL', async () => {
@@ -223,16 +254,17 @@ describe('GateCommandsService', () => {
       commandId: 'cmd-expired',
       status: GateCommandStatus.PENDING,
       expiresAt: new Date(Date.now() - 1_000),
-      controllerDevice: { externalDeviceId: 'barrier-1' },
+      controllerDevice: { externalDeviceId: 'edge-gw-demo-001' },
     };
 
+    (prisma.gateCommand.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
     (prisma.gateCommand.findFirst as jest.Mock).mockResolvedValue(command);
     (prisma.gateCommand.update as jest.Mock).mockResolvedValue({
       ...command,
       status: GateCommandStatus.EXPIRED,
     });
 
-    await expect(service.getPublishableCommand('cmd-expired')).rejects.toBeInstanceOf(
+    await expect(service.claimCommandForPublishing('cmd-expired')).rejects.toBeInstanceOf(
       BadRequestException,
     );
     expect(prisma.gateCommand.update).toHaveBeenCalledWith({

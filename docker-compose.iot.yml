@@ -28,7 +28,8 @@ services:
       - '3100:3100'
     environment:
       EDGE_LOCAL_API_KEY: ${EDGE_LOCAL_API_KEY:-dev-edge-key}
-      EXTERNAL_DEVICE_ID: ${EXTERNAL_DEVICE_ID:-edge-gw-local-001}
+      EDGE_DEVICE_CREDENTIAL: ${EDGE_DEVICE_CREDENTIAL:-demo-device-credential-not-a-real-secret}
+      EXTERNAL_DEVICE_ID: ${EXTERNAL_DEVICE_ID:-edge-gw-demo-001}
       ORGANIZATION_ID: ${ORGANIZATION_ID:-1}
       GATE_ID: ${GATE_ID:-1}
       MQTT_BROKER_URL: mqtt://mosquitto:1883

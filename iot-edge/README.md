@@ -20,7 +20,8 @@ docker compose -f docker-compose.iot.yml up -d mosquitto
 cd iot-edge
 npm install
 export EDGE_LOCAL_API_KEY=dev-edge-key
-export EXTERNAL_DEVICE_ID=edge-gw-local-001
+export EDGE_DEVICE_CREDENTIAL=demo-device-credential-not-a-real-secret
+export EXTERNAL_DEVICE_ID=edge-gw-demo-001
 export ORGANIZATION_ID=1
 export GATE_ID=1
 npm run dev
@@ -46,6 +47,7 @@ curl -s -X POST http://127.0.0.1:3100/vendor/anpr \
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
 | `EDGE_LOCAL_API_KEY` | yes | — | Protects `/vendor/*` HTTP endpoints |
+| `EDGE_DEVICE_CREDENTIAL` | yes | — | Device auth token sent with MQTT detections (never logged) |
 | `EXTERNAL_DEVICE_ID` | yes | — | Edge device external ID used in MQTT topics |
 | `ORGANIZATION_ID` | no | `1` | Tenant organization ID |
 | `GATE_ID` | no | `1` | Gate ID |
@@ -90,7 +92,8 @@ Topic base (aligned with backend `MQTT_TOPIC_PREFIX`, default `smart-parking`):
   "identifier": "KA01AB1234",
   "confidence": 0.94,
   "occurredAt": "2026-07-11T10:00:00.000Z",
-  "source": "ANPR"
+  "source": "ANPR",
+  "deviceAuth": "<EDGE_DEVICE_CREDENTIAL>"
 }
 ```
 

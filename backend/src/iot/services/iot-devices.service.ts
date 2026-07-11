@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { IotDevice, IotDeviceStatus, Prisma } from '@prisma/client';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import { AccessPolicyService } from '../../common/access-policy.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser } from '../../users/types/safe-user.type';
@@ -142,7 +142,14 @@ export class IotDevicesService {
       this.config.deviceCredentialPepper,
     );
 
-    return candidate === device.credentialHash;
+    const expected = Buffer.from(device.credentialHash, 'utf8');
+    const actual = Buffer.from(candidate, 'utf8');
+
+    if (expected.length !== actual.length) {
+      return false;
+    }
+
+    return timingSafeEqual(expected, actual);
   }
 
   async recordHeartbeat(input: {

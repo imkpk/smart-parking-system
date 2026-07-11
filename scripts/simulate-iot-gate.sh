@@ -5,7 +5,7 @@
 #
 # Prerequisites:
 #   docker compose -f docker-compose.iot.yml up -d mosquitto
-#   cd iot-edge && EDGE_LOCAL_API_KEY=dev-edge-key EXTERNAL_DEVICE_ID=edge-gw-local-001 npm run dev
+#   cd iot-edge && EDGE_LOCAL_API_KEY=dev-edge-key EDGE_DEVICE_CREDENTIAL=demo-device-credential-not-a-real-secret EXTERNAL_DEVICE_ID=edge-gw-demo-001 npm run dev
 
 set -euo pipefail
 
@@ -14,7 +14,7 @@ EDGE_URL="${EDGE_URL:-http://127.0.0.1:3100}"
 API_KEY="${EDGE_LOCAL_API_KEY:-dev-edge-key}"
 ORG_ID="${ORGANIZATION_ID:-1}"
 GATE_ID="${GATE_ID:-1}"
-DEVICE_ID="${EXTERNAL_DEVICE_ID:-edge-gw-local-001}"
+DEVICE_ID="${EXTERNAL_DEVICE_ID:-edge-gw-demo-001}"
 MQTT_HOST="${MQTT_HOST:-127.0.0.1}"
 MQTT_PORT="${MQTT_PORT:-1883}"
 TOPIC_PREFIX="${MQTT_TOPIC_PREFIX:-smart-parking}"

@@ -10,6 +10,9 @@ export class HttpRelayBarrierAdapter implements BarrierAdapter {
   constructor(
     private readonly relayUrl: string,
     private readonly timeoutMs: number,
+    private readonly method: 'POST' | 'PUT' = 'POST',
+    private readonly authHeaderName?: string,
+    private readonly authHeaderValue?: string,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
@@ -26,11 +29,17 @@ export class HttpRelayBarrierAdapter implements BarrierAdapter {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (this.authHeaderName && this.authHeaderValue) {
+        headers[this.authHeaderName] = this.authHeaderValue;
+      }
+
       const response = await this.fetchImpl(this.relayUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: this.method,
+        headers,
         body: JSON.stringify({ commandId, action: 'OPEN' }),
         signal: controller.signal,
       });

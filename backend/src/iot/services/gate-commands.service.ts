@@ -46,7 +46,7 @@ export class GateCommandsService {
       where: {
         organizationId: input.organizationId,
         gateId: input.gateId,
-        deviceType: IotDeviceType.BARRIER_CONTROLLER,
+        deviceType: IotDeviceType.EDGE_GATEWAY,
         isEnabled: true,
       },
       orderBy: {
@@ -63,7 +63,7 @@ export class GateCommandsService {
           source: input.source,
           decision: GateAccessDecision.ERROR,
           reasonCode: GateAccessReasonCode.NO_BARRIER_CONTROLLER,
-          reasonDetail: 'No enabled barrier controller found for gate',
+          reasonDetail: 'No enabled edge gateway found for gate',
           vehicleId: input.vehicleId,
           bookingId: input.bookingId,
           parkingEventId: input.parkingEventId,
@@ -83,47 +83,47 @@ export class GateCommandsService {
       throw new NotFoundException('Gate not found');
     }
 
-    const pendingCommand = await this.prisma.gateCommand.findFirst({
-      where: {
-        organizationId: input.organizationId,
-        gateId: input.gateId,
-        status: {
-          in: [
-            GateCommandStatus.PENDING,
-            GateCommandStatus.PUBLISHED,
-            GateCommandStatus.ACKNOWLEDGED,
-          ],
-        },
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        id: 'desc',
-      },
-    });
-
-    if (pendingCommand) {
-      return this.prisma.gateAccessAttempt.create({
-        data: {
-          organizationId: input.organizationId,
-          gateId: input.gateId,
-          detectionId: input.detectionId,
-          source: input.source,
-          decision: GateAccessDecision.DENIED,
-          reasonCode: GateAccessReasonCode.COMMAND_ALREADY_PENDING,
-          reasonDetail: `Gate command ${pendingCommand.commandId} is already pending`,
-          vehicleId: input.vehicleId,
-          bookingId: input.bookingId,
-          parkingEventId: input.parkingEventId,
-          actorUserId: input.actorUserId,
-        },
-      });
-    }
-
     const expiresAt = new Date(Date.now() + gate.commandTtlSeconds * 1000);
 
     return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${input.organizationId}::integer, ${input.gateId}::integer)`;
+
+      const livePending = await tx.gateCommand.findFirst({
+        where: {
+          organizationId: input.organizationId,
+          gateId: input.gateId,
+          status: {
+            in: [
+              GateCommandStatus.PENDING,
+              GateCommandStatus.PUBLISHING,
+              GateCommandStatus.PUBLISHED,
+              GateCommandStatus.ACKNOWLEDGED,
+            ],
+          },
+          expiresAt: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      if (livePending) {
+        return tx.gateAccessAttempt.create({
+          data: {
+            organizationId: input.organizationId,
+            gateId: input.gateId,
+            detectionId: input.detectionId,
+            source: input.source,
+            decision: GateAccessDecision.DENIED,
+            reasonCode: GateAccessReasonCode.COMMAND_ALREADY_PENDING,
+            reasonDetail: `Gate command ${livePending.commandId} is already pending`,
+            vehicleId: input.vehicleId,
+            bookingId: input.bookingId,
+            parkingEventId: input.parkingEventId,
+            actorUserId: input.actorUserId,
+          },
+        });
+      }
+
       const attempt = await tx.gateAccessAttempt.create({
         data: {
           organizationId: input.organizationId,
@@ -301,71 +301,175 @@ export class GateCommandsService {
     });
   }
 
-  async getPublishableCommand(commandId: string) {
-    const command = await this.prisma.gateCommand.findFirst({
+  async claimCommandForPublishing(commandId: string) {
+    const now = new Date();
+    const claimed = await this.prisma.gateCommand.updateMany({
       where: {
         commandId,
         status: GateCommandStatus.PENDING,
+        expiresAt: {
+          gt: now,
+        },
       },
-      include: {
-        controllerDevice: true,
+      data: {
+        status: GateCommandStatus.PUBLISHING,
       },
     });
 
-    if (!command) {
-      throw new NotFoundException('Pending gate command not found');
+    if (claimed.count === 1) {
+      const command = await this.prisma.gateCommand.findFirst({
+        where: { commandId },
+        include: {
+          controllerDevice: true,
+          gate: true,
+          accessAttempt: { select: { source: true } },
+        },
+      });
+
+      if (!command) {
+        throw new NotFoundException('Gate command not found');
+      }
+
+      await this.revalidateBeforePublish(command);
+      return command;
     }
 
-    if (command.expiresAt <= new Date()) {
+    const existing = await this.prisma.gateCommand.findFirst({
+      where: { commandId },
+      include: { controllerDevice: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Gate command not found');
+    }
+
+    if (
+      existing.status === GateCommandStatus.PUBLISHING ||
+      existing.status === GateCommandStatus.PUBLISHED ||
+      existing.status === GateCommandStatus.ACKNOWLEDGED ||
+      existing.status === GateCommandStatus.EXECUTED
+    ) {
+      return existing;
+    }
+
+    if (existing.expiresAt <= now) {
       await this.prisma.gateCommand.update({
-        where: { id: command.id },
-        data: {
-          status: GateCommandStatus.EXPIRED,
-        },
+        where: { id: existing.id },
+        data: { status: GateCommandStatus.EXPIRED },
       });
       throw new BadRequestException('Gate command has expired');
     }
 
-    return command;
+    throw new NotFoundException('Gate command is not publishable');
+  }
+
+  async releasePublishingClaim(commandId: string) {
+    await this.prisma.gateCommand.updateMany({
+      where: {
+        commandId,
+        status: GateCommandStatus.PUBLISHING,
+      },
+      data: {
+        status: GateCommandStatus.PENDING,
+      },
+    });
   }
 
   async markCommandPublished(commandId: string) {
-    const command = await this.prisma.gateCommand.findFirst({
+    const now = new Date();
+    const updated = await this.prisma.gateCommand.updateMany({
       where: {
         commandId,
-        status: GateCommandStatus.PENDING,
+        status: {
+          in: [GateCommandStatus.PUBLISHING, GateCommandStatus.PENDING],
+        },
+        expiresAt: {
+          gt: now,
+        },
+      },
+      data: {
+        status: GateCommandStatus.PUBLISHED,
+        publishedAt: now,
       },
     });
 
-    if (!command) {
-      throw new NotFoundException('Pending gate command not found');
+    if (updated.count === 1) {
+      return this.prisma.gateCommand.findFirstOrThrow({
+        where: { commandId },
+        include: { controllerDevice: true },
+      });
     }
 
-    if (command.expiresAt <= new Date()) {
+    const existing = await this.prisma.gateCommand.findFirst({
+      where: { commandId },
+      include: { controllerDevice: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Gate command not found');
+    }
+
+    if (
+      existing.status === GateCommandStatus.ACKNOWLEDGED ||
+      existing.status === GateCommandStatus.EXECUTED ||
+      existing.status === GateCommandStatus.PUBLISHED
+    ) {
+      return existing;
+    }
+
+    if (existing.expiresAt <= now) {
       await this.prisma.gateCommand.update({
-        where: { id: command.id },
-        data: {
-          status: GateCommandStatus.EXPIRED,
-        },
+        where: { id: existing.id },
+        data: { status: GateCommandStatus.EXPIRED },
       });
       throw new BadRequestException('Gate command has expired');
     }
 
-    return this.prisma.gateCommand.update({
-      where: { id: command.id },
-      data: {
-        status: GateCommandStatus.PUBLISHED,
-        publishedAt: new Date(),
-      },
-      include: {
-        controllerDevice: true,
-      },
-    });
+    throw new NotFoundException('Gate command is not publishable');
   }
 
-  async publishPendingCommand(commandId: string) {
-    await this.getPublishableCommand(commandId);
-    return this.markCommandPublished(commandId);
+  private async revalidateBeforePublish(command: {
+    id: number;
+    commandId: string;
+    organizationId: number;
+    gateId: number;
+    gate: { isActive: boolean; autoOpenEnabled: boolean; parkingLotId: number };
+    controllerDevice: { isEnabled: boolean };
+    accessAttempt: { source: GateAccessSource };
+  }) {
+    const [organization, lot] = await Promise.all([
+      this.prisma.organization.findFirst({
+        where: { id: command.organizationId },
+        select: { isActive: true },
+      }),
+      this.prisma.parkingLot.findFirst({
+        where: {
+          id: command.gate.parkingLotId,
+          organizationId: command.organizationId,
+        },
+        select: { isActive: true },
+      }),
+    ]);
+
+    const blocked =
+      !organization?.isActive ||
+      !command.gate.isActive ||
+      !lot?.isActive ||
+      !command.controllerDevice.isEnabled ||
+      (command.accessAttempt.source !== GateAccessSource.MANUAL_OVERRIDE &&
+        !command.gate.autoOpenEnabled);
+
+    if (blocked) {
+      await this.prisma.gateCommand.update({
+        where: { id: command.id },
+        data: {
+          status: GateCommandStatus.FAILED,
+          failureCode: GateAccessReasonCode.GATE_PUBLISH_BLOCKED,
+          failureMessage: 'Gate, lot, organization, or device is not active for publication',
+        },
+      });
+      throw new BadRequestException('Gate command publication blocked by safety revalidation');
+    }
   }
 
   private async assertManualOverrideRateLimit(gateId: number, actorUserId: number) {
