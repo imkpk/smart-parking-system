@@ -16,6 +16,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ParkingEventsPage } from './pages/parking-events/ParkingEventsPage';
 import { ParkingFinderPage } from './pages/parking-finder/ParkingFinderPage';
 import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPage';
+import { ParkingLotGatesPage } from './pages/parking-lots/ParkingLotGatesPage';
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
 import { PaymentsPage } from './pages/payments/PaymentsPage';
@@ -156,6 +157,10 @@ export const router = createBrowserRouter([
               {
                 path: 'parking-lots/:id/slot-map',
                 element: <VisualSlotMapPage />,
+              },
+              {
+                path: 'parking-lots/:id/gates',
+                element: <ParkingLotGatesPage />,
               },
             ],
           },

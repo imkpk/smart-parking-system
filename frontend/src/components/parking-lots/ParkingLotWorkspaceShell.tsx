@@ -121,6 +121,7 @@ export function ParkingLotWorkspaceShell({
           <Tab label="Visual Map" value="visual-map" />
           <Tab label="Slots" value="slots" />
           <Tab label="Floors" value="floors" />
+          <Tab label="Gates" value="gates" />
           {canManageLot ? <Tab label="Settings" value="settings" /> : null}
         </Tabs>
       </Paper>

@@ -5,6 +5,7 @@ export type ParkingLotWorkspaceTab =
   | 'visual-map'
   | 'slots'
   | 'floors'
+  | 'gates'
   | 'settings';
 
 export function formatParkingLotLocation(lot: Pick<ParkingLot, 'address' | 'city' | 'state' | 'pincode'>) {
@@ -51,6 +52,10 @@ export function resolveParkingLotWorkspaceTab(
 
   if (pathname.endsWith('/slots')) {
     return 'slots';
+  }
+
+  if (pathname.endsWith('/gates')) {
+    return 'gates';
   }
 
   return 'overview';

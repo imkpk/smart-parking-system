@@ -14,6 +14,7 @@ import {
   TextField,
   Tooltip,
   IconButton,
+  Typography,
 } from '@mui/material';
 import { Add, Delete, Edit } from '@mui/icons-material';
 import { GridColDef } from '@mui/x-data-grid';
@@ -41,6 +42,7 @@ import { getApiErrorMessage, isForbiddenError } from '../../lib/apiError';
 import { formatStatusLabel } from '../../lib/formatters';
 import { filterVehicles } from '../../lib/searchFilters';
 import { formatVehicleNumber, normalizeVehicleNumber } from '../../lib/vehicleNumber';
+import { VehicleCredentialsPanel } from '../../components/vehicles/VehicleCredentialsPanel';
 import { Vehicle, VehiclePayload, VehicleType, vehicleTypeOptions } from '../../types/vehicle';
 
 function buildVehicleSummaryRows(
@@ -364,7 +366,14 @@ export function VehiclesPage() {
         }
         technicalRows={detailsVehicle ? buildVehicleTechnicalRows(detailsVehicle) : []}
         title="Vehicle Details"
-      />
+      >
+        {detailsVehicle ? (
+          <Stack spacing={1.5} sx={{ mt: 2 }}>
+            <Typography variant="subtitle2">Gate Access Credentials</Typography>
+            <VehicleCredentialsPanel vehicleId={detailsVehicle.id} />
+          </Stack>
+        ) : null}
+      </DetailsDialog>
 
       <ConfirmDialog
         confirmLabel="Delete"

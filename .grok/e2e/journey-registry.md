@@ -393,6 +393,61 @@
 
 ---
 
+## J16 — IoT gate entry (granted)
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 |
+| **Roles** | SECURITY, ADMIN |
+| **Route** | `/security/gate` (IoT Gate Monitor panel) |
+| **Spec** | `j16-iot-gate-entry.cy.ts` |
+| **Status** | `implemented` |
+
+**User story:** As security staff, I monitor IoT gate activity and see a granted RFID/QR access attempt with vehicle details.
+
+**Preconditions:** SECURITY logged in; parking lot with active gate; mocked or seeded IoT live/detections/attempts APIs.
+
+**Happy path:**
+1. Login as SECURITY
+2. Visit `/security/gate`
+3. IoT panel auto-selects lot/gate
+4. Assert Latest Access Attempts grid shows GRANTED decision and vehicle number
+
+**Assertions:** Decision chip shows Granted; vehicle plate visible; no raw gate/device IDs in primary columns.
+
+**Deferred:** Real MQTT/edge hardware — iot-edge integration tests.
+
+**Classification:** Monorepo smoke (API stubbed when backend IoT endpoints unavailable).
+
+---
+
+## J17 — IoT gate denial
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 |
+| **Roles** | SECURITY, ADMIN |
+| **Route** | `/security/gate` (IoT Gate Monitor panel) |
+| **Spec** | `j17-iot-gate-denial.cy.ts` |
+| **Status** | `implemented` |
+
+**User story:** As security staff, I see denied gate access attempts with a readable reason when no booking matches.
+
+**Preconditions:** SECURITY logged in; mocked denied access attempt (e.g. `NO_ACTIVE_BOOKING`).
+
+**Happy path:**
+1. Login as SECURITY
+2. Visit `/security/gate`
+3. Assert Latest Access Attempts shows DENIED decision, vehicle/plate, and reason code
+
+**Assertions:** Decision chip shows Denied; reason code visible; manual search flow unaffected.
+
+**Deferred:** Review-required and error decisions — Vitest panel tests.
+
+**Classification:** Monorepo smoke (API stubbed).
+
+---
+
 ## Regression: API fan-out guard
 
 | Field | Value |
@@ -413,7 +468,7 @@
 |------|----------|
 | E2E 02 | J1, J3, J14 |
 | E2E 03 | J4, J5, J6, J8 + fan-out regression |
-| Post-rollout | J2, J7, J11, J13 (P1) |
+| Post-rollout | J2, J7, J11, J13, J16, J17 (P1) |
 | Future / separate repo | J9, J10, J12 (P2) |
 
 ## Seed / test data notes

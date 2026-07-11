@@ -18,7 +18,16 @@ export type AppStatus =
   | 'FAILED'
   | 'REFUNDED'
   | 'PENDING'
-  | 'MAINTENANCE';
+  | 'MAINTENANCE'
+  | 'ONLINE'
+  | 'OFFLINE'
+  | 'DEGRADED'
+  | 'DISABLED'
+  | 'GRANTED'
+  | 'DENIED'
+  | 'REVIEW_REQUIRED'
+  | 'ERROR'
+  | 'REVOKED';
 
 const successStyle: StatusStyle = {
   bgcolor: 'rgba(46, 125, 50, 0.12)',
@@ -71,6 +80,15 @@ export const statusStyles: Record<AppStatus, StatusStyle> = {
   REFUNDED: infoStyle,
   PENDING: infoStyle,
   MAINTENANCE: neutralStyle,
+  ONLINE: successStyle,
+  OFFLINE: neutralStyle,
+  DEGRADED: warningStyle,
+  DISABLED: neutralStyle,
+  GRANTED: successStyle,
+  DENIED: errorStyle,
+  REVIEW_REQUIRED: warningStyle,
+  ERROR: errorStyle,
+  REVOKED: neutralStyle,
 };
 
 export function getStatusStyle(status: string): StatusStyle {

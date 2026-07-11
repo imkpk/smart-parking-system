@@ -4,9 +4,9 @@ import { ParkingLotWorkspaceTab } from './parkingLotWorkspace';
 export const PARKING_LOT_QUERY_STALE_MS = 30_000;
 
 export function parkingLotWorkspaceNeedsFloors(tab: ParkingLotWorkspaceTab): boolean {
-  return tab !== 'settings';
+  return tab !== 'settings' && tab !== 'gates';
 }
 
 export function parkingLotWorkspaceNeedsSlots(tab: ParkingLotWorkspaceTab): boolean {
-  return tab !== 'settings';
+  return tab !== 'settings' && tab !== 'gates';
 }

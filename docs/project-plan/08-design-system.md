@@ -75,6 +75,7 @@ We use **one design system** built on MUI — not a downloaded theme.
 | `security-gate-check.jpg` (Magnific preview) | — | **Premium — license pending** | ⚠️ Preview only | `frontend/src/assets/illustrations/` | User-supplied gate search art; verify Magnific/Freepik license before production release |
 | `@emotion/react` | ^11.14.0 | MIT | ✅ Yes | package.json | MUI peer |
 | `@tanstack/react-query` | ^5.80.7 | MIT | ✅ Yes | package.json | Data fetching |
+| `qrcode` | ^1.5.x | MIT | ✅ Yes | package.json | Client-side QR rendering for vehicle gate credentials (one-time display) |
 
 **Before adding any new row:** complete steps 1–4 above and update this table.
 
