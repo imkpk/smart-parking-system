@@ -1,3 +1,5 @@
+import type { CommandAckMessage } from '../contracts/messages.js';
+
 export type CommandDisposition = 'NEW' | 'DUPLICATE' | 'EXPIRED';
 
 export interface CommandCheckResult {
@@ -6,6 +8,8 @@ export interface CommandCheckResult {
 
 interface SeenCommand {
   seenAt: number;
+  receivedAck?: CommandAckMessage;
+  finalAck?: CommandAckMessage;
 }
 
 export class CommandState {
@@ -27,6 +31,41 @@ export class CommandState {
 
     this.seen.set(commandId, { seenAt: now });
     return { disposition: 'NEW' };
+  }
+
+  recordReceived(commandId: string, ack: CommandAckMessage): void {
+    const entry = this.seen.get(commandId);
+    if (!entry) {
+      return;
+    }
+
+    entry.receivedAck = ack;
+  }
+
+  recordFinal(commandId: string, ack: CommandAckMessage): void {
+    const entry = this.seen.get(commandId);
+    if (!entry) {
+      return;
+    }
+
+    entry.finalAck = ack;
+  }
+
+  getReplayAcks(commandId: string): CommandAckMessage[] {
+    const entry = this.seen.get(commandId);
+    if (!entry) {
+      return [];
+    }
+
+    const replay: CommandAckMessage[] = [];
+    if (entry.receivedAck) {
+      replay.push(entry.receivedAck);
+    }
+    if (entry.finalAck) {
+      replay.push(entry.finalAck);
+    }
+
+    return replay;
   }
 
   size(): number {

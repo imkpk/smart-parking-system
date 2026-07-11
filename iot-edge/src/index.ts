@@ -76,7 +76,11 @@ async function main(): Promise<void> {
 
     const check = commandState.check(command.commandId, command.expiresAt);
     if (check.disposition === 'DUPLICATE') {
-      console.info(`[command] duplicate commandId=${command.commandId}`);
+      console.info(`[command] duplicate commandId=${command.commandId} — replaying acks`);
+      const replayAcks = commandState.getReplayAcks(command.commandId);
+      for (const ack of replayAcks) {
+        await mqttClient.publishCommandAck(ack);
+      }
       return;
     }
 
@@ -101,6 +105,7 @@ async function main(): Promise<void> {
       acknowledgedAt: new Date().toISOString(),
     };
 
+    commandState.recordReceived(command.commandId, receivedAck);
     await mqttClient.publishCommandAck(receivedAck);
 
     const result = await barrier.open(command.commandId);
@@ -113,6 +118,7 @@ async function main(): Promise<void> {
       failureMessage: result.failureMessage,
     };
 
+    commandState.recordFinal(command.commandId, finalAck);
     await mqttClient.publishCommandAck(finalAck);
 
     if (!result.ok) {

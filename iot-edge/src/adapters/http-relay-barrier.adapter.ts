@@ -1,5 +1,9 @@
 import type { BarrierAdapter, BarrierOpenResult } from './barrier-adapter.js';
 
+function sanitizeRelayErrorMessage(message: string): string {
+  return message.replace(/\/\/[^@/]+@/g, '//[redacted]@');
+}
+
 export class HttpRelayBarrierAdapter implements BarrierAdapter {
   readonly mode = 'HTTP_RELAY' as const;
 
@@ -41,11 +45,16 @@ export class HttpRelayBarrierAdapter implements BarrierAdapter {
 
       return { ok: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown relay error';
+      const rawMessage =
+        error instanceof Error && error.name === 'AbortError'
+          ? `Relay request timed out after ${this.timeoutMs}ms`
+          : error instanceof Error
+            ? error.message
+            : 'Unknown relay error';
       return {
         ok: false,
         failureCode: 'RELAY_UNREACHABLE',
-        failureMessage: message,
+        failureMessage: sanitizeRelayErrorMessage(rawMessage),
       };
     } finally {
       clearTimeout(timeout);
