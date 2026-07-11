@@ -21,6 +21,7 @@ import { BookingStatusChip } from '../../components/common/BookingStatusChip';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { InfoRows } from '../../components/common/InfoRows';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SecurityGateIotPanel } from '../../components/security/SecurityGateIotPanel';
 import { ParkingEventStatusChip } from '../../components/common/ParkingEventStatusChip';
 import { useAppSnackbar } from '../../hooks/useAppSnackbar';
 import { getApiErrorMessage } from '../../lib/apiError';
@@ -745,6 +746,8 @@ export function SecurityGatePage() {
         description="Search by booking code, booking no, vehicle number, or phone number."
         title="Security Gate"
       />
+
+      <SecurityGateIotPanel />
 
       {step === 'search' ? (
         <Paper

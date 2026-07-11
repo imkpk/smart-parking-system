@@ -1,3 +1,9 @@
+import {
+  registerAuthMocks,
+  setupIotGateMonitorMocks as setupIotGateMonitorMocksHelper,
+  visitWithMockedSecuritySession,
+} from './iot-mocked-auth';
+
 type E2ERole = 'USER' | 'ADMIN' | 'SECURITY';
 
 interface RegisteredUser {
@@ -123,6 +129,18 @@ Cypress.Commands.add('loginWithUser', (user: RegisteredUser) => {
   }
 
   loginViaUi(user);
+});
+
+Cypress.Commands.add('loginAsMockedSecurity', () => {
+  registerAuthMocks();
+});
+
+Cypress.Commands.add('setupIotGateMonitorMocks', (scenario: 'granted' | 'denied' = 'granted') => {
+  setupIotGateMonitorMocksHelper(scenario);
+});
+
+Cypress.Commands.add('visitWithMockedSecuritySession', (path: string) => {
+  visitWithMockedSecuritySession(path);
 });
 
 Cypress.Commands.add('loginAs', (role: E2ERole = 'USER') => {
@@ -289,6 +307,9 @@ declare global {
       registerViaApi(role?: E2ERole): Chainable<RegisteredUser>;
       loginWithUser(user: RegisteredUser): Chainable<void>;
       loginAs(role?: E2ERole): Chainable<void>;
+      loginAsMockedSecurity(): Chainable<void>;
+      setupIotGateMonitorMocks(scenario?: 'granted' | 'denied'): Chainable<void>;
+      visitWithMockedSecuritySession(path: string): Chainable<void>;
       logout(): Chainable<void>;
       setupParkingSmokeData(): Chainable<ParkingSmokeData>;
       createBookingViaApi(data: ParkingSmokeData): Chainable<BookingSmokeData>;

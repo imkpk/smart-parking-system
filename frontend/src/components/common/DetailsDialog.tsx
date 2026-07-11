@@ -37,12 +37,14 @@ export function DetailsRows({ rows }: { rows: DetailsRow[] }) {
 }
 
 export function DetailsDialog({
+  children,
   onClose,
   open,
   summaryRows,
   technicalRows,
   title,
 }: {
+  children?: ReactNode;
   onClose: () => void;
   open: boolean;
   summaryRows: DetailsRow[];
@@ -64,6 +66,8 @@ export function DetailsDialog({
               <DetailsRows rows={technicalRows} />
             </>
           ) : null}
+
+          {children}
         </Stack>
       </DialogContent>
       <DialogActions>

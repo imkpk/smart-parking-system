@@ -1,6 +1,7 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { EventHandlerRegistry } from './event-handler.registry';
 import { EventPublisherService } from './event-publisher.service';
+import { GateOpenRequestedHandler } from './gate-open-requested.handler';
 import { EventsModule } from './events.module';
 import { OutboxMonitorController } from './outbox-monitor.controller';
 import { OutboxMonitorService } from './outbox-monitor.service';
@@ -18,6 +19,7 @@ describe('EventsModule', () => {
         OutboxWorkerService,
         EventHandlerRegistry,
         OutboxMonitorService,
+        GateOpenRequestedHandler,
       ]),
     );
   });

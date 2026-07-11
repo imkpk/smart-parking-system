@@ -1,0 +1,43 @@
+# Full-stack IoT integration stack for local runs and CI helpers.
+#
+# Start broker only:
+#   docker compose -f docker-compose.fullstack-iot.yml up -d mosquitto
+#
+# Then start backend, payment-service, and iot-edge processes on the host and run:
+#   node scripts/iot-fullstack-integration.mjs
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: smart-parking-postgres-iot
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smart_parking_db
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: smart-parking-mosquitto
+    restart: unless-stopped
+    ports:
+      - '1883:1883'
+      - '9001:9001'
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mosquitto_sub -h 127.0.0.1 -t $$SYS/broker/version -C 1 -W 3 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mosquitto-data:

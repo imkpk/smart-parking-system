@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleHomeRedirect } from './components/auth/RoleHomeRedirect';
 import { RoleRoute } from './components/auth/RoleRoute';
@@ -16,6 +16,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ParkingEventsPage } from './pages/parking-events/ParkingEventsPage';
 import { ParkingFinderPage } from './pages/parking-finder/ParkingFinderPage';
 import { ParkingLotDetailsPage } from './pages/parking-lots/ParkingLotDetailsPage';
+import { ParkingLotGatesPage } from './pages/parking-lots/ParkingLotGatesPage';
 import { ParkingLotsPage } from './pages/parking-lots/ParkingLotsPage';
 import { VisualSlotMapPage } from './pages/parking-lots/VisualSlotMapPage';
 import { PaymentsPage } from './pages/payments/PaymentsPage';
@@ -28,7 +29,7 @@ import {
 import { UserSupportPage } from './pages/support/UserSupportPage';
 import { VehiclesPage } from './pages/vehicles/VehiclesPage';
 
-export const router = createBrowserRouter([
+export const appRoutes = [
   {
     path: '/login',
     element: <LoginPage />,
@@ -157,6 +158,10 @@ export const router = createBrowserRouter([
                 path: 'parking-lots/:id/slot-map',
                 element: <VisualSlotMapPage />,
               },
+              {
+                path: 'parking-lots/:id/gates',
+                element: <ParkingLotGatesPage />,
+              },
             ],
           },
           {
@@ -207,4 +212,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFoundPage />,
   },
-]);
+] satisfies RouteObject[];
+
+export const router = createBrowserRouter(appRoutes);

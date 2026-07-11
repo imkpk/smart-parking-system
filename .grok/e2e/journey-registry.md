@@ -393,6 +393,61 @@
 
 ---
 
+## J16 — IoT gate monitor UI smoke (granted row)
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 |
+| **Roles** | SECURITY, ADMIN |
+| **Route** | `/security/gate` (IoT Gate Monitor panel) |
+| **Spec** | `j16-iot-gate-entry.cy.ts` |
+| **Status** | `implemented` |
+
+**User story:** As security staff, I can open the IoT gate monitor and see a granted access attempt row rendered with readable vehicle details.
+
+**Preconditions:** SECURITY logged in; IoT live/detections/attempts APIs stubbed or seeded with a GRANTED attempt.
+
+**Happy path:**
+1. Login as SECURITY
+2. Visit `/security/gate`
+3. IoT panel auto-selects lot/gate
+4. Assert Latest Access Attempts grid shows GRANTED decision and vehicle number
+
+**Assertions:** Decision chip shows Granted; vehicle plate visible; no raw gate/device IDs in primary columns.
+
+**Deferred:** Real MQTT/edge command lifecycle, barrier execution, and parking orchestration — `backend/test/iot-gate-lifecycle.integration.spec.ts` and `scripts/simulate-iot-gate.sh`.
+
+**Classification:** UI smoke only (API stubbed). Not a substitute for backend/edge integration coverage.
+
+---
+
+## J17 — IoT gate monitor UI smoke (denied row)
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 |
+| **Roles** | SECURITY, ADMIN |
+| **Route** | `/security/gate` (IoT Gate Monitor panel) |
+| **Spec** | `j17-iot-gate-denial.cy.ts` |
+| **Status** | `implemented` |
+
+**User story:** As security staff, I can open the IoT gate monitor and see a denied access attempt row with a readable reason code.
+
+**Preconditions:** SECURITY logged in; denied access attempt stubbed (e.g. `NO_ACTIVE_BOOKING`).
+
+**Happy path:**
+1. Login as SECURITY
+2. Visit `/security/gate`
+3. Assert Latest Access Attempts shows DENIED decision, vehicle/plate, and reason code
+
+**Assertions:** Decision chip shows Denied; reason code visible; manual search flow unaffected.
+
+**Deferred:** Review-required/error decisions and real denial pipeline — Vitest panel tests plus backend IoT integration smoke.
+
+**Classification:** UI smoke only (API stubbed). Not a substitute for backend/edge integration coverage.
+
+---
+
 ## Regression: API fan-out guard
 
 | Field | Value |
@@ -413,7 +468,7 @@
 |------|----------|
 | E2E 02 | J1, J3, J14 |
 | E2E 03 | J4, J5, J6, J8 + fan-out regression |
-| Post-rollout | J2, J7, J11, J13 (P1) |
+| Post-rollout | J2, J7, J11, J13, J16, J17 (P1) |
 | Future / separate repo | J9, J10, J12 (P2) |
 
 ## Seed / test data notes

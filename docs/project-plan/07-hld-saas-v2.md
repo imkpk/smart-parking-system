@@ -90,8 +90,19 @@ Every tenant-scoped record carries `organizationId`. JWT includes `organizationI
 | Bookings | Reserve slot → RESERVED |
 | Parking Events | Check-in ACTIVE / check-out COMPLETED |
 | Dashboard / Reports | Occupancy, sessions, revenue (tenant-scoped) |
+| **IoT / Gates** | Gate registry, device auth, ANPR/RFID/QR access, MQTT commands, manual override audit |
 
-**ORM:** Prisma → MySQL `parking_lot_db`
+**ORM:** Prisma → PostgreSQL (Neon) `smart_parking_db`
+
+### IoT gate access (implemented)
+
+```text
+Edge gateway (iot-edge) → MQTT broker → NestJS IoT module
+  → GateAccessDecisionService → ParkingEventsService (system check-in/out)
+  → Outbox GATE_OPEN_REQUESTED → MQTT OPEN command → barrier adapter
+```
+
+Recognition: ANPR plate (confidence threshold), UHF RFID HMAC credential, QR HMAC credential, manual override (SECURITY/ADMIN/TENANT_ADMIN). Raw RFID/QR never persisted.
 
 **Core entities**
 

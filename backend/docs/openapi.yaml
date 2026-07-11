@@ -16,6 +16,9 @@ tags:
   - name: Bookings
   - name: Parking Events
   - name: Dashboard
+  - name: IoT Gates
+  - name: IoT Devices
+  - name: Vehicle Access Credentials
 paths:
   /health:
     get:
@@ -704,6 +707,149 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SlotStatusSummary"
+
+  /parking-lots/{parkingLotId}/gates:
+    get:
+      tags: [IoT Gates]
+      summary: List gates for a parking lot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: parkingLotId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Gate list }
+    post:
+      tags: [IoT Gates]
+      summary: Create gate
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: parkingLotId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "201": { description: Gate created }
+
+  /gates/{gateId}/open:
+    post:
+      tags: [IoT Gates]
+      summary: Manual gate open (audited override)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: gateId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 8 }
+      responses:
+        "200": { description: Gate open command queued }
+
+  /gates/{gateId}/monitoring/health:
+    get:
+      tags: [IoT Gates]
+      summary: Gate and device health snapshot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: gateId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Health snapshot }
+
+  /iot/devices/{deviceId}/rotate-credential:
+    post:
+      tags: [IoT Devices]
+      summary: Rotate device MQTT credential (one-time plaintext in response)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: New credential issued once }
+
+  /vehicles/{vehicleId}/access-credentials:
+    get:
+      tags: [Vehicle Access Credentials]
+      summary: List access credentials for a vehicle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Credential list }
+    post:
+      deprecated: true
+      tags: [Vehicle Access Credentials]
+      summary: Deprecated legacy credential route
+
+  /vehicles/{vehicleId}/access-credentials/rfid:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Create RFID access credential for a vehicle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rfidTag]
+              properties:
+                rfidTag: { type: string, minLength: 4 }
+                validUntil: { type: string, format: date-time }
+      responses:
+        "201": { description: RFID credential created }
+
+  /vehicles/{vehicleId}/access-credentials/qr:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Generate QR access credential for a vehicle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "201":
+          description: QR credential created; one-time qrPayload returned
+
+  /vehicles/{vehicleId}/access-credentials/{credentialId}/revoke:
+    post:
+      tags: [Vehicle Access Credentials]
+      summary: Revoke a vehicle access credential
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: credentialId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Credential revoked }
 
 components:
   securitySchemes:

@@ -4,9 +4,9 @@
 > Paste this entire file into Claude Code, Codex, Antigravity, Copilot, Cursor, Grok, or any coding agent **before every session**.  
 > **This document overrides generic tool suggestions.** If a tool recommends something that conflicts with this file, follow this file.
 
-**Version:** 1.16.12
-**Last updated:** 2026-06-27
-**Current branch:** `feat/parking-finder-booking-entry`
+**Version:** 1.17.0
+**Last updated:** 2026-07-11
+**Current branch:** `feature/iot-automatic-gate-access`
 **Maintainer rule:** Every agent MUST update the [Changelog](#changelog) and relevant status sections at the end of each completed task.
 
 ---
@@ -693,6 +693,7 @@ Keep entries factual and brief. Do not delete history — append to changelog.
 
 | Date | Version | Author | Summary |
 |------|---------|--------|---------|
+| 2026-07-11 | 1.17.0 | Agent | IoT automatic gate access (PR pending): ANPR/RFID/QR detection, MQTT outbox commands, `iot-edge` reference gateway, gate management UI, security gate monitoring, demo seed, Cypress J16/J17. Backend IoT tests 12 passed; iot-edge 11 passed; builds pass. Report: `.grok/reports/iot-automatic-gate-access.md`. |
 | 2026-06-27 | 1.16.12 | Agent | Step 5 implemented (PR pending): Parking Finder book actions now route logged-out users through a safe `/login?redirect=/bookings/new?parkingLotId=<id>` path and logged-in users directly to protected `/bookings/new?parkingLotId=<id>`; the existing booking form opens with the lot preselected and no slot reservation occurs before confirmation. Targeted finder, bookings, login, and router tests passed; frontend build passed; full frontend suite passed in 340.72s. Report: `.grok/reports/parking-finder-booking-entry.md`. |
 | 2026-06-27 | 1.16.11 | Agent | Step 4 implemented and merged (PR #153): narrowed frontend parking operation invalidations for check-in/check-out and related booking create/cancel from root React Query namespaces to targeted event, booking, lot/slot, slot-map, dashboard metric/activity, available-slot, and checkout payment keys. Targeted ParkingEventsPage test passed in 41.04s; BookingsPage test passed in 32.88s; helper test passed in 3.87s; frontend build passed; full frontend suite passed in 485.36s. Report: `.grok/reports/frontend-narrow-operational-invalidations.md`. |
 | 2026-06-27 | 1.16.10 | Agent | Step 3 implemented (PR #152 pending): gated `ParkingEventsPage` React Query calls by active tab so active events fetch only on the active tab and admin history/all fetches only on the history tab, while USER history remains default. Targeted test passed; full frontend suite passed in 322.56s after previous shorter command ceilings timed out. Report: `.grok/reports/frontend-parking-events-tab-query-gating.md`. |

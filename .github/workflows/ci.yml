@@ -33,6 +33,9 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       payment: ${{ steps.filter.outputs.payment }}
+      iot-edge: ${{ steps.filter.outputs.iot-edge }}
+      iot-integration: ${{ steps.filter.outputs.iot-integration }}
+      iot-frontend: ${{ steps.filter.outputs.iot-frontend }}
       workflow: ${{ steps.filter.outputs.workflow }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
@@ -52,6 +55,28 @@ jobs:
               - 'frontend/**'
             payment:
               - 'payment-service/**'
+              - 'backend/src/integrations/payment-service/**'
+              - 'backend/src/parking-events/**'
+              - 'backend/src/iot/**'
+            iot-edge:
+              - 'iot-edge/**'
+            iot-integration:
+              - '.github/workflows/ci.yml'
+              - 'backend/src/iot/**'
+              - 'backend/src/parking-events/**'
+              - 'backend/src/integrations/payment-service/**'
+              - 'backend/src/events/gate-open-requested.handler.ts'
+              - 'backend/test/iot-gate-lifecycle*.ts'
+              - 'iot-edge/**'
+              - 'scripts/iot-fullstack-integration.mjs'
+              - 'docker-compose.iot.yml'
+              - 'docker-compose.fullstack-iot.yml'
+              - 'infra/mosquitto/**'
+            iot-frontend:
+              - 'frontend/src/**/*iot*'
+              - 'frontend/src/**/*Gate*'
+              - 'frontend/cypress/e2e/smoke/j16-iot-gate-entry.cy.ts'
+              - 'frontend/cypress/e2e/smoke/j17-iot-gate-denial.cy.ts'
             workflow:
               - '.github/workflows/**'
             docs:
@@ -155,10 +180,228 @@ jobs:
         if: github.event_name == 'push' && steps.coverage.outcome == 'success'
         run: node ../.github/scripts/frontend-coverage-summary.mjs
 
+  iot-edge:
+    name: IoT Edge Gateway
+    needs: changes
+    if: needs.changes.outputs.iot-edge == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: iot-edge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: iot-edge/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+  iot-fullstack-integration:
+    name: IoT Full-Stack Integration
+    needs: [changes, payment-service]
+    if: >
+      always() &&
+      needs.changes.outputs.iot-integration == 'true' &&
+      (needs.payment-service.result == 'success' || needs.payment-service.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: smart_parking_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_db?schema=public
+      SHADOW_DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/smart_parking_shadow_db?schema=public
+      PORT: '3000'
+      JWT_SECRET: smart_parking_dev_jwt_secret_32_chars_minimum
+      JWT_EXPIRES_IN: 1d
+      PAYMENT_SERVICE_URL: http://127.0.0.1:8081
+      PAYMENT_SERVICE_JWT_SECRET: dev_payment_service_jwt_secret_32_chars
+      PAYMENT_SERVICE_JWT_ISSUER: smart-parking-backend
+      PAYMENT_SERVICE_JWT_AUDIENCE: smart-parking-payment-service
+      PAYMENT_SERVICE_TOKEN_TTL_SECONDS: 60
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      DB_URL: jdbc:postgresql://127.0.0.1:5432/parking_payment_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+      JWT_SECRET_PAYMENT: smart_parking_dev_jwt_secret_32_chars_minimum
+      IOT_ENABLED: 'true'
+      IOT_SIMULATOR_ENABLED: 'true'
+      IOT_IDENTIFIER_PEPPER: demo_iot_pepper_dev_only_not_production
+      IOT_DEVICE_CREDENTIAL_PEPPER: demo_iot_pepper_dev_only_not_production
+      MQTT_BROKER_URL: mqtt://127.0.0.1:1883
+      MQTT_TOPIC_PREFIX: smart-parking
+      OUTBOX_WORKER_ENABLED: 'true'
+      OUTBOX_WORKER_INTERVAL_MS: 500
+      EDGE_URL: http://127.0.0.1:3100
+      EDGE_LOCAL_API_KEY: dev-edge-key
+      EDGE_DEVICE_CREDENTIAL: demo-device-credential-not-a-real-secret
+      EXTERNAL_DEVICE_ID: edge-gw-demo-001
+      ORGANIZATION_ID: '1'
+      DEMO_RESEED: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            iot-edge/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Start Mosquitto
+        run: docker compose -f docker-compose.iot.yml up -d mosquitto
+
+      - name: Prepare databases
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE smart_parking_shadow_db;"
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d postgres -c "CREATE DATABASE parking_payment_db;"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Apply backend database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+
+      - name: Seed IoT integration data
+        working-directory: backend
+        run: DEMO_RESEED=1 npm run prisma:demo-seed
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Run mocked IoT orchestration tests
+        working-directory: backend
+        run: npm run test:iot-orchestration
+
+      - name: Start backend API
+        working-directory: backend
+        run: |
+          npm run start > ../backend-iot.log 2>&1 &
+          echo $! > ../backend-iot.pid
+
+      - name: Build and start payment service
+        working-directory: payment-service
+        run: |
+          mvn -B -q package -DskipTests
+          JWT_SECRET="${JWT_SECRET_PAYMENT}" \
+          DB_URL="${DB_URL}" \
+          DB_USERNAME="${DB_USERNAME}" \
+          DB_PASSWORD="${DB_PASSWORD}" \
+          java -jar target/*.jar > ../payment-iot.log 2>&1 &
+          echo $! > ../payment-iot.pid
+
+      - name: Build and start IoT edge gateway
+        working-directory: iot-edge
+        run: |
+          npm ci
+          npm run build
+          EDGE_LOCAL_API_KEY="${EDGE_LOCAL_API_KEY}" \
+          EDGE_DEVICE_CREDENTIAL="${EDGE_DEVICE_CREDENTIAL}" \
+          EXTERNAL_DEVICE_ID="${EXTERNAL_DEVICE_ID}" \
+          ORGANIZATION_ID="${ORGANIZATION_ID}" \
+          MQTT_BROKER_URL="${MQTT_BROKER_URL}" \
+          MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX}" \
+          BARRIER_MODE=SIMULATED \
+          SIMULATED_BARRIER_DELAY_MS=50 \
+          npm run start > ../iot-edge.log 2>&1 &
+          echo $! > ../iot-edge.pid
+          HTTP_PORT=3101 \
+          EDGE_DEVICE_CREDENTIAL=demo-exit-device-credential \
+          EXTERNAL_DEVICE_ID=edge-gw-demo-exit \
+          EDGE_LOCAL_API_KEY="${EDGE_LOCAL_API_KEY}" \
+          ORGANIZATION_ID="${ORGANIZATION_ID}" \
+          MQTT_BROKER_URL="${MQTT_BROKER_URL}" \
+          MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX}" \
+          BARRIER_MODE=SIMULATED \
+          SIMULATED_BARRIER_DELAY_MS=50 \
+          npm run start > ../iot-edge-exit.log 2>&1 &
+          echo $! > ../iot-edge-exit.pid
+
+      - name: Wait for backend, payment service, edge, and Mosquitto
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/api/health >/dev/null \
+              && curl -sf http://127.0.0.1:8081/actuator/health >/dev/null \
+              && curl -sf http://127.0.0.1:3100/health >/dev/null \
+              && docker exec smart-parking-mosquitto mosquitto_sub -h 127.0.0.1 -t '$SYS/broker/version' -C 1 -W 2 >/dev/null; then
+              echo "IoT stack ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend log:" && tail -n 80 backend-iot.log || true
+          echo "Payment log:" && tail -n 80 payment-iot.log || true
+          echo "IoT edge log:" && tail -n 80 iot-edge.log || true
+          echo "IoT exit edge log:" && tail -n 80 iot-edge-exit.log || true
+          exit 1
+
+      - name: Run IoT full-stack integration harness
+        working-directory: backend
+        run: npm run test:iot-fullstack
+
+      - name: Print IoT integration diagnostics
+        if: failure()
+        run: |
+          echo "=== backend-iot.log ==="
+          tail -n 150 backend-iot.log || true
+          echo "=== payment-iot.log ==="
+          tail -n 150 payment-iot.log || true
+          echo "=== iot-edge.log ==="
+          tail -n 150 iot-edge.log || true
+          echo "=== iot-edge-exit.log ==="
+          tail -n 150 iot-edge-exit.log || true
+          docker compose -f docker-compose.iot.yml ps || true
+          docker compose -f docker-compose.iot.yml logs --tail=150 mosquitto || true
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -d smart_parking_db -c "\dt" || true
+
   payment-service:
     name: Spring Boot Payment Service
     needs: changes
-    if: needs.changes.outputs.payment == 'true'
+    if: >
+      needs.changes.outputs.payment == 'true' ||
+      needs.changes.outputs.iot-integration == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -318,10 +561,61 @@ jobs:
           npx cypress verify
           npm run e2e:ci
 
+  iot-cypress-smoke:
+    name: IoT Cypress UI Smoke
+    needs: changes
+    if: >
+      github.event_name == 'pull_request' &&
+      needs.changes.outputs.iot-frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Verify Cypress
+        run: npx cypress verify
+
+      - name: Start frontend dev server
+        run: |
+          npm run dev > ../iot-cypress-frontend.log 2>&1 &
+          echo $! > ../iot-cypress-frontend.pid
+
+      - name: Wait for frontend
+        run: npx wait-on http://127.0.0.1:5173
+
+      - name: Run IoT Cypress UI smoke
+        run: >
+          npx cypress run
+          --spec
+          "cypress/e2e/smoke/j16-iot-gate-entry.cy.ts,cypress/e2e/smoke/j17-iot-gate-denial.cy.ts"
+
+      - name: Print IoT Cypress diagnostics
+        if: failure()
+        run: |
+          echo "=== iot-cypress-frontend.log ==="
+          tail -n 150 ../iot-cypress-frontend.log || true
+          echo "=== Cypress screenshots ==="
+          find cypress/screenshots -type f 2>/dev/null | head -20 || true
+          ls -la cypress/screenshots 2>/dev/null || true
+
   ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [changes, backend, frontend, payment-service, e2e-smoke]
+    needs: [changes, backend, frontend, payment-service, iot-edge, iot-fullstack-integration, iot-cypress-smoke, e2e-smoke]
     if: always()
     steps:
       - name: Verify CI results
@@ -329,13 +623,16 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Ref: ${{ github.ref }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Gate mode: path-filtered PR checks (build + affected tests only; no Cypress)"
+            echo "Gate mode: path-filtered PR checks (build + affected tests; IoT Cypress smoke on iot-frontend paths)"
           else
             echo "Gate mode: full integration trunk checks on develop push (coverage + Cypress smoke on relevant paths)"
           fi
           echo "Backend: ${{ needs.backend.result }}"
           echo "Frontend: ${{ needs.frontend.result }}"
           echo "Payment: ${{ needs.payment-service.result }}"
+          echo "IoT Edge: ${{ needs.iot-edge.result }}"
+          echo "IoT Full-Stack Integration: ${{ needs.iot-fullstack-integration.result }}"
+          echo "IoT Cypress Smoke (PR iot-frontend paths): ${{ needs.iot-cypress-smoke.result }}"
           echo "E2E Smoke (advisory on push only): ${{ needs.e2e-smoke.result }}"
 
           failed=0
@@ -349,6 +646,18 @@ jobs:
           fi
           if [ "${{ needs.payment-service.result }}" = "failure" ] || [ "${{ needs.payment-service.result }}" = "cancelled" ]; then
             echo "Payment service job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.iot-edge.result }}" = "failure" ] || [ "${{ needs.iot-edge.result }}" = "cancelled" ]; then
+            echo "IoT edge job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.iot-fullstack-integration.result }}" = "failure" ] || [ "${{ needs.iot-fullstack-integration.result }}" = "cancelled" ]; then
+            echo "IoT full-stack integration job failed or was cancelled"
+            failed=1
+          fi
+          if [ "${{ needs.iot-cypress-smoke.result }}" = "failure" ] || [ "${{ needs.iot-cypress-smoke.result }}" = "cancelled" ]; then
+            echo "IoT Cypress smoke job failed or was cancelled"
             failed=1
           fi
 

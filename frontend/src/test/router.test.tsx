@@ -1,10 +1,27 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { RouterProvider } from 'react-router-dom';
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+
+  return {
+    ...actual,
+    Navigate: ({ to }: { to: string }) => {
+      if (to === '/login') {
+        return <div>Login Page</div>;
+      }
+
+      return null;
+    },
+  };
+});
+
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createMockUser, createTestQueryClient } from '@/test/test-utils';
 import { ThemeModeProvider } from '@/providers/ThemeModeProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { appRoutes } from '@/router';
 
 vi.mock('@/providers/AuthProvider', () => ({
   useAuth: vi.fn(),
@@ -51,6 +68,10 @@ vi.mock('@/pages/parking-lots/ParkingLotDetailsPage', () => ({
   ParkingLotDetailsPage: () => <div>Parking Lot Details Page</div>,
 }));
 
+vi.mock('@/pages/parking-lots/ParkingLotGatesPage', () => ({
+  ParkingLotGatesPage: () => <div>Parking Lot Gates Page</div>,
+}));
+
 vi.mock('@/pages/vehicles/VehiclesPage', () => ({
   VehiclesPage: () => <div>Vehicles Page</div>,
 }));
@@ -71,18 +92,21 @@ vi.mock('@/pages/NotFoundPage', () => ({
   NotFoundPage: () => <div>Not Found Page</div>,
 }));
 
-import { router } from '@/router';
-
-function renderAppRouter() {
+function renderAppRouter(initialPath: string) {
   const queryClient = createTestQueryClient();
+  const memoryRouter = createMemoryRouter(appRoutes, {
+    initialEntries: [initialPath],
+  });
 
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <ThemeModeProvider>
-        <RouterProvider router={router} />
+        <RouterProvider router={memoryRouter} />
       </ThemeModeProvider>
     </QueryClientProvider>,
   );
+
+  return { ...view, memoryRouter };
 }
 
 describe('router', () => {
@@ -99,15 +123,13 @@ describe('router', () => {
   });
 
   it('resolves public login route', async () => {
-    await router.navigate('/login');
-    renderAppRouter();
+    renderAppRouter('/login');
 
     expect(await screen.findByText('Login Page')).toBeInTheDocument();
   });
 
   it('resolves protected bookings route for authenticated admin', async () => {
-    await router.navigate('/bookings');
-    renderAppRouter();
+    renderAppRouter('/bookings');
 
     await waitFor(() => {
       expect(screen.getByText('Bookings Page')).toBeInTheDocument();
@@ -125,8 +147,7 @@ describe('router', () => {
       logout: vi.fn(),
     });
 
-    await router.navigate('/bookings/new?parkingLotId=5');
-    renderAppRouter();
+    renderAppRouter('/bookings/new?parkingLotId=5');
 
     await waitFor(() => {
       expect(screen.getByText('Login Page')).toBeInTheDocument();
@@ -144,8 +165,7 @@ describe('router', () => {
       logout: vi.fn(),
     });
 
-    await router.navigate('/bookings/new?parkingLotId=5');
-    renderAppRouter();
+    renderAppRouter('/bookings/new?parkingLotId=5');
 
     await waitFor(() => {
       expect(screen.getByText('Bookings Page')).toBeInTheDocument();
@@ -153,8 +173,7 @@ describe('router', () => {
   });
 
   it('does not expose new booking entry route to admin roles', async () => {
-    await router.navigate('/bookings/new?parkingLotId=5');
-    renderAppRouter();
+    renderAppRouter('/bookings/new?parkingLotId=5');
 
     await waitFor(() => {
       expect(screen.getByText(/you do not have access to this page/i)).toBeInTheDocument();
@@ -162,8 +181,7 @@ describe('router', () => {
   });
 
   it('resolves admin parking lot details route', async () => {
-    await router.navigate('/parking-lots/1');
-    renderAppRouter();
+    renderAppRouter('/parking-lots/1');
 
     await waitFor(() => {
       expect(screen.getByText('Parking Lot Details Page')).toBeInTheDocument();
@@ -171,8 +189,7 @@ describe('router', () => {
   });
 
   it('resolves admin donut drill-down slots route', async () => {
-    await router.navigate('/parking-lots/1/slots?status=AVAILABLE');
-    renderAppRouter();
+    renderAppRouter('/parking-lots/1/slots?status=AVAILABLE');
 
     await waitFor(() => {
       expect(screen.getByText('Parking Lot Details Page')).toBeInTheDocument();
@@ -180,9 +197,16 @@ describe('router', () => {
     });
   });
 
+  it('resolves parking lot gates route', async () => {
+    renderAppRouter('/parking-lots/1/gates');
+
+    await waitFor(() => {
+      expect(screen.getByText('Parking Lot Gates Page')).toBeInTheDocument();
+    });
+  });
+
   it('resolves unknown routes to not found page', async () => {
-    await router.navigate('/does-not-exist');
-    renderAppRouter();
+    renderAppRouter('/does-not-exist');
 
     expect(await screen.findByText('Not Found Page')).toBeInTheDocument();
   });
