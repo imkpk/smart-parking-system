@@ -32,17 +32,22 @@ export class GateOpenRequestedHandler implements OnModuleInit {
         throw new Error('GATE_OPEN_REQUESTED payload is missing command details');
       }
 
-      await this.gateCommandsService.getPublishableCommand(payload.commandId);
+      await this.gateCommandsService.claimCommandForPublishing(payload.commandId);
 
-      await this.mqttBridgeService.publishOpenCommand({
-        organizationId: payload.organizationId,
-        externalDeviceId: payload.externalDeviceId,
-        command: {
-          commandId: payload.commandId,
-          action: payload.action,
-          expiresAt: payload.expiresAt,
-        },
-      });
+      try {
+        await this.mqttBridgeService.publishOpenCommand({
+          organizationId: payload.organizationId,
+          externalDeviceId: payload.externalDeviceId,
+          command: {
+            commandId: payload.commandId,
+            action: payload.action,
+            expiresAt: payload.expiresAt,
+          },
+        });
+      } catch (error) {
+        await this.gateCommandsService.releasePublishingClaim(payload.commandId);
+        throw error;
+      }
 
       await this.gateCommandsService.markCommandPublished(payload.commandId);
 

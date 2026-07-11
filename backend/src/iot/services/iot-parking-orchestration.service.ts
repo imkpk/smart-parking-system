@@ -70,6 +70,23 @@ export class IotParkingOrchestrationService {
         });
 
         parkingEventId = checkOutResult.parkingEvent.id;
+
+        const feeAmount = Number(checkOutResult.parkingEvent.feeAmount ?? 0);
+        if (feeAmount >= 0.01 && !checkOutResult.paymentInitiated) {
+          return this.recordFailedAttempt({
+            organizationId: input.organizationId,
+            gateId: input.gateId,
+            source: input.source,
+            detectionId: input.detectionId,
+            vehicleId: input.vehicleId,
+            bookingId: input.decision.bookingId,
+            parkingEventId: checkOutResult.parkingEvent.id,
+            actorUserId: input.actorUserId,
+            reasonCode: GateAccessReasonCode.PAYMENT_INITIATION_FAILED,
+            reasonDetail:
+              checkOutResult.paymentError ?? 'Exit payment initiation failed',
+          });
+        }
       }
 
       return this.gateCommandsService.createOpenCommand({
@@ -181,6 +198,7 @@ export class IotParkingOrchestrationService {
     bookingId?: number;
     parkingEventId?: number;
     actorUserId?: number;
+    reasonCode?: string;
     reasonDetail: string;
   }) {
     return this.prisma.gateAccessAttempt.create({
@@ -190,7 +208,7 @@ export class IotParkingOrchestrationService {
         detectionId: input.detectionId,
         source: input.source,
         decision: GateAccessDecision.ERROR,
-        reasonCode: GateAccessReasonCode.ORCHESTRATION_FAILED,
+        reasonCode: input.reasonCode ?? GateAccessReasonCode.ORCHESTRATION_FAILED,
         reasonDetail: input.reasonDetail,
         vehicleId: input.vehicleId,
         bookingId: input.bookingId,

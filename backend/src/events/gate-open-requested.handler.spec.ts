@@ -16,10 +16,11 @@ describe('GateOpenRequestedHandler', () => {
       }),
     };
     const gateCommandsService = {
-      getPublishableCommand: jest.fn(async () => {
-        calls.push('get');
+      claimCommandForPublishing: jest.fn(async () => {
+        calls.push('claim');
         return { commandId: 'cmd-1' };
       }),
+      releasePublishingClaim: jest.fn(),
       markCommandPublished: jest.fn(async () => {
         calls.push('mark');
       }),
@@ -49,8 +50,8 @@ describe('GateOpenRequestedHandler', () => {
       OutboxEventType.GATE_OPEN_REQUESTED,
       expect.any(Function),
     );
-    expect(calls).toEqual(['get', 'mqtt', 'mark']);
-    expect(gateCommandsService.getPublishableCommand).toHaveBeenCalledWith('cmd-1');
+    expect(calls).toEqual(['claim', 'mqtt', 'mark']);
+    expect(gateCommandsService.claimCommandForPublishing).toHaveBeenCalledWith('cmd-1');
     expect(mqttBridgeService.publishOpenCommand).toHaveBeenCalled();
     expect(gateCommandsService.markCommandPublished).toHaveBeenCalledWith('cmd-1');
   });
