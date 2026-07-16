@@ -18,9 +18,17 @@
 
 ## PRs
 
-| PR | Scope | State |
-|----|-------|-------|
-| Primary | Full control plane + execution plane (phases 0–20) | **Awaiting human merge** (repo policy) |
+| PR | Scope | State | CI |
+|----|-------|-------|-----|
+| [#156](https://github.com/imkpk/smart-parking-system/pull/156) | Full control plane + execution plane (phases 0–20) | **OPEN — awaiting human merge** (repo policy) | **Green** |
+
+| Field | Value |
+|-------|-------|
+| Branch | `feat/orchestration-a-manifest-planner` |
+| Commit | `b0fd630d901d9ac25f4c0392ee930e5a269b5583` |
+| Orchestration CI | https://github.com/imkpk/smart-parking-system/actions/runs/29476477371 |
+| Activation summary | https://github.com/imkpk/smart-parking-system/actions/runs/29476477358 |
+| Main CI | https://github.com/imkpk/smart-parking-system/actions/runs/29476477443 |
 
 **PR sequence adaptation:** Suggested PRs A–E were combined into one reviewable PR because planner, schemas, run ledger, permissions, and CI share `scripts/agents` and a single test package. Stacking unmerged PRs would leave dependents red until human merge.
 
