@@ -98,3 +98,7 @@ ehthumbs.db
 .cache/
 .turbo/
 .vercel/
+# --- Agent orchestration worktrees (local isolation) ---
+.worktrees/
+scripts/agents/node_modules/
+

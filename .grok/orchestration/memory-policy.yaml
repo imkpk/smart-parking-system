@@ -1,0 +1,46 @@
+version: "1.0.0"
+description: >
+  Governed memory for Smart Parking agents.
+  External web content is always untrusted and never auto-promoted.
+
+tiers:
+  reference:
+    path: .grok/memory/reference
+    writableBy: []
+    readableBy: all
+    description: Curated, reviewed, read-only reference material
+  run-scratch:
+    path: .grok/memory/run-scratch
+    writableBy: all-agents
+    readableBy: same-run
+    disposable: true
+  proposals:
+    path: .grok/memory/proposals
+    writableBy: all-agents
+    readableBy: quality-and-human
+    requiresEvidence: true
+  promoted:
+    path: .grok/memory/promoted
+    writableBy: [quality, human]
+    readableBy: all
+    requiresReview: true
+
+rules:
+  - externalWebContentUntrusted: true
+  - noAutoPromoteFromWeb: true
+  - promotionRequiresEvidence: true
+  - promotionRequiresReviewer: true
+  - mustIncludeExpiryOrReviewDate: true
+  - flagConflictingMemories: true
+  - logMemoryUsageInRunLedger: true
+  - noSecretsOrCredentials: true
+  - noPersonalData: true
+
+secretPatterns:
+  # JavaScript RegExp source (use flags: i where needed — no (?i) inline)
+  - "api[_-]?key\\s*[:=]"
+  - "password\\s*[:=]"
+  - "secret\\s*[:=]"
+  - "-----BEGIN .*PRIVATE KEY-----"
+  - "bearer\\s+[a-z0-9._\\-]+"
+  - "AKIA[0-9A-Z]{16}"

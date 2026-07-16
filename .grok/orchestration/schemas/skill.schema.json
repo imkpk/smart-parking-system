@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/skill.schema.json",
+  "title": "AgentSkill",
+  "type": "object",
+  "required": [
+    "id",
+    "owner",
+    "version",
+    "riskTier",
+    "allowedTools",
+    "allowedPaths",
+    "networkAccess",
+    "status",
+    "lastReview"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "owner": { "type": "string" },
+    "version": { "type": "string" },
+    "riskTier": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+    "allowedTools": { "type": "array", "items": { "type": "string" } },
+    "allowedPaths": { "type": "array", "items": { "type": "string" } },
+    "networkAccess": { "type": "string", "enum": ["none", "read-only", "restricted"] },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "evaluationCases": { "type": "array", "items": { "type": "string" } },
+    "lastReview": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated", "retired"]
+    },
+    "rollbackVersion": { "type": ["string", "null"] },
+    "description": { "type": "string" },
+    "instructions": { "type": "string" }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@smart-parking/agents",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Provider-neutral multi-agent orchestration control plane for Smart Parking",
+  "scripts": {
+    "validate": "node validate-manifest.mjs",
+    "validate:run": "node validate-run.mjs",
+    "validate:schedules": "node validate-schedules.mjs",
+    "validate:skills": "node validate-skills.mjs",
+    "plan": "node plan-run.mjs --base origin/develop --head HEAD --format text",
+    "plan:json": "node plan-run.mjs --base origin/develop --head HEAD --format json",
+    "create-run": "node create-run.mjs",
+    "dry-run": "node orchestrate-run.mjs --dry-run --base origin/develop --head HEAD",
+    "inspect": "node inspect-run.mjs",
+    "render": "node render-run-status.mjs",
+    "audit-memory": "node audit-memory.mjs",
+    "test": "node --test __tests__/*.test.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

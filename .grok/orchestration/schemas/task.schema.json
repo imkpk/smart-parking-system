@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/task.schema.json",
+  "title": "AgentTask",
+  "type": "object",
+  "required": [
+    "id",
+    "runId",
+    "agent",
+    "type",
+    "status",
+    "dependencies",
+    "attempt",
+    "maximumAttempts",
+    "timeout"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string" },
+    "runId": { "type": "string" },
+    "agent": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": ["plan", "implement", "test", "review", "integrate", "recover"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "PLANNED",
+        "READY",
+        "RUNNING",
+        "VERIFYING",
+        "SUCCEEDED",
+        "SIMULATED",
+        "FAILED",
+        "BLOCKED",
+        "ESCALATED",
+        "CANCELLED"
+      ]
+    },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "allowedPaths": { "type": "array", "items": { "type": "string" } },
+    "deniedPaths": { "type": "array", "items": { "type": "string" } },
+    "attempt": { "type": "integer", "minimum": 0 },
+    "maximumAttempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "timeout": { "type": "integer", "minimum": 1 },
+    "acceptanceCriteria": { "type": "array", "items": { "type": "string" } },
+    "verificationCommands": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "startedAt": { "type": ["string", "null"] },
+    "completedAt": { "type": ["string", "null"] },
+    "error": { "type": ["string", "null"] },
+    "escalation": { "type": ["object", "null"] },
+    "worktreePath": { "type": ["string", "null"] },
+    "branch": { "type": ["string", "null"] }
+  }
+}

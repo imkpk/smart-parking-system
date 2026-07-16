@@ -13,9 +13,12 @@ The `.grok/` folder name is **historical project convention** — not tied to Gr
 |-------|------|-----|
 | 1 | [`MASTER_PROMPT.md`](../../MASTER_PROMPT.md) | Live status, rules, changelog — **overrides tool defaults** |
 | 2 | [`.grok/AGENTS.md`](../../.grok/AGENTS.md) | Coding standards (canonical — not root `Agents.md`) |
-| 3 | [`docs/agents/ROLES.md`](./ROLES.md) | Multi-agent registry ①–⑫, phases 0–15 |
-| 4 | [`docs/agents/QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) | Role ⑤ gate §1–13 |
-| 5 | Task prompt | [`.grok/prompts/<slug>.md`](../../.grok/prompts/) if one exists for your task |
+| 3 | [`.grok/orchestration/manifest.yaml`](../../.grok/orchestration/manifest.yaml) | **Canonical** agent machine registry |
+| 4 | [`docs/agents/ROLES.md`](./ROLES.md) + [`ORCHESTRATION.md`](./ORCHESTRATION.md) | Human explanation of roles + platform |
+| 5 | [`docs/agents/QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) | Role ⑤ gate §1–13 |
+| 6 | Task prompt | [`.grok/prompts/<slug>.md`](../../.grok/prompts/) if one exists for your task |
+
+**Plan a run:** `node scripts/agents/plan-run.mjs --base origin/develop --head HEAD --format text`
 
 ---
 

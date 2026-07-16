@@ -2,7 +2,7 @@
 
 > **Purpose:** Mandatory gate between worker implementation and merge.  
 > **Owner:** Role ⑤ — Quality, Architecture & Release Agent  
-> **Companion:** [`ROLES.md`](./ROLES.md) (roles + workflow) · [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (coding standards) · [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.md)
+> **Companion:** [`ROLES.md`](./ROLES.md) (roles + workflow) · [`ORCHESTRATION.md`](./ORCHESTRATION.md) (control plane) · [`.grok/orchestration/manifest.yaml`](../../.grok/orchestration/manifest.yaml) (canonical agents) · [`.grok/AGENTS.md`](../../.grok/AGENTS.md) (coding standards) · [`docs/project-plan/08-design-system.md`](../project-plan/08-design-system.md)
 
 > This checklist is run by Role ⑤ on **EVERY** worker PR before merge.  
 > Mark **N/A** only if zero files in that domain were touched.  
@@ -376,8 +376,19 @@ Do not implement features — only test/CI fixes if CI is broken.
 
 ## When workers should self-check (before requesting review)
 
-Writers (②③④⑥⑦⑧⑩⑫) run service build; **⑨** runs tests. Workers skim §1–12 for their folder **before** requesting ⑤. Role ⑤ runs the full §1–13 gate.
+Writers (②③④⑥⑦⑧⑩⑫) run service build and may add tightly coupled unit/contract tests; **⑨** independently audits coverage and broader tests. Workers skim §1–12 for their folder **before** requesting ⑤. Role ⑤ runs the full §1–13 gate.
+
+### Orchestration-platform PRs (extra evidence)
+
+When `.grok/orchestration/**` or `scripts/agents/**` change, Role ⑤ also requires:
+
+- [ ] `node scripts/agents/validate-manifest.mjs`
+- [ ] `cd scripts/agents && npm test` (routing precision/recall, state machine, permissions, security)
+- [ ] Dry-run: `node scripts/agents/orchestrate-run.mjs --dry-run --provider mock --files <sample>`
+- [ ] Permission denial demo (quality cannot write feature paths; blocked commands)
+- [ ] No claim of live external provider execution without evidence
+- [ ] Verdict: **APPROVE** | **APPROVE_WITH_NOTES** | **BLOCK**
 
 ---
 
-*Last updated: 2026-06-26 · Maintainer: Pratibha Kumar K · §1–13 universal checklist*
+*Last updated: 2026-07-16 · Maintainer: Pratibha Kumar K · §1–13 universal checklist + orchestration evidence*
