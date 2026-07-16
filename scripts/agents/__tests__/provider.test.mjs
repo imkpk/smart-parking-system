@@ -17,12 +17,13 @@ const inv = {
 };
 
 describe('providers', () => {
-  it('mock succeeds', async () => {
+  it('mock default is dry-run simulated success (not realExecution)', async () => {
     const p = await getProvider('mock');
     const r = await p.invoke(inv);
     assert.equal(r.status, 'succeeded');
     assert.equal(r.provider, 'mock');
     assert.equal(r.dryRun, true);
+    assert.equal(r.realExecution, false);
   });
 
   it('mock can force fail', async () => {

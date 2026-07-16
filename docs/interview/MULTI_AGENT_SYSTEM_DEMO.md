@@ -29,15 +29,18 @@ node scripts/agents/plan-run.mjs \
   --format json
 ```
 
-## 4. Dry-run orchestration
+## 4. Dry-run orchestration (simulation — not production success)
 
 ```bash
 node scripts/agents/orchestrate-run.mjs \
   --dry-run \
-  --provider mock \
+  --provider local-prompt \
   --files backend/src/bookings/bookings.service.ts \
   --slug demo-dry-run
 ```
+
+Expect JSON with `"status": "SIMULATED"` (or tasks in `SIMULATED`), **not** a real Quality approval.
+Confirm `status.md` says simulation and that events include `task.simulated` / `run.simulated` without `quality.approved`.
 
 Note the printed `runId`. Inspect:
 
@@ -120,3 +123,9 @@ cd scripts/agents && npm test
 ```
 
 **Important:** These demos use **mock** / **local-prompt** only. No external model is invoked.
+
+### Implemented vs simulated (say this in an interview)
+
+| Implemented | Simulated | Not implemented |
+|-------------|-----------|-----------------|
+| Planner, ledger, permissions, worktrees, provider interface | mock/local-prompt execution, dry-run graph | Live Codex/Claude/Grok, autonomous production merge, autonomous Quality APPROVE |

@@ -54,15 +54,16 @@ describe('typed run ledger', () => {
     updateTaskState(RUN_ID, ready.id, 'FAILED', { error: 'boom' });
     updateTaskState(RUN_ID, ready.id, 'READY');
     updateTaskState(RUN_ID, ready.id, 'RUNNING');
-    updateTaskState(RUN_ID, ready.id, 'SUCCEEDED', { evidence: ['ok'] });
+    updateTaskState(RUN_ID, ready.id, 'SIMULATED', { evidence: ['ok'] });
     const t = loadRun(RUN_ID).tasks.find((x) => x.id === ready.id);
-    assert.equal(t.status, 'SUCCEEDED');
+    assert.equal(t.status, 'SIMULATED');
     assert.ok(t.attempt >= 2);
   });
 
   it('rejects invalid transition', () => {
     const { tasks } = loadRun(RUN_ID);
-    const done = tasks.find((t) => t.status === 'SUCCEEDED');
+    const done = tasks.find((t) => t.status === 'SIMULATED' || t.status === 'SUCCEEDED');
+    assert.ok(done);
     assert.throws(() => updateTaskState(RUN_ID, done.id, 'RUNNING'));
   });
 

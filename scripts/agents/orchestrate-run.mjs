@@ -2,27 +2,22 @@
 /**
  * Dry-run / plan-only / resume orchestrator.
  *
- * node scripts/agents/orchestrate-run.mjs --dry-run --base origin/develop --head HEAD
- * node scripts/agents/orchestrate-run.mjs --plan-only --files a.ts
- * node scripts/agents/orchestrate-run.mjs --resume <run-id>
- * node scripts/agents/orchestrate-run.mjs --resume <run-id> --task <task-id>
+ * Simulated providers (mock, local-prompt) produce SIMULATED task/run state —
+ * never real SUCCEEDED / quality.approved.
  */
-import fs from 'node:fs';
-import path from 'node:path';
 import { planRun, formatPlanText } from './lib/planner.mjs';
-import { loadAndValidateManifest, getAgent } from './lib/manifest.mjs';
+import { loadAndValidateManifest } from './lib/manifest.mjs';
 import {
   createRunFromPlan,
   loadRun,
   updateTaskState,
   listTasks,
   readTask,
-  writeTask,
   renderStatusMarkdown,
 } from './lib/run-store.mjs';
 import { appendEvent } from './lib/events.mjs';
 import { getProvider } from './providers/provider.mjs';
-import { assertWriteAllowed, assertCommandAllowed } from './lib/permissions.mjs';
+import { executeTask, runReadyLoop } from './lib/orchestrator-core.mjs';
 
 function parseArgs(argv) {
   const out = {
@@ -49,7 +44,6 @@ function parseArgs(argv) {
     else if (a === '--files') out.files = argv[++i].split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--help') out.help = true;
   }
-  // default to dry-run safety if neither resume nor plan-only
   if (!out.resume && !out.planOnly && !out.dryRun) out.dryRun = true;
   return out;
 }
@@ -64,7 +58,6 @@ if (opts.help) {
 }
 
 async function main() {
-  // 1. Validate configuration
   const manifestResult = loadAndValidateManifest();
   if (!manifestResult.valid) {
     throw new Error(`Invalid manifest:\n${manifestResult.errors.join('\n')}`);
@@ -82,116 +75,22 @@ async function main() {
     return;
   }
 
-  // 2-4. Inspect diff, generate plan, create run state
   const plan = planRun({ base: opts.base, head: opts.head, files: opts.files || undefined });
-  const { run, tasks, runDir } = createRunFromPlan(plan, {
+  const { run, runDir } = createRunFromPlan(plan, {
     slug: opts.slug,
     dryRun: opts.dryRun,
     provider: opts.provider,
+    simulatedGraph: opts.dryRun,
   });
 
-  // 5-8. Build deps already in plan; enforce permissions; emit events; produce prompts
   const provider = await getProvider(opts.provider);
-  const prompts = [];
-
-  for (const t of tasks) {
-    // permission check on allowed paths
-    for (const p of t.allowedPaths || []) {
-      // paths are globs — check a sample concrete path is not secret-only
-      if (p.includes('.env') && !p.includes('.env.example')) {
-        const check = assertWriteAllowed(manifest, t.agent, p.replace('**', 'x'));
-        if (!check.ok && t.writeMode === 'write') {
-          updateTaskState(run.id, t.id, 'BLOCKED', { error: check.error });
-        }
-      }
-    }
-
-    const agent = getAgent(manifest, t.agent);
-    const inv = {
-      taskGoal: `${t.type} task for ${t.agent}`,
-      allowedPaths: t.allowedPaths || [],
-      deniedPaths: t.deniedPaths || [],
-      acceptanceCriteria: t.acceptanceCriteria || agent?.qualityRequirements?.evidence || [],
-      verificationCommands: agent?.qualityRequirements?.verification || [],
-      relevantFiles: t.changedFilesInScope || plan.changedFiles || [],
-      skills: agent?.skills || [],
-      referenceMemory: [],
-      runId: run.id,
-      taskId: t.id,
-      agent: t.agent,
-      outputSchema: { summary: 'string', evidence: ['string'] },
-    };
-
-    // 9. Dry-run: invoke provider but mock/local-prompt never calls external models
-    if (t.status === 'READY' || t.status === 'PLANNED') {
-      if (t.status === 'PLANNED') {
-        // leave for deps
-        continue;
-      }
-      updateTaskState(run.id, t.id, 'RUNNING');
-      const result = await provider.invoke(inv);
-      const logDir = path.join(runDir, 'logs');
-      fs.mkdirSync(logDir, { recursive: true });
-      if (result.prompt) {
-        const promptFile = path.join(logDir, `${t.id}.prompt.md`);
-        fs.writeFileSync(promptFile, result.prompt, 'utf8');
-        prompts.push(promptFile);
-      }
-      fs.writeFileSync(path.join(logDir, `${t.id}.result.json`), JSON.stringify(result, null, 2), 'utf8');
-
-      if (result.status === 'blocked') {
-        updateTaskState(run.id, t.id, 'BLOCKED', { error: result.error });
-      } else if (result.status === 'failed') {
-        updateTaskState(run.id, t.id, 'FAILED', { error: result.error });
-      } else {
-        // dry-run succeeds tasks as simulated
-        updateTaskState(run.id, t.id, 'SUCCEEDED', {
-          evidence: [`provider:${result.provider}:${result.status}`],
-        });
-      }
-    }
-  }
-
-  // Second pass: promote and complete remaining READY after deps
-  let guard = 0;
-  while (guard++ < 50) {
-    const current = listTasks(runDir);
-    const ready = current.filter((t) => t.status === 'READY');
-    if (!ready.length) break;
-    for (const t of ready) {
-      const agent = getAgent(manifest, t.agent);
-      updateTaskState(run.id, t.id, 'RUNNING');
-      const result = await provider.invoke({
-        taskGoal: `${t.type} task for ${t.agent}`,
-        allowedPaths: t.allowedPaths || [],
-        deniedPaths: t.deniedPaths || [],
-        acceptanceCriteria: [],
-        verificationCommands: agent?.qualityRequirements?.verification || [],
-        relevantFiles: plan.changedFiles || [],
-        skills: agent?.skills || [],
-        referenceMemory: [],
-        runId: run.id,
-        taskId: t.id,
-        agent: t.agent,
-      });
-      const logDir = path.join(runDir, 'logs');
-      fs.mkdirSync(logDir, { recursive: true });
-      if (result.prompt) {
-        fs.writeFileSync(path.join(logDir, `${t.id}.prompt.md`), result.prompt, 'utf8');
-      }
-      fs.writeFileSync(path.join(logDir, `${t.id}.result.json`), JSON.stringify(result, null, 2), 'utf8');
-      if (result.status === 'blocked') updateTaskState(run.id, t.id, 'BLOCKED', { error: result.error });
-      else if (result.status === 'failed') updateTaskState(run.id, t.id, 'FAILED', { error: result.error });
-      else updateTaskState(run.id, t.id, 'SUCCEEDED', { evidence: [`provider:${result.provider}`] });
-    }
-  }
-
-  // quality events
-  const finalTasks = listTasks(runDir);
-  const q = finalTasks.find((t) => t.agent === 'quality');
-  if (q?.status === 'SUCCEEDED') {
-    appendEvent(runDir, { type: 'quality.approved', runId: run.id, taskId: q.id, agent: 'quality' });
-  }
+  await runReadyLoop({
+    runId: run.id,
+    runDir,
+    manifest,
+    provider,
+    dryRun: opts.dryRun,
+  });
 
   renderStatusMarkdown(runDir);
   const final = loadRun(run.id);
@@ -201,10 +100,13 @@ async function main() {
         mode: opts.dryRun ? 'dry-run' : 'execute',
         runId: run.id,
         status: final.run.status,
+        simulated: final.run.status === 'SIMULATED' || final.run.dryRun,
+        qualityVerdict: final.run.qualityVerdict,
         tasks: final.tasks.map((t) => ({ id: t.id, status: t.status })),
-        note: opts.dryRun
-          ? 'Stopped safely before external model invocation (local-prompt/mock only).'
-          : 'Execution mode — still uses configured provider adapter.',
+        note:
+          final.run.status === 'SIMULATED' || opts.dryRun
+            ? 'Simulation only — no external model invocation; not production success; quality.approved not emitted.'
+            : 'Execution mode — still uses configured provider adapter.',
       },
       null,
       2,
@@ -213,7 +115,7 @@ async function main() {
 }
 
 async function resumeRun(runId, opts, manifest) {
-  const { runDir, run, tasks, historical } = loadRun(runId);
+  const { runDir, run, historical } = loadRun(runId);
   if (historical) throw new Error(`Cannot resume historical Markdown-only run: ${runId}`);
   if (!run) throw new Error(`Missing run.json for ${runId}`);
 
@@ -225,54 +127,50 @@ async function resumeRun(runId, opts, manifest) {
     : listTasks(runDir).filter((t) => ['READY', 'FAILED', 'BLOCKED'].includes(t.status));
 
   for (const t of targets) {
-    // idempotent: skip SUCCEEDED
-    if (t.status === 'SUCCEEDED') continue;
+    if (t.status === 'SUCCEEDED' || t.status === 'SIMULATED') continue;
+
     if (t.status === 'FAILED') {
-      // retry if attempts remain
-      updateTaskState(runId, t.id, 'READY');
-    }
-    if (t.status === 'BLOCKED' && !opts.task) continue;
-
-    const current = readTask(runDir, t.id);
-    if (current.status !== 'READY' && current.status !== 'RUNNING') {
-      if (current.status === 'PLANNED' || current.status === 'CREATED') continue;
-    }
-    if (current.status === 'READY') updateTaskState(runId, t.id, 'RUNNING');
-
-    const agent = getAgent(manifest, current.agent);
-    // verify commands permission
-    for (const cmd of agent?.qualityRequirements?.verification || []) {
-      const check = assertCommandAllowed(current.agent, cmd, { toolProfile: agent.toolProfile });
-      if (!check.ok) {
-        updateTaskState(runId, t.id, 'BLOCKED', { error: check.error });
+      try {
+        updateTaskState(runId, t.id, 'READY');
+      } catch (err) {
+        // retry budget exhausted
         continue;
       }
     }
 
-    const result = await provider.invoke({
-      taskGoal: `resume ${current.type} for ${current.agent}`,
-      allowedPaths: current.allowedPaths || [],
-      deniedPaths: current.deniedPaths || [],
-      acceptanceCriteria: current.acceptanceCriteria || [],
-      verificationCommands: agent?.qualityRequirements?.verification || [],
-      relevantFiles: run.changedFiles || [],
-      skills: agent?.skills || [],
-      referenceMemory: [],
+    // Explicit re-resume of BLOCKED only when --task is set
+    if (t.status === 'BLOCKED') {
+      if (!opts.task) continue;
+      try {
+        updateTaskState(runId, t.id, 'READY');
+      } catch {
+        continue;
+      }
+    }
+
+    const current = readTask(runDir, t.id);
+    if (current.status !== 'READY') continue;
+
+    // executeTask validates permissions and WILL NOT invoke provider on denial
+    await executeTask({
       runId,
+      runDir,
       taskId: current.id,
-      agent: current.agent,
+      manifest,
+      provider,
+      relevantFiles: run.changedFiles || [],
+      dryRun: run.dryRun !== false,
     });
-    const logDir = path.join(runDir, 'logs');
-    fs.mkdirSync(logDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(logDir, `${current.id}.resume-${Date.now()}.json`),
-      JSON.stringify(result, null, 2),
-      'utf8',
-    );
-    if (result.status === 'blocked') updateTaskState(runId, t.id, 'BLOCKED', { error: result.error });
-    else if (result.status === 'failed') updateTaskState(runId, t.id, 'FAILED', { error: result.error });
-    else updateTaskState(runId, t.id, 'SUCCEEDED', { evidence: [`resume:${result.provider}`] });
   }
+
+  // continue dependency chain in simulated graph if needed
+  await runReadyLoop({
+    runId,
+    runDir,
+    manifest,
+    provider,
+    dryRun: run.dryRun !== false,
+  });
 
   renderStatusMarkdown(runDir);
   const final = loadRun(runId);
@@ -282,6 +180,8 @@ async function resumeRun(runId, opts, manifest) {
         mode: 'resume',
         runId,
         status: final.run.status,
+        simulated: final.run.status === 'SIMULATED' || final.run.dryRun,
+        qualityVerdict: final.run.qualityVerdict,
         tasks: final.tasks.map((t) => ({ id: t.id, status: t.status, attempt: t.attempt })),
       },
       null,

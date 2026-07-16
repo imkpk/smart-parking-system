@@ -51,6 +51,7 @@ export default {
         summary: 'local-prompt generated (no external invocation)',
         prompt,
         dryRun: true,
+        realExecution: false,
         artifacts: { promptPathHint: `logs/${inv.taskId}.prompt.md` },
       },
       'local-prompt',

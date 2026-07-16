@@ -3,7 +3,7 @@
 **Date:** 2026-07-16  
 **Branch:** `feat/orchestration-a-manifest-planner`  
 **Base:** `develop`  
-**Role ⑤ verdict:** **APPROVE** (orchestration-only change set; tests green locally)
+**Role ⑤ verdict:** **APPROVE** (after execution-safety corrective commit + fresh CI)
 
 ## Status legend
 
@@ -16,19 +16,36 @@
 | **blocked** | Awaiting human merge / live credentials |
 | **future work** | Intentionally deferred |
 
+## Clarity: implemented vs simulated vs not implemented
+
+| Category | Items |
+|----------|--------|
+| **Implemented** | Deterministic planner, typed ledger, permission policy end-to-end, worktree helpers (production code tested), provider interface, SIMULATED state machine |
+| **Simulated** | mock/local-prompt agent execution, prompt generation, dry-run orchestration |
+| **Not implemented** | Live Codex / Claude / Grok invocation, autonomous production code integration, autonomous Quality approval |
+
+Simulated runs emit `task.simulated` / `run.simulated` — **never** real `task.completed` or `quality.approved`.
+
+## Execution-safety corrective commit (review blockers)
+
+Fixed four blockers on PR #156:
+
+1. **Target branch integration** — `integrateTaskResult` refuses when current branch ≠ `targetBranch`; no silent checkout.
+2. **Production worktree tests** — tests import and exercise `lib/worktree.mjs` against temp repos.
+3. **E2E permissions** — `validateTaskInvocation` gates every write task; denial never calls `provider.invoke`.
+4. **Simulation ≠ success** — `SIMULATED` terminal state; Quality approval only with realExecution + verdict + evidence + non-dry-run.
+
 ## PRs
 
 | PR | Scope | State | CI |
 |----|-------|-------|-----|
-| [#156](https://github.com/imkpk/smart-parking-system/pull/156) | Full control plane + execution plane (phases 0–20) | **OPEN — awaiting human merge** (repo policy) | **Green** |
+| [#156](https://github.com/imkpk/smart-parking-system/pull/156) | Full control plane + execution safety fixes | **OPEN — awaiting human merge** | See fresh head CI below |
 
 | Field | Value |
 |-------|-------|
 | Branch | `feat/orchestration-a-manifest-planner` |
-| Commit | `b0fd630d901d9ac25f4c0392ee930e5a269b5583` |
-| Orchestration CI | https://github.com/imkpk/smart-parking-system/actions/runs/29476477371 |
-| Activation summary | https://github.com/imkpk/smart-parking-system/actions/runs/29476477358 |
-| Main CI | https://github.com/imkpk/smart-parking-system/actions/runs/29476477443 |
+| Prior head (pre-fix) | `688d6b55f900a721289170ea56ef4dccc75e7197` |
+| Corrective head | _(updated on push)_ |
 
 **PR sequence adaptation:** Suggested PRs A–E were combined into one reviewable PR because planner, schemas, run ledger, permissions, and CI share `scripts/agents` and a single test package. Stacking unmerged PRs would leave dependents red until human merge.
 
@@ -58,9 +75,11 @@ Control plane (`.grok/orchestration/`) holds the canonical manifest, schemas, pe
 
 ```text
 cd scripts/agents && npm test
-→ 57/57 pass
+→ 88/88 pass (after safety fix; was 57 before corrective tests)
 Routing: precision ≈ 0.989, recall = 1.0, F1 ≈ 0.995 (20 fixtures)
 ```
+
+New regression coverage: production worktree helper, orchestrator permission gate, simulation/quality approval semantics.
 
 Also: `validate-manifest`, `validate-skills`, `validate-schedules`.
 

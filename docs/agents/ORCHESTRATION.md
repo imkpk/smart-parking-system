@@ -91,24 +91,39 @@ Writing tasks may use `.worktrees/<run>/<task>` on branch `agent/<run>/<task>`.
 - Parallel writes ⇒ separate worktrees
 - Orchestrator owns integration (`integrate-task-result.mjs`)
 - Cleanup refuses dirty trees unless `--force --allow-dirty`
+- **Target branch enforcement:** when `--target <branch>` is supplied, the current checkout **must already equal** that branch. Integration refuses otherwise (no silent checkout). Successful results report the actual checked-out branch.
+- Production helpers are unit-tested against temporary Git repositories (not inline clones).
 
 ## 7. Permissions and tool profiles
 
 - Path scopes: manifest `writePaths` / `deniedPaths`
 - Global blocks: `permissions.yaml` (force-push, migrate reset, DROP DATABASE, …)
 - Profiles: `tool-profiles.yaml` (e.g. `quality-review` cannot implement features)
+- **E2E gate:** `validateTaskInvocation()` runs before every `provider.invoke`. Any path/command denial marks the task `BLOCKED` and **skips** the provider (including resume).
 
 ## 8. Provider adapters
 
 ```text
 scripts/agents/providers/
   provider.mjs      # interface + normalizeResult
-  mock.mjs          # tests
-  local-prompt.mjs  # prompt only, no network
-  codex.mjs|claude.mjs|grok.mjs  # block without credentials
+  mock.mjs          # tests (default dry-run / not realExecution)
+  local-prompt.mjs  # prompt only, no network → status simulated
+  codex.mjs|claude.mjs|grok.mjs  # stubs that block without credentials
 ```
 
-**Never claim an external model ran when only mock/local-prompt was used.**
+**Simulation semantics**
+
+| Provider result | Task state | Notes |
+|-----------------|------------|-------|
+| `simulated` or dry-run mock | `SIMULATED` | Not production completion |
+| `succeeded` + `realExecution: true` | `SUCCEEDED` | Real path only |
+| `blocked` / `failed` | `BLOCKED` / `FAILED` | As usual |
+
+- Dry-run / local-prompt / default mock **cannot** emit `quality.approved`.
+- Approval requires non-dry-run, real success, explicit `qualityVerdict`, and evidence.
+
+**Never claim an external model ran when only mock/local-prompt was used.**  
+Provider stubs are **not** operational live integrations.
 
 ## 9. Memory governance
 

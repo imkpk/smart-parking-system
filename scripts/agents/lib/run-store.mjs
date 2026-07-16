@@ -3,9 +3,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { AGENT_RUNS_DIR, PLANNER_VERSION, toPosix } from './paths.mjs';
+import { AGENT_RUNS_DIR, PLANNER_VERSION } from './paths.mjs';
 import { appendEvent, readEvents, summarizeEvents } from './events.mjs';
-import { assertTransition } from './state-machine.mjs';
+import { assertTransition, dependencySatisfied } from './state-machine.mjs';
 import { validateWithSchemaFile } from './schema-validate.mjs';
 import { formatPlanText } from './planner.mjs';
 
@@ -38,6 +38,7 @@ export function createRunFromPlan(plan, options = {}) {
   ensureRunLayout(runDir);
 
   const now = new Date().toISOString();
+  const dryRun = options.dryRun !== false;
   const tasks = (plan.tasks || []).map((t) => ({
     id: t.id,
     runId,
@@ -60,9 +61,10 @@ export function createRunFromPlan(plan, options = {}) {
     worktreePath: null,
     branch: null,
     writeMode: t.writeMode,
+    changedFilesInScope: t.changedFilesInScope || [],
+    simulated: false,
   }));
 
-  // Mark tasks with no deps as READY
   for (const t of tasks) {
     if (!t.dependencies.length) t.status = 'READY';
   }
@@ -80,7 +82,8 @@ export function createRunFromPlan(plan, options = {}) {
     activatedAgents: (plan.activatedAgents || []).map((a) => a.id || a),
     taskIds: tasks.map((t) => t.id),
     provider: options.provider || 'local-prompt',
-    dryRun: options.dryRun !== false,
+    dryRun,
+    simulatedGraph: dryRun || options.simulatedGraph === true,
     qualityVerdict: null,
     metrics: {},
     error: null,
@@ -108,7 +111,7 @@ export function createRunFromPlan(plan, options = {}) {
   appendEvent(runDir, {
     type: 'run.created',
     runId,
-    payload: { dryRun: run.dryRun, provider: run.provider },
+    payload: { dryRun: run.dryRun, provider: run.provider, simulatedGraph: run.simulatedGraph },
   });
   appendEvent(runDir, {
     type: 'plan.generated',
@@ -150,11 +153,12 @@ export function listTasks(runDir) {
 
 export function readRun(runDir) {
   const file = path.join(runDir, 'run.json');
-  if (!fs.existsSync(file)) {
-    // historical markdown-only run
-    return null;
-  }
+  if (!fs.existsSync(file)) return null;
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+export function writeRun(runDir, run) {
+  fs.writeFileSync(path.join(runDir, 'run.json'), JSON.stringify(run, null, 2), 'utf8');
 }
 
 export function loadRun(runId) {
@@ -187,11 +191,38 @@ export function updateTaskState(runId, taskId, nextStatus, patch = {}) {
   if (nextStatus === 'RUNNING') {
     task.attempt = (task.attempt || 0) + 1;
     task.startedAt = task.startedAt || new Date().toISOString();
-    appendEvent(runDir, { type: 'task.started', runId, taskId, agent: task.agent, payload: { attempt: task.attempt } });
+    appendEvent(runDir, {
+      type: 'task.started',
+      runId,
+      taskId,
+      agent: task.agent,
+      payload: { attempt: task.attempt },
+    });
   }
   if (nextStatus === 'SUCCEEDED') {
     task.completedAt = new Date().toISOString();
+    task.simulated = false;
     appendEvent(runDir, { type: 'task.completed', runId, taskId, agent: task.agent });
+  }
+  if (nextStatus === 'SIMULATED') {
+    task.completedAt = new Date().toISOString();
+    task.simulated = true;
+    appendEvent(runDir, {
+      type: 'task.simulated',
+      runId,
+      taskId,
+      agent: task.agent,
+      payload: { provider: patch.provider, note: 'not production completion' },
+    });
+    if (patch.prompt) {
+      appendEvent(runDir, {
+        type: 'prompt.generated',
+        runId,
+        taskId,
+        agent: task.agent,
+        payload: { bytes: String(patch.prompt).length },
+      });
+    }
   }
   if (nextStatus === 'FAILED') {
     task.error = patch.error || task.error || 'failed';
@@ -214,12 +245,16 @@ export function updateTaskState(runId, taskId, nextStatus, patch = {}) {
     });
   }
   if (nextStatus === 'BLOCKED') {
+    task.error = patch.error || patch.reason || task.error;
     appendEvent(runDir, {
       type: 'task.blocked',
       runId,
       taskId,
       agent: task.agent,
-      payload: { reason: patch.error || patch.reason },
+      payload: {
+        reason: patch.error || patch.reason,
+        denials: patch.denials || null,
+      },
     });
   }
   if (nextStatus === 'ESCALATED') {
@@ -242,8 +277,22 @@ export function updateTaskState(runId, taskId, nextStatus, patch = {}) {
       payload: { evidence: patch.evidence },
     });
   }
-  if (patch.error && nextStatus !== 'FAILED') task.error = patch.error;
-  Object.assign(task, Object.fromEntries(Object.entries(patch).filter(([k]) => !['evidence', 'error', 'reason', 'escalation'].includes(k) || k === 'worktreePath' || k === 'branch')));
+  if (patch.error && nextStatus !== 'FAILED' && nextStatus !== 'BLOCKED') {
+    task.error = patch.error;
+  }
+  if (patch.qualityVerdict) task.qualityVerdict = patch.qualityVerdict;
+  if (patch.denials) task.denials = patch.denials;
+
+  const assignable = Object.fromEntries(
+    Object.entries(patch).filter(
+      ([k]) =>
+        !['evidence', 'error', 'reason', 'escalation', 'denials', 'prompt', 'provider'].includes(k) ||
+        k === 'worktreePath' ||
+        k === 'branch' ||
+        k === 'qualityVerdict',
+    ),
+  );
+  Object.assign(task, assignable);
 
   writeTask(runDir, task);
   promoteReadyTasks(runDir, runId);
@@ -253,11 +302,15 @@ export function updateTaskState(runId, taskId, nextStatus, patch = {}) {
 }
 
 function promoteReadyTasks(runDir, runId) {
+  const run = readRun(runDir);
+  const simulatedGraph = Boolean(run?.simulatedGraph || run?.dryRun);
   const tasks = listTasks(runDir);
   const byId = new Map(tasks.map((t) => [t.id, t]));
   for (const t of tasks) {
     if (!['CREATED', 'PLANNED'].includes(t.status)) continue;
-    const depsMet = (t.dependencies || []).every((d) => byId.get(d)?.status === 'SUCCEEDED');
+    const depsMet = (t.dependencies || []).every((d) =>
+      dependencySatisfied(byId.get(d)?.status, { simulatedGraph }),
+    );
     if (depsMet) {
       t.status = 'READY';
       writeTask(runDir, t);
@@ -271,14 +324,52 @@ function updateRunRollup(runDir, runId) {
   if (!run) return;
   const tasks = listTasks(runDir);
   run.updatedAt = new Date().toISOString();
-  if (tasks.every((t) => t.status === 'SUCCEEDED')) run.status = 'SUCCEEDED';
-  else if (tasks.some((t) => t.status === 'ESCALATED')) run.status = 'ESCALATED';
-  else if (tasks.some((t) => t.status === 'BLOCKED')) run.status = 'BLOCKED';
-  else if (tasks.some((t) => t.status === 'FAILED')) run.status = 'FAILED';
-  else if (tasks.some((t) => ['RUNNING', 'VERIFYING'].includes(t.status))) run.status = 'RUNNING';
-  const q = tasks.find((t) => t.agent === 'quality' && t.status === 'SUCCEEDED');
-  if (q?.qualityVerdict) run.qualityVerdict = q.qualityVerdict;
-  fs.writeFileSync(path.join(runDir, 'run.json'), JSON.stringify(run, null, 2), 'utf8');
+
+  const allTerminal = tasks.every((t) =>
+    ['SUCCEEDED', 'SIMULATED', 'FAILED', 'BLOCKED', 'ESCALATED', 'CANCELLED'].includes(t.status),
+  );
+  const anySimulated = tasks.some((t) => t.status === 'SIMULATED');
+  const anySucceeded = tasks.some((t) => t.status === 'SUCCEEDED');
+  const anyFailed = tasks.some((t) => t.status === 'FAILED');
+  const anyBlocked = tasks.some((t) => t.status === 'BLOCKED');
+  const anyEscalated = tasks.some((t) => t.status === 'ESCALATED');
+  const anyRunning = tasks.some((t) => ['RUNNING', 'VERIFYING'].includes(t.status));
+
+  if (anyRunning) run.status = 'RUNNING';
+  else if (anyEscalated) run.status = 'ESCALATED';
+  else if (anyBlocked) run.status = 'BLOCKED';
+  else if (anyFailed) run.status = 'FAILED';
+  else if (allTerminal && anySimulated && !anySucceeded) {
+    run.status = 'SIMULATED';
+    appendEventOnce(runDir, {
+      type: 'run.simulated',
+      runId,
+      payload: { note: 'run completed in simulation only — not production' },
+    });
+  } else if (allTerminal && anySucceeded && anySimulated) {
+    // mixed: still simulated graph if dry-run
+    run.status = run.dryRun || run.simulatedGraph ? 'SIMULATED' : 'SUCCEEDED';
+  } else if (tasks.every((t) => t.status === 'SUCCEEDED')) {
+    run.status = 'SUCCEEDED';
+  } else if (allTerminal && anySimulated) {
+    run.status = 'SIMULATED';
+  }
+
+  // Never promote qualityVerdict from simulated tasks
+  const q = tasks.find((t) => t.agent === 'quality');
+  if (q?.status === 'SUCCEEDED' && q.qualityVerdict && !q.simulated) {
+    run.qualityVerdict = q.qualityVerdict;
+  } else if (q?.status === 'SIMULATED') {
+    run.qualityVerdict = null;
+  }
+
+  writeRun(runDir, run);
+}
+
+function appendEventOnce(runDir, event) {
+  const events = readEvents(runDir);
+  if (events.some((e) => e.type === event.type && e.runId === event.runId)) return;
+  appendEvent(runDir, event);
 }
 
 export function renderStatusMarkdown(runDir) {
@@ -287,10 +378,12 @@ export function renderStatusMarkdown(runDir) {
   const events = readEvents(runDir);
   const summary = summarizeEvents(events);
 
-  if (!run) {
-    // preserve historical status.md if present
-    return;
-  }
+  if (!run) return;
+
+  const statusNote =
+    run.status === 'SIMULATED' || run.dryRun
+      ? ' **(SIMULATED / dry-run — not production completion)**'
+      : '';
 
   const lines = [
     `# Run status — \`${run.id}\``,
@@ -299,13 +392,14 @@ export function renderStatusMarkdown(runDir) {
     '',
     `| Field | Value |`,
     `|-------|-------|`,
-    `| Status | **${run.status}** |`,
+    `| Status | **${run.status}**${statusNote} |`,
     `| Pattern | ${run.orchestrationPattern} |`,
     `| Risk | ${run.riskLevel} |`,
     `| Dry-run | ${run.dryRun} |`,
+    `| Simulated graph | ${run.simulatedGraph ?? run.dryRun} |`,
     `| Provider | ${run.provider} |`,
     `| Planner | ${run.plannerVersion} |`,
-    `| Quality | ${run.qualityVerdict ?? '—'} |`,
+    `| Quality | ${run.qualityVerdict ?? '— (none / simulated)'} |`,
     `| Updated | ${run.updatedAt} |`,
     '',
     '## Tasks',
@@ -314,14 +408,20 @@ export function renderStatusMarkdown(runDir) {
     '|----|-------|------|--------|---------|------|',
   ];
   for (const t of tasks) {
+    const sim = t.status === 'SIMULATED' ? ' 🧪' : '';
     lines.push(
-      `| \`${t.id}\` | ${t.agent} | ${t.type} | ${t.status} | ${t.attempt}/${t.maximumAttempts} | ${(t.dependencies || []).join(', ') || '—'} |`,
+      `| \`${t.id}\` | ${t.agent} | ${t.type} | ${t.status}${sim} | ${t.attempt}/${t.maximumAttempts} | ${(t.dependencies || []).join(', ') || '—'} |`,
     );
   }
   lines.push('', '## Event summary', '');
   lines.push(`Total events: ${summary.eventCount}`);
   for (const [k, v] of Object.entries(summary.counts)) {
     lines.push(`- \`${k}\`: ${v}`);
+  }
+  if (summary.counts['quality.approved']) {
+    lines.push('', '> Real quality.approved events are present.');
+  } else {
+    lines.push('', '> No real `quality.approved` event (simulated/dry-run cannot approve).');
   }
   lines.push('');
   fs.writeFileSync(path.join(runDir, 'status.md'), lines.join('\n'), 'utf8');
@@ -349,6 +449,7 @@ export function computeMetrics(runDir) {
     attemptCount: tasks.reduce((s, t) => s + (t.attempt || 0), 0),
     failureCount: summary.taskFailed,
     retryCount: summary.retries,
+    simulatedCount: tasks.filter((t) => t.status === 'SIMULATED').length,
     routingDecisions: events.filter((e) => e.type === 'plan.generated').length,
     parallelism: tasks.filter((t) => t.status === 'RUNNING').length,
     qualityVerdict: run?.qualityVerdict ?? null,

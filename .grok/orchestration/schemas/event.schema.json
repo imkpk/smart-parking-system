@@ -14,10 +14,12 @@
         "task.ready",
         "task.started",
         "task.completed",
+        "task.simulated",
         "task.failed",
         "task.retried",
         "task.blocked",
         "task.escalated",
+        "prompt.generated",
         "evidence.recorded",
         "quality.approved",
         "quality.blocked",
@@ -33,7 +35,8 @@
         "provider.invoked",
         "provider.blocked",
         "run.resumed",
-        "run.completed"
+        "run.completed",
+        "run.simulated"
       ]
     },
     "runId": { "type": "string" },

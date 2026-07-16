@@ -15,12 +15,14 @@
         "RUNNING",
         "VERIFYING",
         "SUCCEEDED",
+        "SIMULATED",
         "FAILED",
         "BLOCKED",
         "ESCALATED",
         "CANCELLED"
       ]
     },
+    "simulatedGraph": { "type": "boolean" },
     "createdAt": { "type": "string" },
     "updatedAt": { "type": "string" },
     "baseBranch": { "type": "string" },

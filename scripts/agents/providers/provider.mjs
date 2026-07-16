@@ -60,6 +60,9 @@ export function normalizeResult(partial, provider) {
     artifacts: partial.artifacts || {},
     error: partial.error || null,
     dryRun: partial.dryRun !== false,
+    realExecution: partial.realExecution === true,
+    qualityVerdict: partial.qualityVerdict ?? null,
+    evidence: partial.evidence || partial.artifacts?.evidence || [],
     provider,
   };
 }

@@ -8,6 +8,7 @@ export const TASK_STATES = [
   'RUNNING',
   'VERIFYING',
   'SUCCEEDED',
+  'SIMULATED',
   'FAILED',
   'BLOCKED',
   'ESCALATED',
@@ -19,16 +20,35 @@ export const TASK_TRANSITIONS = {
   CREATED: new Set(['PLANNED', 'CANCELLED']),
   PLANNED: new Set(['READY', 'CANCELLED', 'BLOCKED']),
   READY: new Set(['RUNNING', 'CANCELLED', 'BLOCKED']),
-  RUNNING: new Set(['VERIFYING', 'SUCCEEDED', 'FAILED', 'BLOCKED', 'ESCALATED', 'CANCELLED']),
-  VERIFYING: new Set(['SUCCEEDED', 'FAILED', 'BLOCKED', 'ESCALATED']),
+  RUNNING: new Set([
+    'VERIFYING',
+    'SUCCEEDED',
+    'SIMULATED',
+    'FAILED',
+    'BLOCKED',
+    'ESCALATED',
+    'CANCELLED',
+  ]),
+  VERIFYING: new Set(['SUCCEEDED', 'SIMULATED', 'FAILED', 'BLOCKED', 'ESCALATED']),
   SUCCEEDED: new Set([]),
-  FAILED: new Set(['READY', 'ESCALATED', 'CANCELLED']), // retry -> READY
+  SIMULATED: new Set([]),
+  FAILED: new Set(['READY', 'ESCALATED', 'CANCELLED']),
   BLOCKED: new Set(['READY', 'ESCALATED', 'CANCELLED']),
   ESCALATED: new Set(['READY', 'CANCELLED', 'FAILED']),
   CANCELLED: new Set([]),
 };
 
-export const TERMINAL_TASK_STATES = new Set(['SUCCEEDED', 'CANCELLED']);
+/** Terminal states that are not production completion */
+export const SIMULATED_TERMINAL = new Set(['SIMULATED']);
+
+export const TERMINAL_TASK_STATES = new Set(['SUCCEEDED', 'SIMULATED', 'CANCELLED']);
+
+/** Dependencies: real completion only, unless simulated graph mode */
+export function dependencySatisfied(status, { simulatedGraph = false } = {}) {
+  if (status === 'SUCCEEDED') return true;
+  if (simulatedGraph && status === 'SIMULATED') return true;
+  return false;
+}
 
 export function canTransition(from, to) {
   const allowed = TASK_TRANSITIONS[from];
@@ -50,7 +70,6 @@ export function assertTransition(from, to, context = {}) {
       error: `invalid transition ${from} -> ${to}${context.taskId ? ` (task ${context.taskId})` : ''}`,
     };
   }
-  // Retry path: FAILED -> READY must respect maximumAttempts
   if (from === 'FAILED' && to === 'READY') {
     const attempt = context.attempt ?? 0;
     const max = context.maximumAttempts ?? 1;
@@ -66,4 +85,8 @@ export function assertTransition(from, to, context = {}) {
 
 export function isTerminal(status) {
   return TERMINAL_TASK_STATES.has(status);
+}
+
+export function isProductionSuccess(status) {
+  return status === 'SUCCEEDED';
 }

@@ -10,6 +10,10 @@ describe('task state machine', () => {
     assert.equal(canTransition('RUNNING', 'SUCCEEDED'), true);
   });
 
+  it('allows RUNNING -> SIMULATED', () => {
+    assert.equal(canTransition('RUNNING', 'SIMULATED'), true);
+  });
+
   it('rejects Quality-style invalid jumps', () => {
     assert.equal(canTransition('CREATED', 'SUCCEEDED'), false);
     assert.equal(canTransition('SUCCEEDED', 'RUNNING'), false);
@@ -22,7 +26,7 @@ describe('task state machine', () => {
     assert.equal(bad.ok, false);
   });
 
-  it('defines all required states', () => {
+  it('defines all required states including SIMULATED', () => {
     for (const s of [
       'CREATED',
       'PLANNED',
@@ -30,6 +34,7 @@ describe('task state machine', () => {
       'RUNNING',
       'VERIFYING',
       'SUCCEEDED',
+      'SIMULATED',
       'FAILED',
       'BLOCKED',
       'ESCALATED',
