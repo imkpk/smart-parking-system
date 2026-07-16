@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/manifest.schema.json",
+  "title": "AgentManifest",
+  "type": "object",
+  "required": ["version", "agents", "policy"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string", "minLength": 1 },
+    "plannerVersion": { "type": "string" },
+    "updated": { "type": "string" },
+    "description": { "type": "string" },
+    "policy": {
+      "type": "object",
+      "required": ["alwaysActive", "qualityAlwaysLast"],
+      "properties": {
+        "alwaysActive": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "qualityAlwaysLast": { "type": "boolean" },
+        "testingAfterImplementation": { "type": "boolean" },
+        "testingOnDocsOnly": { "type": "boolean" },
+        "splitFileThreshold": { "type": "integer", "minimum": 1 },
+        "maxParallelWriters": { "type": "integer", "minimum": 1 },
+        "requireEvidenceForQuality": { "type": "boolean" },
+        "defaultBaseBranch": { "type": "string" },
+        "mergeStrategy": { "type": "string" }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["paths", "note"],
+        "properties": {
+          "paths": { "type": "array", "items": { "type": "string" } },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 12,
+      "items": { "$ref": "#/definitions/agent" }
+    }
+  },
+  "definitions": {
+    "agent": {
+      "type": "object",
+      "required": [
+        "id",
+        "displayId",
+        "name",
+        "purpose",
+        "activation",
+        "readPaths",
+        "writePaths",
+        "deniedPaths",
+        "toolProfile",
+        "skills",
+        "dependencies",
+        "concurrencyPolicy",
+        "maximumAttempts",
+        "timeout",
+        "escalationTarget",
+        "qualityRequirements",
+        "memoryAccess",
+        "riskTier"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "displayId": { "type": "string" },
+        "name": { "type": "string" },
+        "purpose": { "type": "string" },
+        "activation": { "type": "object" },
+        "readPaths": { "type": "array", "items": { "type": "string" } },
+        "writePaths": { "type": "array", "items": { "type": "string" } },
+        "deniedPaths": { "type": "array", "items": { "type": "string" } },
+        "toolProfile": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "dependencies": { "type": "array", "items": { "type": "string" } },
+        "concurrencyPolicy": { "type": "string" },
+        "maximumAttempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "timeout": { "type": "integer", "minimum": 1 },
+        "escalationTarget": { "type": "string" },
+        "qualityRequirements": { "type": "object" },
+        "memoryAccess": { "type": "object" },
+        "riskTier": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        }
+      }
+    }
+  }
+}

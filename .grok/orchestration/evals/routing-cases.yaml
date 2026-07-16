@@ -1,0 +1,331 @@
+# Deterministic routing evaluation fixtures.
+# expectedAgents / excludedAgents use agent ids (not display glyphs).
+version: "1.0.0"
+cases:
+  - id: docs-only
+    changedFiles:
+      - docs/agents/ROLES.md
+      - MASTER_PROMPT.md
+    expectedAgents:
+      - orchestrator
+      - documentation
+      - quality
+    excludedAgents:
+      - core-api
+      - experience
+      - payments
+      - database
+    expectedOrderTail: [quality]
+    expectedRisk: low
+    expectedPattern: deterministic-routing
+
+  - id: backend-only
+    changedFiles:
+      - backend/src/bookings/bookings.service.ts
+    expectedAgents:
+      - orchestrator
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+      - payments
+    expectedOrderTail: [testing, quality]
+    expectedRisk: low
+    expectedPattern: deterministic-routing
+
+  - id: frontend-only
+    changedFiles:
+      - frontend/src/pages/BookingsPage.tsx
+    expectedAgents:
+      - orchestrator
+      - experience
+      - testing
+      - quality
+    excludedAgents:
+      - core-api
+      - payments
+      - database
+    expectedOrderTail: [testing, quality]
+    expectedRisk: low
+    expectedPattern: deterministic-routing
+
+  - id: payment-only
+    changedFiles:
+      - payment-service/src/main/java/com/parking/payment/service/PaymentService.java
+    expectedAgents:
+      - orchestrator
+      - payments
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+      - database
+    expectedOrderTail: [testing, quality]
+    expectedRisk: medium
+    expectedPattern: deterministic-routing
+
+  - id: prisma-schema
+    changedFiles:
+      - backend/prisma/schema.prisma
+    expectedAgents:
+      - orchestrator
+      - database
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: medium
+    expectedPattern: deterministic-routing
+
+  - id: migration-plus-backend
+    changedFiles:
+      - backend/prisma/migrations/20260716_add_index/migration.sql
+      - backend/src/slots/slots.service.ts
+    expectedAgents:
+      - orchestrator
+      - database
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+    expectedOrderTail: [testing, quality]
+    expectedRisk: medium
+    expectedPattern: hybrid
+
+  - id: auth-change
+    changedFiles:
+      - backend/src/auth/auth.service.ts
+      - backend/src/auth/jwt.strategy.ts
+    expectedAgents:
+      - orchestrator
+      - security
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: hybrid
+
+  - id: rbac-change
+    changedFiles:
+      - backend/src/common/guards/roles.guard.ts
+      - backend/src/common/decorators/permissions.decorator.ts
+    expectedAgents:
+      - orchestrator
+      - security
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: hybrid
+
+  - id: ci-workflow
+    changedFiles:
+      - .github/workflows/ci.yml
+    expectedAgents:
+      - orchestrator
+      - devops
+      - quality
+    excludedAgents:
+      - core-api
+      - experience
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: deterministic-routing
+
+  - id: scripts-only
+    changedFiles:
+      - scripts/agent-run-post-merge.mjs
+    expectedAgents:
+      - orchestrator
+      - devops
+      - quality
+    excludedAgents:
+      - core-api
+      - experience
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: deterministic-routing
+
+  - id: iot-mqtt
+    changedFiles:
+      - iot-edge/gate-controller/index.js
+      - infra/mosquitto/mosquitto.conf
+      - backend/src/iot/mqtt.service.ts
+    expectedAgents:
+      - orchestrator
+      - events-iot
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: medium
+    expectedPattern: hybrid
+
+  - id: events-outbox
+    changedFiles:
+      - backend/src/events/outbox/outbox.publisher.ts
+      - backend/src/events/gate-open-requested.handler.ts
+    expectedAgents:
+      - orchestrator
+      - events-iot
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+    expectedOrderTail: [quality]
+    expectedRisk: medium
+    expectedPattern: hybrid
+
+  - id: test-only
+    changedFiles:
+      - backend/src/bookings/bookings.service.spec.ts
+      - frontend/src/pages/BookingsPage.spec.tsx
+    expectedAgents:
+      - orchestrator
+      - testing
+      - quality
+    excludedAgents:
+      - payments
+      - database
+    expectedOrderTail: [quality]
+    expectedRisk: low
+    expectedPattern: deterministic-routing
+
+  - id: frontend-plus-backend
+    changedFiles:
+      - backend/src/bookings/bookings.controller.ts
+      - frontend/src/api/bookings.ts
+    expectedAgents:
+      - orchestrator
+      - core-api
+      - experience
+      - testing
+      - quality
+    excludedAgents:
+      - payments
+    expectedOrderTail: [testing, quality]
+    expectedRisk: medium
+    expectedPattern: hybrid
+
+  - id: full-stack
+    changedFiles:
+      - backend/src/parking-events/parking-events.service.ts
+      - frontend/src/pages/PaymentsPage.tsx
+      - payment-service/src/main/java/com/parking/payment/web/PaymentController.java
+    expectedAgents:
+      - orchestrator
+      - core-api
+      - experience
+      - payments
+      - testing
+      - quality
+    excludedAgents: []
+    expectedOrderTail: [testing, quality]
+    expectedRisk: high
+    expectedPattern: hybrid
+
+  - id: security-sensitive-configuration
+    changedFiles:
+      - backend/src/auth/auth.module.ts
+      - backend/.env.example
+    expectedAgents:
+      - orchestrator
+      - security
+      - core-api
+      - devops
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: hybrid
+
+  - id: performance-sensitive-query
+    changedFiles:
+      - backend/src/dashboard/dashboard.service.ts
+      - frontend/src/hooks/useDashboardQueries.ts
+      - frontend/src/lib/query-cache-staletime.ts
+    expectedAgents:
+      - orchestrator
+      - core-api
+      - experience
+      - performance
+      - testing
+      - quality
+    excludedAgents:
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: medium
+    expectedPattern: hybrid
+
+  - id: large-cross-service-change
+    changedFiles:
+      - backend/prisma/schema.prisma
+      - backend/src/users/users.service.ts
+      - backend/src/auth/auth.service.ts
+      - frontend/src/pages/UsersPage.tsx
+      - frontend/src/api/users.ts
+      - payment-service/src/main/java/com/parking/payment/service/PaymentService.java
+      - iot-edge/gate-controller/index.js
+      - .github/workflows/ci.yml
+      - docs/project-plan/07-hld-saas-v2.md
+    expectedAgents:
+      - orchestrator
+      - database
+      - core-api
+      - security
+      - experience
+      - payments
+      - events-iot
+      - devops
+      - documentation
+      - testing
+      - quality
+    excludedAgents: []
+    expectedOrderTail: [quality]
+    expectedRisk: high
+    expectedPattern: hybrid
+    expectSplit: true
+
+  - id: unknown-path
+    changedFiles:
+      - experimental/foo/bar.xyz
+    expectedAgents:
+      - orchestrator
+      - quality
+    excludedAgents:
+      - payments
+    expectedOrderTail: [quality]
+    expectedRisk: low
+    expectedPattern: adaptive-investigation
+
+  - id: overlapping-write-ownership
+    changedFiles:
+      - backend/src/bookings/bookings.service.ts
+      - backend/src/slots/slots.service.ts
+    expectedAgents:
+      - orchestrator
+      - core-api
+      - testing
+      - quality
+    excludedAgents:
+      - experience
+    expectedOrderTail: [quality]
+    expectedRisk: low
+    expectedPattern: deterministic-routing
+    note: Single writer agent for overlapping backend paths — no parallel write split needed

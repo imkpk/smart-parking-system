@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/handoff.schema.json",
+  "title": "AgentHandoff",
+  "type": "object",
+  "required": ["id", "runId", "fromAgent", "toAgent", "reason", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "runId": { "type": "string" },
+    "fromTaskId": { "type": "string" },
+    "toTaskId": { "type": "string" },
+    "fromAgent": { "type": "string" },
+    "toAgent": { "type": "string" },
+    "reason": { "type": "string" },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string" }
+  }
+}

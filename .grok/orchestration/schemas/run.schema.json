@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/run.schema.json",
+  "title": "AgentRun",
+  "type": "object",
+  "required": ["id", "status", "createdAt", "baseBranch", "plannerVersion"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "PLANNED",
+        "RUNNING",
+        "VERIFYING",
+        "SUCCEEDED",
+        "FAILED",
+        "BLOCKED",
+        "ESCALATED",
+        "CANCELLED"
+      ]
+    },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "baseBranch": { "type": "string" },
+    "headRef": { "type": "string" },
+    "plannerVersion": { "type": "string" },
+    "orchestrationPattern": { "type": "string" },
+    "riskLevel": { "type": "string" },
+    "activatedAgents": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "taskIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "provider": { "type": "string" },
+    "dryRun": { "type": "boolean" },
+    "qualityVerdict": {
+      "type": ["string", "null"],
+      "enum": ["APPROVE", "APPROVE_WITH_NOTES", "BLOCK", null]
+    },
+    "metrics": { "type": "object" },
+    "error": { "type": ["string", "null"] }
+  }
+}

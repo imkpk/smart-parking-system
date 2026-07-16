@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/event.schema.json",
+  "title": "RunEvent",
+  "type": "object",
+  "required": ["ts", "type", "runId"],
+  "properties": {
+    "ts": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "run.created",
+        "plan.generated",
+        "task.ready",
+        "task.started",
+        "task.completed",
+        "task.failed",
+        "task.retried",
+        "task.blocked",
+        "task.escalated",
+        "evidence.recorded",
+        "quality.approved",
+        "quality.blocked",
+        "pr.created",
+        "ci.started",
+        "ci.completed",
+        "merge.completed",
+        "memory.proposed",
+        "memory.promoted",
+        "schedule.triggered",
+        "worktree.created",
+        "worktree.cleaned",
+        "provider.invoked",
+        "provider.blocked",
+        "run.resumed",
+        "run.completed"
+      ]
+    },
+    "runId": { "type": "string" },
+    "taskId": { "type": ["string", "null"] },
+    "agent": { "type": ["string", "null"] },
+    "payload": { "type": "object" }
+  }
+}

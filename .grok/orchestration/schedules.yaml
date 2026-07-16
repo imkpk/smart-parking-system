@@ -1,0 +1,111 @@
+version: "1.0.0"
+description: >
+  Schedule registry that validates against GitHub Actions workflows.
+  Schedules default to read-only / report-only. Never auto-merge, deploy,
+  or mutate production secrets/data.
+
+defaults:
+  forbiddenActions:
+    - merge
+    - deploy
+    - change-secrets
+    - modify-production-data
+    - force-push
+
+schedules:
+  - id: daily-stale-agent-run-audit
+    description: Audit stale agent-run index rows
+    timezone: UTC
+    cron: "0 6 * * *"
+    concurrencyGroup: orchestration-audit
+    timeout: 900
+    retryPolicy:
+      maxAttempts: 1
+      backoffSeconds: 60
+    idempotencyKey: daily-stale-agent-run-{{date}}
+    pause:
+      enabled: false
+    failureReporting: github-actions-summary
+    manualReplay: true
+    permissions:
+      contents: read
+    mode: report-only
+    workflow: .github/workflows/agent-orchestration-audit.yml
+    forbiddenActions: [merge, deploy, change-secrets]
+
+  - id: weekly-documentation-consistency
+    description: Docs consistency audit (report only)
+    timezone: UTC
+    cron: "0 7 * * 1"
+    concurrencyGroup: orchestration-audit
+    timeout: 1200
+    retryPolicy:
+      maxAttempts: 1
+      backoffSeconds: 60
+    idempotencyKey: weekly-docs-{{date}}
+    pause:
+      enabled: false
+    failureReporting: github-actions-summary
+    manualReplay: true
+    permissions:
+      contents: read
+    mode: report-only
+    workflow: .github/workflows/agent-orchestration-audit.yml
+    forbiddenActions: [merge, deploy]
+
+  - id: weekly-memory-proposal-review
+    description: List open memory proposals for human/quality review
+    timezone: UTC
+    cron: "30 7 * * 1"
+    concurrencyGroup: orchestration-audit
+    timeout: 600
+    retryPolicy:
+      maxAttempts: 1
+      backoffSeconds: 0
+    idempotencyKey: weekly-memory-{{date}}
+    pause:
+      enabled: false
+    failureReporting: github-actions-summary
+    manualReplay: true
+    permissions:
+      contents: read
+    mode: report-only
+    workflow: .github/workflows/agent-orchestration-audit.yml
+
+  - id: weekly-routing-evaluation
+    description: Run routing fixture evaluation suite
+    timezone: UTC
+    cron: "0 8 * * 1"
+    concurrencyGroup: orchestration-eval
+    timeout: 1200
+    retryPolicy:
+      maxAttempts: 2
+      backoffSeconds: 120
+    idempotencyKey: weekly-routing-{{date}}
+    pause:
+      enabled: false
+    failureReporting: github-actions-summary
+    manualReplay: true
+    permissions:
+      contents: read
+    mode: read-only
+    workflow: .github/workflows/agent-orchestration-audit.yml
+
+  - id: monthly-skills-evaluation
+    description: Validate skill registry and coexistence
+    timezone: UTC
+    cron: "0 9 1 * *"
+    concurrencyGroup: orchestration-eval
+    timeout: 900
+    retryPolicy:
+      maxAttempts: 1
+      backoffSeconds: 0
+    idempotencyKey: monthly-skills-{{date}}
+    pause:
+      enabled: false
+    failureReporting: github-actions-summary
+    manualReplay: true
+    permissions:
+      contents: read
+    mode: read-only
+    workflow: .github/workflows/agent-orchestration-audit.yml

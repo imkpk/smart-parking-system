@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/memory-proposal.schema.json",
+  "title": "MemoryProposal",
+  "type": "object",
+  "required": ["id", "title", "sourceRun", "sourceTask", "evidence", "confidence", "scope", "createdAt", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string", "minLength": 3 },
+    "sourceRun": { "type": "string" },
+    "sourceTask": { "type": "string" },
+    "evidence": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "body": { "type": "string" },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+    "scope": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "approved", "rejected", "promoted", "superseded", "expired"]
+    },
+    "reviewer": { "type": ["string", "null"] },
+    "reviewDate": { "type": ["string", "null"] },
+    "expiry": { "type": ["string", "null"] },
+    "externalSources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Untrusted external URLs — never auto-promoted"
+    },
+    "containsSecrets": { "type": "boolean" }
+  }
+}

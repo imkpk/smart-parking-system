@@ -1,0 +1,104 @@
+version: "1.0.0"
+description: Governed reusable skills — not every prompt is a skill.
+skills:
+  - id: nestjs-api-review
+    owner: core-api
+    version: "1.0.0"
+    riskTier: medium
+    allowedTools: [read-file, grep, run-tests]
+    allowedPaths: ["backend/src/**", "backend/docs/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["nestjs-tenant-scoping", "nestjs-controller-thin"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: Review NestJS modules for tenant scoping and thin controllers
+    instructions: |
+      Verify organizationId scoping, AccessPolicyService usage, no raw SQL,
+      controllers delegate to services, OpenAPI updated when routes change.
+
+  - id: prisma-migration-safety
+    owner: database
+    version: "1.0.0"
+    riskTier: high
+    allowedTools: [read-file, grep]
+    allowedPaths: ["backend/prisma/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["prisma-additive-migration"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: Ensure migrations are deploy-safe
+    instructions: |
+      Prefer additive migrations. Split enum changes when PostgreSQL requires
+      commit-before-use. Never suggest prisma migrate reset on shared DBs.
+
+  - id: react-query-cache-review
+    owner: experience
+    version: "1.0.0"
+    riskTier: medium
+    allowedTools: [read-file, grep]
+    allowedPaths: ["frontend/src/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["react-query-staletime"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: React Query cache keys and invalidation hygiene
+    instructions: |
+      Check intentional staleTime/gcTime, avoid duplicate fan-out, invalidate
+      narrowly after mutations, never hit production URLs in tests.
+
+  - id: iot-mqtt-contract-review
+    owner: events-iot
+    version: "1.0.0"
+    riskTier: high
+    allowedTools: [read-file, grep]
+    allowedPaths: ["backend/src/iot/**", "iot-edge/**", "infra/mosquitto/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["iot-topic-tenant-scope"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: MQTT topic and ack contract review
+    instructions: |
+      Topics must be tenant-scoped. Gate open events go through outbox/domain
+      events. Edge devices must not bypass NestJS authorization.
+
+  - id: github-ci-diagnosis
+    owner: devops
+    version: "1.0.0"
+    riskTier: medium
+    allowedTools: [read-file, grep]
+    allowedPaths: [".github/workflows/**", "scripts/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["ci-path-filters"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: Diagnose CI path filters and job wiring
+    instructions: |
+      Prefer path filters, never weaken secrets scan, docs-only should skip
+      heavy service jobs when safe.
+
+  - id: security-rbac-review
+    owner: security
+    version: "1.0.0"
+    riskTier: critical
+    allowedTools: [read-file, grep]
+    allowedPaths: ["backend/src/auth/**", "backend/src/**/guards/**"]
+    networkAccess: none
+    dependencies: []
+    evaluationCases: ["rbac-guard-present"]
+    lastReview: "2026-07-16"
+    status: active
+    rollbackVersion: null
+    description: RBAC and auth guard review
+    instructions: |
+      Controllers must enforce roles. No unguarded sensitive endpoints.
+      No secrets in logs. JWT expiry configured.

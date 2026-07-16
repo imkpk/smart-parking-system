@@ -1,0 +1,125 @@
+version: "1.0.0"
+profiles:
+  read-only-review:
+    description: Review without mutating production code
+    filesystem: read
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "git commit"
+      - "git push"
+      - "npm publish"
+    requiresHumanApproval:
+      - "gh pr merge"
+      - "deploy"
+
+  backend-development:
+    description: NestJS / Prisma-adjacent application work
+    filesystem: write-scoped
+    network: none
+    shell: service-local
+    allowedCwd:
+      - backend
+    deniedCommands:
+      - "prisma migrate reset"
+      - "DROP DATABASE"
+      - "git push --force"
+    requiresHumanApproval:
+      - "gh pr merge"
+      - "production deploy"
+
+  frontend-development:
+    description: React / Vite application work
+    filesystem: write-scoped
+    network: none
+    shell: service-local
+    allowedCwd:
+      - frontend
+    deniedCommands:
+      - "git push --force"
+    requiresHumanApproval:
+      - "gh pr merge"
+
+  payment-development:
+    description: Spring Boot payment service
+    filesystem: write-scoped
+    network: none
+    shell: service-local
+    allowedCwd:
+      - payment-service
+    deniedCommands:
+      - "DROP DATABASE"
+      - "git push --force"
+    requiresHumanApproval:
+      - "gh pr merge"
+      - "credential-rotation"
+
+  database-migration:
+    description: Prisma schema and migrations only
+    filesystem: write-scoped
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "prisma migrate reset"
+      - "DROP DATABASE"
+    requiresHumanApproval:
+      - "prisma migrate deploy"
+
+  iot-events-development:
+    description: Events, outbox, MQTT, IoT edge
+    filesystem: write-scoped
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "git push --force"
+    requiresHumanApproval:
+      - "gh pr merge"
+
+  ci-diagnostics:
+    description: CI workflows and scripts
+    filesystem: write-scoped
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "git push --force"
+    requiresHumanApproval:
+      - "branch-protection-change"
+
+  documentation:
+    description: Markdown and docs only
+    filesystem: write-scoped
+    network: none
+    shell: none
+    deniedCommands:
+      - "git push --force"
+
+  testing:
+    description: Specs, fixtures, E2E tests
+    filesystem: write-scoped
+    network: none
+    shell: service-local
+    deniedCommands:
+      - "git push --force"
+
+  quality-review:
+    description: Review gate — no feature implementation
+    filesystem: write-scoped
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "git push --force"
+    requiresHumanApproval:
+      - "gh pr merge"
+
+  orchestrator-integration:
+    description: Plans, runs, integration commits
+    filesystem: write-scoped
+    network: none
+    shell: restricted
+    deniedCommands:
+      - "git push --force"
+      - "DROP DATABASE"
+    requiresHumanApproval:
+      - "gh pr merge"
+      - "force-push"
+      - "production-deploy"

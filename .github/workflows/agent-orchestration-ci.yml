@@ -1,0 +1,65 @@
+name: Agent Orchestration CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - '.grok/orchestration/**'
+      - 'scripts/agents/**'
+      - '.github/workflows/agent-orchestration-ci.yml'
+      - '.github/workflows/agent-activation-summary.yml'
+      - '.github/workflows/agent-orchestration-audit.yml'
+  push:
+    branches: [develop, main]
+    paths:
+      - '.grok/orchestration/**'
+      - 'scripts/agents/**'
+      - '.github/workflows/agent-orchestration-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  orchestration:
+    name: Manifest, routing, and orchestration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        working-directory: scripts/agents
+        run: npm ci
+
+      - name: Validate manifest
+        run: node scripts/agents/validate-manifest.mjs
+
+      - name: Validate skills
+        run: node scripts/agents/validate-skills.mjs
+
+      - name: Validate schedules
+        run: node scripts/agents/validate-schedules.mjs
+
+      - name: Run orchestration unit tests
+        working-directory: scripts/agents
+        run: npm test
+
+      - name: Dry-run planner (origin/develop...HEAD)
+        run: |
+          git fetch origin develop || true
+          node scripts/agents/plan-run.mjs --base origin/develop --head HEAD --format json > /tmp/plan.json
+          test -s /tmp/plan.json
+
+      - name: Dry-run orchestrator
+        run: |
+          node scripts/agents/orchestrate-run.mjs \
+            --dry-run \
+            --provider mock \
+            --files backend/src/bookings/bookings.service.ts \
+            --slug ci-dry-run

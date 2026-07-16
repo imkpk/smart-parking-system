@@ -1,0 +1,593 @@
+# Canonical multi-agent manifest — Smart Parking SaaS
+# Single source of truth for agent identity, activation, permissions, and quality gates.
+# Human docs (docs/agents/ROLES.md) explain this file; they must not maintain a parallel registry.
+version: "1.0.0"
+plannerVersion: "1.0.0"
+updated: "2026-07-16"
+description: >
+  Provider-neutral orchestration control plane for Smart Parking.
+  Deterministic routing maps changed paths to agents ①–⑫.
+
+policy:
+  alwaysActive:
+    - orchestrator
+    - quality
+  qualityAlwaysLast: true
+  testingAfterImplementation: true
+  testingOnDocsOnly: false
+  splitFileThreshold: 40
+  maxParallelWriters: 4
+  requireEvidenceForQuality: true
+  defaultBaseBranch: develop
+  mergeStrategy: merge-commit
+
+exceptions:
+  - paths:
+      - backend/docs/**
+      - payment-service/README.md
+      - frontend/README.md
+    note: Service-local docs may be co-owned by documentation + owning service agent.
+  - paths:
+      - backend/src/integrations/payment-service/**
+    note: NestJS payment client is core-api owned; payment-service agent consults only.
+  - paths:
+      - .grok/orchestration/**
+      - scripts/agents/**
+    note: Orchestration platform owned by orchestrator + devops + documentation.
+
+agents:
+  - id: orchestrator
+    displayId: "①"
+    name: Orchestrator
+    purpose: >
+      Turn goals into ordered plans, activate specialists from the diff,
+      prevent scope creep, own integration and run ledger.
+    activation:
+      paths:
+        - "**/*"
+      mode: always
+    readPaths:
+      - "**/*"
+    writePaths:
+      - ".grok/agent-runs/**"
+      - ".grok/prompts/**"
+      - ".grok/reports/**"
+      - ".grok/orchestration/**"
+      - "scripts/agents/**"
+      - "MASTER_PROMPT.md"
+    deniedPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "payment-service/src/**"
+      - "iot-edge/**"
+    toolProfile: orchestrator-integration
+    skills:
+      - github-ci-diagnosis
+    dependencies: []
+    concurrencyPolicy: singleton
+    maximumAttempts: 2
+    timeout: 7200
+    escalationTarget: human
+    qualityRequirements:
+      evidence:
+        - plan.md
+        - activation table
+      verification: []
+    memoryAccess:
+      read:
+        - reference
+        - promoted
+      write:
+        - run-scratch
+        - proposals
+    riskTier: medium
+
+  - id: core-api
+    displayId: "②"
+    name: Core API Agent
+    purpose: Tenant-aware NestJS REST API, parking operations, integrations (non-schema).
+    activation:
+      paths:
+        - "backend/src/**"
+        - "backend/docs/**"
+        - "backend/package.json"
+        - "backend/tsconfig*.json"
+        - "backend/nest-cli.json"
+      pathExclude:
+        - "backend/src/**/*.spec.ts"
+        - "backend/src/**/*.test.ts"
+        - "backend/test/**"
+      keywords:
+        - nestjs
+    readPaths:
+      - "backend/**"
+      - "docs/**"
+      - "MASTER_PROMPT.md"
+      - ".grok/orchestration/**"
+    writePaths:
+      - "backend/src/**"
+      - "backend/docs/**"
+      - "backend/package.json"
+      - "backend/tsconfig*.json"
+    deniedPaths:
+      - "frontend/**"
+      - "payment-service/**"
+      - "backend/prisma/**"
+    toolProfile: backend-development
+    skills:
+      - nestjs-api-review
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 5400
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - build log
+        - unit test results
+      verification:
+        - "cd backend && npm run build && npm run test:run"
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: high
+
+  - id: experience
+    displayId: "③"
+    name: Experience Agent
+    purpose: React UI, MUI design system, React Query clients, Vercel config.
+    activation:
+      paths:
+        - "frontend/src/**"
+        - "frontend/public/**"
+        - "frontend/index.html"
+        - "frontend/package.json"
+        - "frontend/vite.config.*"
+        - "frontend/tsconfig*.json"
+        - "frontend/vercel.json"
+      pathExclude:
+        - "frontend/src/**/*.spec.ts"
+        - "frontend/src/**/*.spec.tsx"
+        - "frontend/src/**/*.test.ts"
+        - "frontend/src/**/*.test.tsx"
+        - "frontend/cypress/**"
+    readPaths:
+      - "frontend/**"
+      - "docs/**"
+      - "MASTER_PROMPT.md"
+    writePaths:
+      - "frontend/src/**"
+      - "frontend/public/**"
+      - "frontend/index.html"
+      - "frontend/package.json"
+      - "frontend/vite.config.*"
+      - "frontend/vercel.json"
+      - "frontend/.env.example"
+    deniedPaths:
+      - "backend/**"
+      - "payment-service/**"
+    toolProfile: frontend-development
+    skills:
+      - react-query-cache-review
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 5400
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - build log
+        - vitest results
+      verification:
+        - "cd frontend && npm run build && npm run test:run"
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: medium
+
+  - id: payments
+    displayId: "④"
+    name: Payments Agent
+    purpose: Spring Boot payment service, Razorpay, payment DB.
+    activation:
+      paths:
+        - "payment-service/**"
+    readPaths:
+      - "payment-service/**"
+      - "docs/**"
+      - "backend/src/integrations/payment-service/**"
+    writePaths:
+      - "payment-service/**"
+    deniedPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+    toolProfile: payment-development
+    skills: []
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 5400
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - mvn package log
+      verification:
+        - "cd payment-service && mvn -B clean package"
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: high
+
+  - id: quality
+    displayId: "⑤"
+    name: Quality, Architecture & Release
+    purpose: Mandatory final gate — architecture, code quality, evidence, CI readiness.
+    activation:
+      mode: always
+      paths: []
+    readPaths:
+      - "**/*"
+    writePaths:
+      - ".grok/reports/**"
+      - ".grok/review/**"
+      - ".grok/agent-runs/**/tasks/quality-release.md"
+      - ".grok/agent-runs/**/status.md"
+    deniedPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "payment-service/src/**"
+    toolProfile: quality-review
+    skills:
+      - nestjs-api-review
+      - security-rbac-review
+      - react-query-cache-review
+    dependencies:
+      - testing
+    concurrencyPolicy: singleton
+    maximumAttempts: 2
+    timeout: 3600
+    escalationTarget: human
+    qualityRequirements:
+      evidence:
+        - QUALITY_REVIEW checklist
+        - verdict APPROVE|APPROVE_WITH_NOTES|BLOCK
+      verification: []
+    memoryAccess:
+      read: [reference, promoted, proposals]
+      write: [promoted, proposals, run-scratch]
+    riskTier: medium
+
+  - id: database
+    displayId: "⑥"
+    name: Database Agent
+    purpose: Prisma schema, migrations, seeds, deploy-safe DDL.
+    activation:
+      paths:
+        - "backend/prisma/**"
+        - "**/schema.prisma"
+        - "backend/prisma/migrations/**"
+        - "backend/prisma/seed.ts"
+        - "backend/prisma/demo-seed.ts"
+    readPaths:
+      - "backend/prisma/**"
+      - "backend/src/**"
+      - "docs/**"
+    writePaths:
+      - "backend/prisma/**"
+    deniedPaths:
+      - "frontend/**"
+      - "payment-service/**"
+      - "backend/src/**"
+    toolProfile: database-migration
+    skills:
+      - prisma-migration-safety
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 2
+    timeout: 3600
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - migration review notes
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: high
+
+  - id: devops
+    displayId: "⑦"
+    name: DevOps / Infra Agent
+    purpose: CI workflows, containers, env templates, automation scripts.
+    activation:
+      paths:
+        - ".github/workflows/**"
+        - "**/Dockerfile"
+        - "**/Dockerfile.*"
+        - "docker-compose*.yml"
+        - "**/.env.example"
+        - "scripts/**"
+        - "infra/**"
+    readPaths:
+      - ".github/**"
+      - "scripts/**"
+      - "infra/**"
+      - "docs/**"
+      - "docker-compose*.yml"
+      - "**/Dockerfile*"
+    writePaths:
+      - ".github/workflows/**"
+      - "scripts/**"
+      - "infra/**"
+      - "docker-compose*.yml"
+      - "**/Dockerfile"
+      - "**/Dockerfile.*"
+      - "**/.env.example"
+    deniedPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "payment-service/src/**"
+    toolProfile: ci-diagnostics
+    skills:
+      - github-ci-diagnosis
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 3600
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - workflow validation
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: high
+
+  - id: security
+    displayId: "⑧"
+    name: Security Agent
+    purpose: Auth, RBAC, guards, JWT, CORS, sensitive-data handling.
+    activation:
+      paths:
+        - "backend/src/auth/**"
+        - "**/guards/**"
+        - "**/interceptors/**"
+        - "**/*auth*"
+        - "**/*guard*"
+        - "**/*permission*"
+        - "**/*rbac*"
+        - "**/*jwt*"
+      keywords:
+        - auth
+        - guard
+        - permission
+        - jwt
+        - rbac
+    readPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "docs/**"
+    writePaths:
+      - "backend/src/auth/**"
+      - "backend/src/**/guards/**"
+      - "backend/src/**/interceptors/**"
+    deniedPaths:
+      - "payment-service/**"
+      - "frontend/src/**"
+    toolProfile: read-only-review
+    skills:
+      - security-rbac-review
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 2
+    timeout: 3600
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - security review notes
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: critical
+
+  - id: testing
+    displayId: "⑨"
+    name: Testing Agent
+    purpose: >
+      Independent coverage audit, regression/integration/E2E tests,
+      negative paths and cross-service contracts. Implementation agents
+      may write tightly coupled unit/contract tests; Testing owns broader verification.
+    activation:
+      paths:
+        - "**/*.spec.ts"
+        - "**/*.spec.tsx"
+        - "**/*.test.ts"
+        - "**/*.test.tsx"
+        - "**/*.test.mjs"
+        - "**/*Test.java"
+        - "**/jest.config.*"
+        - "**/vitest.config.*"
+        - "frontend/cypress/**"
+        - "backend/test/**"
+      mode: after-implementation-or-test-paths
+    readPaths:
+      - "**/*"
+    writePaths:
+      - "**/*.spec.ts"
+      - "**/*.spec.tsx"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/*.test.mjs"
+      - "**/*Test.java"
+      - "**/__tests__/**"
+      - "backend/test/**"
+      - "frontend/cypress/**"
+      - "**/jest.config.*"
+      - "**/vitest.config.*"
+      - "scripts/agents/__tests__/**"
+    deniedPaths:
+      - "backend/src/**/*.ts"
+      - "frontend/src/**/*.tsx"
+      - "frontend/src/**/*.ts"
+      - "payment-service/src/**/*.java"
+    toolProfile: testing
+    skills: []
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 5400
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - test results
+        - coverage notes
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: medium
+
+  - id: documentation
+    displayId: "⑩"
+    name: Documentation Agent
+    purpose: Docs, prompts, reports, MASTER_PROMPT consistency.
+    activation:
+      paths:
+        - "docs/**"
+        - ".grok/**"
+        - "**/*.md"
+        - "MASTER_PROMPT.md"
+        - "Agents.md"
+        - "README.md"
+        - "**/AGENTS.md"
+    readPaths:
+      - "**/*"
+    writePaths:
+      - "docs/**"
+      - ".grok/**"
+      - "**/*.md"
+      - "MASTER_PROMPT.md"
+      - "Agents.md"
+      - "README.md"
+    deniedPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "payment-service/src/**"
+    toolProfile: documentation
+    skills: []
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 2
+    timeout: 3600
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - doc links checked
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: low
+
+  - id: performance
+    displayId: "⑪"
+    name: Performance Agent
+    purpose: N+1, caching, pagination, WebSocket and large-data risk review.
+    activation:
+      mode: manual-or-heuristic
+      paths:
+        - "**/*pagination*"
+        - "**/*cache*"
+        - "**/*websocket*"
+        - "**/*fanout*"
+        - "**/*fan-out*"
+      keywords:
+        - pagination
+        - staleTime
+        - websocket
+        - fanout
+        - cache
+    readPaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+      - "docs/**"
+    writePaths:
+      - "backend/src/**"
+      - "frontend/src/**"
+    deniedPaths:
+      - "backend/prisma/**"
+      - "payment-service/**"
+    toolProfile: read-only-review
+    skills:
+      - react-query-cache-review
+    dependencies: []
+    concurrencyPolicy: shared-read
+    maximumAttempts: 2
+    timeout: 3600
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - performance notes
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: medium
+
+  - id: events-iot
+    displayId: "⑫"
+    name: Events / IoT Agent
+    purpose: Event bus, outbox, MQTT, notifications, gateways, IoT edge.
+    activation:
+      paths:
+        - "backend/src/events/**"
+        - "backend/src/iot/**"
+        - "backend/src/**/outbox/**"
+        - "backend/src/**/*listener*"
+        - "backend/src/**/*subscriber*"
+        - "backend/src/**/*notification*"
+        - "backend/src/**/*websocket*"
+        - "backend/src/**/*gateway*"
+        - "iot-edge/**"
+        - "infra/mosquitto/**"
+        - "docker-compose.iot.yml"
+        - "docker-compose.fullstack-iot.yml"
+        - "scripts/iot-*.mjs"
+        - "scripts/simulate-iot-*"
+      keywords:
+        - mqtt
+        - outbox
+        - gateway
+        - notification
+    readPaths:
+      - "backend/src/**"
+      - "iot-edge/**"
+      - "infra/**"
+      - "docs/**"
+    writePaths:
+      - "backend/src/events/**"
+      - "backend/src/iot/**"
+      - "backend/src/**/outbox/**"
+      - "iot-edge/**"
+      - "infra/mosquitto/**"
+    deniedPaths:
+      - "frontend/**"
+      - "payment-service/**"
+    toolProfile: iot-events-development
+    skills:
+      - iot-mqtt-contract-review
+    dependencies: []
+    concurrencyPolicy: exclusive-write-scope
+    maximumAttempts: 3
+    timeout: 5400
+    escalationTarget: quality
+    qualityRequirements:
+      evidence:
+        - iot/integration notes
+      verification: []
+    memoryAccess:
+      read: [reference, promoted]
+      write: [run-scratch, proposals]
+    riskTier: high

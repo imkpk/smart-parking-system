@@ -1,0 +1,85 @@
+name: Agent Orchestration Audit
+
+on:
+  schedule:
+    # daily-stale-agent-run-audit 06:00 UTC
+    - cron: '0 6 * * *'
+    # weekly docs / memory / routing Mondays
+    - cron: '0 7 * * 1'
+    - cron: '30 7 * * 1'
+    - cron: '0 8 * * 1'
+    # monthly skills
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which audit to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - stale-runs
+          - routing
+          - memory
+          - skills
+          - docs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orchestration-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        working-directory: scripts/agents
+        run: npm ci
+
+      - name: Validate control plane
+        run: |
+          node scripts/agents/validate-manifest.mjs
+          node scripts/agents/validate-skills.mjs
+          node scripts/agents/validate-schedules.mjs
+
+      - name: Routing evaluation
+        run: node --test scripts/agents/__tests__/routing.test.mjs
+
+      - name: Memory audit
+        run: node scripts/agents/audit-memory.mjs || true
+
+      - name: Stale agent-run index report
+        run: |
+          {
+            echo '## Stale agent-run audit (report-only)'
+            echo ''
+            if [ -f .grok/agent-runs/README.md ]; then
+              echo 'In-progress rows:'
+              grep -n '⏳ In Progress' .grok/agent-runs/README.md || echo '_none_'
+            else
+              echo 'Index missing'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summary
+        run: |
+          {
+            echo '## Orchestration audit'
+            echo ''
+            echo 'Mode: **read-only / report-only**'
+            echo ''
+            echo 'This workflow never merges, deploys, or changes secrets.'
+            echo "Triggered: ${{ github.event_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"

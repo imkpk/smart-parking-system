@@ -2,10 +2,14 @@
 
 > **Purpose:** Define how AI agents (and humans) split work on this monorepo.  
 > **Read first:** [`MASTER_PROMPT.md`](../../MASTER_PROMPT.md) — every agent obeys it over generic tool defaults.  
+> **Canonical machine registry:** [`.grok/orchestration/manifest.yaml`](../../.grok/orchestration/manifest.yaml) — **single source of truth** for activation paths, write scopes, tool profiles, timeouts. This document **explains** the manifest; do not maintain a second conflicting path→agent table.  
+> **Orchestration platform:** [`ORCHESTRATION.md`](./ORCHESTRATION.md)  
 > **Branch rules:** [`docs/project-plan/09-branch-strategy.md`](../project-plan/09-branch-strategy.md)  
 > **Task library:** [`.grok/prompts/`](../../.grok/prompts/) — copy-paste agent missions per phase  
 > **Completion archive:** [`.grok/reports/`](../../.grok/reports/) — what was done, PR links, lessons learned  
 > **Review gate:** [`QUALITY_REVIEW.md`](./QUALITY_REVIEW.md) — architecture + code quality checklist for Role ⑤
+
+**Planner:** `node scripts/agents/plan-run.mjs --base origin/develop --head HEAD --format text`
 
 ---
 
@@ -79,10 +83,10 @@ The system no longer assumes exactly five workers. **Role ①** inspects the PR 
 
 | Agent type | Writes | Never writes |
 |------------|--------|--------------|
-| Writers (②③④⑥⑦⑧⑩⑪⑫) | Production code / infra / docs in their scope | Tests (⑨ owns tests) |
-| ⑨ Testing Agent | `*.spec.ts`, `*.test.ts`, test utils | Production source files |
-| ⑤ Quality Agent | Review verdicts, CI/doc fixes for the gate | Feature implementation |
-| ① Orchestrator | Plans, prompts, activation tables, branches | Application code |
+| Writers (②③④⑥⑦⑧⑩⑪⑫) | Production code / infra / docs in their scope | Unrelated services; may add **tightly coupled unit/contract tests** for their change |
+| ⑨ Testing Agent | Broader regression, integration, E2E, negative paths, cross-service contracts; audits coverage | Production feature implementation |
+| ⑤ Quality Agent | Review verdicts, CI/doc fixes for the gate | Feature implementation (enforced in permissions) |
+| ① Orchestrator | Plans, prompts, activation tables, branches, run ledger | Application product code |
 
 ```text
 Work comes in
@@ -355,13 +359,13 @@ Do not implement features — only test/CI fixes if CI is broken.
 
 | Field | Definition |
 |-------|------------|
-| **Mission** | Write and maintain tests for code produced by writers — **never production code**. |
-| **Owns** | `**/*.spec.ts`, `**/*.test.ts`, Jest/Vitest config, test utilities, mocks, fixtures |
-| **Responsibilities** | Every new service/component has a matching spec; no skipped tests without comment; no `console.log` in tests; mocks isolated between tests |
-| **Forbidden** | Production source files (read-only access to understand behavior) |
+| **Mission** | Independently audit coverage; add regression, integration, E2E, negative-path and cross-service contract tests. Implementation agents may still write tightly coupled unit/contract tests. |
+| **Owns** | Broader test suites, Jest/Vitest/Cypress config, shared test utilities, mocks, fixtures |
+| **Responsibilities** | Coverage audit; failure behavior; no skipped tests without comment; mocks isolated; never trust writers' tests alone |
+| **Forbidden** | Production feature implementation |
 | **Hands off to** | ⑤ for coverage and CI checks (§10, §13) |
 
-**Runs after:** ②③④⑥⑦⑧⑩⑪⑫ complete implementation.
+**Runs after:** ②③④⑥⑦⑧⑩⑪⑫ complete implementation (enforced in planner task graph).
 
 ---
 

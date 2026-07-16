@@ -1,0 +1,43 @@
+version: "1.0.0"
+description: >
+  Global permission policy for the orchestration execution plane.
+  Agent-specific path scopes live in manifest.yaml (single source of truth for ownership).
+
+alwaysRequireHuman:
+  - merge-protected-branch
+  - production-deploy
+  - change-production-secrets
+  - destructive-database
+  - force-push
+  - branch-protection-change
+  - repository-deletion
+  - environment-deletion
+  - credential-rotation
+
+blockedCommands:
+  - pattern: "prisma migrate reset"
+    reason: Destructive against non-test databases
+  - pattern: "DROP DATABASE"
+    reason: Destructive DDL
+  - pattern: "git push --force"
+    reason: Force push to shared branches forbidden
+  - pattern: "git push -f"
+    reason: Force push to shared branches forbidden
+
+blockedPathWrites:
+  - "**/.env"
+  - "**/*.pem"
+  - "**/id_rsa"
+  - "**/credentials.json"
+
+qualityRestrictions:
+  mayNotImplementFeatures: true
+  allowedWriteGlobs:
+    - ".grok/reports/**"
+    - ".grok/review/**"
+    - ".grok/agent-runs/**"
+
+secretHandling:
+  storeSecretsInRunState: false
+  storeSecretsInMemory: false
+  redactionRequired: true

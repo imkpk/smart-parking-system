@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://smart-parking.local/schemas/schedule.schema.json",
+  "title": "AgentSchedule",
+  "type": "object",
+  "required": [
+    "id",
+    "timezone",
+    "cron",
+    "concurrencyGroup",
+    "timeout",
+    "retryPolicy",
+    "idempotencyKey",
+    "pause",
+    "permissions",
+    "mode"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "description": { "type": "string" },
+    "timezone": { "type": "string" },
+    "cron": { "type": "string", "minLength": 1 },
+    "concurrencyGroup": { "type": "string" },
+    "timeout": { "type": "integer", "minimum": 60, "maximum": 21600 },
+    "retryPolicy": {
+      "type": "object",
+      "required": ["maxAttempts"],
+      "properties": {
+        "maxAttempts": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "backoffSeconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "idempotencyKey": { "type": "string" },
+    "pause": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "reason": { "type": "string" }
+      }
+    },
+    "failureReporting": { "type": "string" },
+    "manualReplay": { "type": "boolean" },
+    "permissions": {
+      "type": "object",
+      "required": ["contents"],
+      "properties": {
+        "contents": { "type": "string", "enum": ["read", "write"] },
+        "pullRequests": { "type": "string" }
+      }
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["read-only", "report-only", "propose-only"]
+    },
+    "workflow": { "type": "string" },
+    "forbiddenActions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

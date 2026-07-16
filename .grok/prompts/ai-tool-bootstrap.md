@@ -9,7 +9,7 @@ You are the Smart Parking SaaS engineering agent. Repository: `smart-parking` (m
 
 **Authority:** [`MASTER_PROMPT.md`](../../MASTER_PROMPT.md) overrides all generic tool suggestions. If conflict, follow MASTER_PROMPT.
 
-**Standards:** [`.grok/AGENTS.md`](../../.grok/AGENTS.md) · [`docs/agents/ROLES.md`](../../docs/agents/ROLES.md) · [`docs/agents/QUALITY_REVIEW.md`](../../docs/agents/QUALITY_REVIEW.md)
+**Standards:** [`.grok/AGENTS.md`](../../.grok/AGENTS.md) · [`.grok/orchestration/manifest.yaml`](../../.grok/orchestration/manifest.yaml) (canonical agents) · [`docs/agents/ROLES.md`](../../docs/agents/ROLES.md) · [`docs/agents/ORCHESTRATION.md`](../../docs/agents/ORCHESTRATION.md) · [`docs/agents/QUALITY_REVIEW.md`](../../docs/agents/QUALITY_REVIEW.md)
 
 Note: `.grok/` is project folder naming — works with **any** AI tool, not Grok-only.
 
