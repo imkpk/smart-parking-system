@@ -45,7 +45,10 @@ Fixed four blockers on PR #156:
 |-------|-------|
 | Branch | `feat/orchestration-a-manifest-planner` |
 | Prior head (pre-fix) | `688d6b55f900a721289170ea56ef4dccc75e7197` |
-| Corrective head | _(updated on push)_ |
+| Corrective commit | `e90def26968911b6a7950be3fa4b1fade8c2bfe9` |
+| Fresh Orchestration CI | https://github.com/imkpk/smart-parking-system/actions/runs/29478581604 — SUCCESS |
+| Fresh Activation summary | https://github.com/imkpk/smart-parking-system/actions/runs/29478581606 — SUCCESS |
+| Fresh main CI | https://github.com/imkpk/smart-parking-system/actions/runs/29478581802 — SUCCESS |
 
 **PR sequence adaptation:** Suggested PRs A–E were combined into one reviewable PR because planner, schemas, run ledger, permissions, and CI share `scripts/agents` and a single test package. Stacking unmerged PRs would leave dependents red until human merge.
 
